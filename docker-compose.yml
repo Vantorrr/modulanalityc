@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  # Main API application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medical-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/medical_db
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
+      - OPENAI_BASE_URL=https://openrouter.ai/api/v1
+      - OPENAI_MODEL=openai/gpt-4o-mini
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DEBUG=false
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - medical-network
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: medical-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=medical_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medical-network
+
+  # Redis for caching and task queue
+  redis:
+    image: redis:7-alpine
+    container_name: medical-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - medical-network
+
+  # Celery worker for background tasks (optional)
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: medical-worker
+  #   restart: unless-stopped
+  #   command: celery -A app.worker worker -l info
+  #   environment:
+  #     - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/medical_db
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #   depends_on:
+  #     - api
+  #     - redis
+  #   networks:
+  #     - medical-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  medical-network:
+    driver: bridge
+
