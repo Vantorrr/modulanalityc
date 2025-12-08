@@ -7,11 +7,11 @@ import {
   ChevronRightIcon, ChevronLeftIcon, SearchIcon,
   FileTextIcon, ImageIcon, ArchiveIcon, BarChartIcon, ShieldIcon,
   SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon
-} from "@/components/Icons";
+} from "../components/Icons";
 import {
   analysesApi, medcardApi, calendarApi,
   type Analysis, type MedicalDocument, type Reminder
-} from "@/lib/api";
+} from "../lib/api";
 
 // Модуль встраивается в основное приложение заказчика
 // Авторизация происходит на стороне основного приложения
