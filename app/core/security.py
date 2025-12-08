@@ -10,8 +10,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_async_session
+from app.models.user import User
 
 
 # Password hashing
@@ -125,7 +128,29 @@ async def get_current_user_id(
     return int(token_data.sub)
 
 
+async def get_current_user(
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[AsyncSession, Depends(get_async_session)],
+) -> User:
+    """
+    Dependency that returns the current authenticated user.
+    """
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь неактивен",
+        )
+    return user
+
+
 # Type alias for dependency injection
 CurrentUserID = Annotated[int, Depends(get_current_user_id)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
