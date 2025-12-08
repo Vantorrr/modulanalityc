@@ -14,7 +14,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_async_session
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.medical_document import MedicalDocument, DocumentCategory
@@ -40,7 +40,7 @@ async def upload_document(
     tags: Optional[str] = Form(None, description="Теги через запятую"),
     visit_date: Optional[str] = Form(None, description="Дата визита (ISO format)"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """
     Загрузка произвольного медицинского документа.
@@ -112,7 +112,7 @@ async def get_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """
     Получить список документов пользователя.
@@ -145,7 +145,7 @@ async def get_documents(
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Получить информацию о документе по ID."""
     result = await db.execute(
@@ -170,7 +170,7 @@ async def update_document(
     document_id: int,
     data: MedicalDocumentUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Обновить метаданные документа (название, описание, теги, категорию, дату визита)."""
     result = await db.execute(
@@ -202,7 +202,7 @@ async def update_document(
 async def delete_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Удалить документ (файл + запись в БД)."""
     result = await db.execute(
@@ -235,7 +235,7 @@ async def delete_document(
 async def download_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Скачать файл документа."""
     result = await db.execute(
@@ -270,7 +270,7 @@ async def download_document(
 async def view_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """
     Просмотр документа (inline в браузере).
