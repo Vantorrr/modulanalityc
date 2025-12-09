@@ -482,10 +482,10 @@ function AnalysesPage() {
         ) : displayAnalyses.map((item: any, i) => {
           const hasIssues = item.biomarkers?.some((b: any) => b.status !== 'normal');
           return (
-            <div 
+            <button 
               key={item.id || i} 
               onClick={() => setSelectedAnalysis(item)}
-              className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+              className="w-full text-left bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
             >
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -513,7 +513,7 @@ function AnalysesPage() {
                 <span className="text-xs text-gray-400">Нажмите для подробностей</span>
                 <ChevronRightIcon size={16} className="text-gray-400" />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
