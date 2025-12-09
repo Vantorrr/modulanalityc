@@ -104,15 +104,19 @@ async def get_current_user_id(
     """
     Dependency that extracts and validates the current user from JWT.
     Returns user_id.
+    
+    In demo mode (no token), returns demo user id = 1.
     """
+    # Demo mode: if no credentials, use demo user
+    if not credentials:
+        # Return demo user id for testing/demo purposes
+        return 1
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Невалидный токен авторизации",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    if not credentials:
-        raise credentials_exception
     
     token_data = decode_token(credentials.credentials)
     

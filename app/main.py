@@ -34,11 +34,43 @@ async def lifespan(app: FastAPI):
     upload_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Upload directory: {upload_dir.absolute()}")
     
+    # Create demo user if not exists
+    await create_demo_user()
+    
     yield
     
     # Shutdown
     logger.info("Shutting down...")
     await engine.dispose()
+
+
+async def create_demo_user():
+    """Create demo user for testing if not exists."""
+    from app.core.database import async_session_maker
+    from app.models.user import User
+    from app.core.security import get_password_hash
+    from sqlalchemy import select
+    
+    async with async_session_maker() as session:
+        # Check if demo user exists
+        result = await session.execute(select(User).where(User.id == 1))
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            demo_user = User(
+                id=1,
+                email="demo@healthtracker.app",
+                hashed_password=get_password_hash("demo123"),
+                first_name="Демо",
+                last_name="Пользователь",
+                is_active=True,
+                is_verified=True,
+            )
+            session.add(demo_user)
+            await session.commit()
+            logger.info("Demo user created (id=1)")
+        else:
+            logger.info("Demo user already exists")
 
 
 # Create FastAPI app
