@@ -16,7 +16,7 @@ const getApiUrl = () => {
 const API_BASE_URL = getApiUrl();
 
 // Export for cache busting
-export const API_VERSION = 'v9-turnkey';
+export const API_VERSION = 'v10-production';
 
 // Debug log
 if (typeof window !== 'undefined') {
@@ -241,15 +241,22 @@ export const analysesApi = {
     if (title) formData.append('title', title);
     if (labName) formData.append('lab_name', labName);
     
-    const response = await fetch(`${API_BASE_URL}/analyses/upload`, {
+    // Use direct backend URL for file uploads (proxy might have issues with multipart)
+    const uploadUrl = 'https://modulanalityc-production.up.railway.app/api/v1/analyses/upload';
+    
+    console.log('[API Upload]', uploadUrl, file.name);
+    
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       body: formData,
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Ошибка загрузки' }));
-      throw new Error(error.detail);
+      const errorText = await response.text();
+      console.error('[API Upload Error]', errorText);
+      const error = JSON.parse(errorText).catch?.(() => ({ detail: 'Ошибка загрузки' })) || { detail: errorText };
+      throw new Error(error.detail || 'Ошибка загрузки');
     }
     
     return response.json();
@@ -282,15 +289,21 @@ export const medcardApi = {
     if (description) formData.append('description', description);
     if (documentDate) formData.append('document_date', documentDate);
     
-    const response = await fetch(`${API_BASE_URL}/medcard/upload`, {
+    // Use direct backend URL for file uploads
+    const uploadUrl = 'https://modulanalityc-production.up.railway.app/api/v1/medcard/upload';
+    
+    console.log('[API Medcard Upload]', uploadUrl, file.name);
+    
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       body: formData,
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Ошибка загрузки' }));
-      throw new Error(error.detail);
+      const errorText = await response.text();
+      console.error('[API Medcard Upload Error]', errorText);
+      throw new Error('Ошибка загрузки документа');
     }
     
     return response.json();

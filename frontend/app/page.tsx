@@ -18,6 +18,75 @@ import {
 // Авторизация происходит на стороне основного приложения
 // Пользователь уже залогинен
 
+// Компонент уведомлений
+function NotificationBell() {
+  const [notifications, setNotifications] = useState<Reminder[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    try {
+      const reminders = await calendarApi.getAll();
+      // Filter upcoming reminders (next 7 days)
+      const upcoming = reminders.filter(r => {
+        const daysUntil = Math.ceil((new Date(r.scheduled_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        return daysUntil >= 0 && daysUntil <= 7 && !r.is_completed;
+      });
+      setNotifications(upcoming);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const count = notifications.length;
+
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setShowPopup(!showPopup)}
+        className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative text-gray-600 hover:bg-gray-200 transition-colors"
+      >
+        <BellIcon size={18} />
+        {count > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+            {count > 9 ? '9+' : count}
+          </span>
+        )}
+      </button>
+      
+      {showPopup && (
+        <div className="absolute right-0 top-12 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+          <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-bold text-gray-900">Уведомления</h3>
+            <button onClick={() => setShowPopup(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {loading ? (
+              <div className="p-4 text-center text-gray-400">Загрузка...</div>
+            ) : notifications.length === 0 ? (
+              <div className="p-4 text-center text-gray-400">Нет уведомлений</div>
+            ) : notifications.map(n => (
+              <div key={n.id} className="p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer">
+                <div className="font-medium text-sm text-gray-900">{n.title}</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {new Date(n.scheduled_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   // Use API_VERSION to bust stale bundles
   useEffect(() => {
@@ -42,13 +111,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => alert("Уведомления:\n\n• Запланирован анализ через 3 дня\n• Витамин D - проверить через неделю\n\n(Функция уведомлений в разработке)")}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative text-gray-600 hover:bg-gray-200 transition-colors"
-              >
-                <BellIcon size={18} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationBell />
             </div>
           </div>
         </header>
@@ -748,11 +811,7 @@ function MedcardPage() {
       <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
         {activeTab === "events" && <MedcardEvents />}
         {activeTab === "about" && <PatientAboutTab />}
-        {activeTab === "diaries" && (
-            <div className="flex items-center justify-center h-40 text-gray-400">
-                Раздел дневников в разработке
-            </div>
-        )}
+        {activeTab === "diaries" && <DiariesSection />}
       </div>
     </div>
   );
@@ -1064,6 +1123,122 @@ function CalendarPage() {
           Добавить напоминание
         </button>
       )}
+    </div>
+  );
+}
+
+// Раздел дневников
+function DiariesSection() {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ type: "mood", value: 3, note: "" });
+
+  // Демо данные
+  const demoEntries = [
+    { id: 1, date: "2024-12-09", type: "mood", value: 4, note: "Хорошее настроение после тренировки" },
+    { id: 2, date: "2024-12-08", type: "sleep", value: 7.5, note: "Спал крепко" },
+    { id: 3, date: "2024-12-08", type: "water", value: 2.5, note: "Пил больше воды" },
+    { id: 4, date: "2024-12-07", type: "mood", value: 3, note: "Обычный день" },
+    { id: 5, date: "2024-12-07", type: "weight", value: 74.5, note: "" },
+  ];
+
+  const displayEntries = entries.length > 0 ? entries : demoEntries;
+
+  const diaryTypes = [
+    { id: "mood", label: "Настроение", icon: "😊", unit: "/ 5", color: "bg-amber-50 text-amber-600" },
+    { id: "sleep", label: "Сон", icon: "😴", unit: "ч", color: "bg-indigo-50 text-indigo-600" },
+    { id: "water", label: "Вода", icon: "💧", unit: "л", color: "bg-cyan-50 text-cyan-600" },
+    { id: "weight", label: "Вес", icon: "⚖️", unit: "кг", color: "bg-emerald-50 text-emerald-600" },
+    { id: "pressure", label: "Давление", icon: "❤️", unit: "мм", color: "bg-rose-50 text-rose-600" },
+    { id: "sugar", label: "Сахар", icon: "🩸", unit: "ммоль/л", color: "bg-red-50 text-red-600" },
+  ];
+
+  const handleSave = () => {
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      ...formData
+    };
+    setEntries(prev => [newEntry, ...prev]);
+    setShowForm(false);
+    setFormData({ type: "mood", value: 3, note: "" });
+  };
+
+  const getTypeInfo = (type: string) => diaryTypes.find(t => t.id === type) || diaryTypes[0];
+
+  return (
+    <div className="space-y-4 pb-20">
+      <div className="grid grid-cols-3 gap-2">
+        {diaryTypes.map(type => (
+          <button
+            key={type.id}
+            onClick={() => { setFormData(prev => ({ ...prev, type: type.id })); setShowForm(true); }}
+            className={`p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-1 hover:shadow-md transition-all ${type.color}`}
+          >
+            <span className="text-2xl">{type.icon}</span>
+            <span className="text-xs font-medium">{type.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {showForm && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900">Новая запись</h3>
+            <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <span className="text-3xl">{getTypeInfo(formData.type).icon}</span>
+            <div className="flex-1">
+              <div className="font-medium text-gray-900">{getTypeInfo(formData.type).label}</div>
+              <input
+                type="number"
+                step="0.1"
+                value={formData.value}
+                onChange={e => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                className="w-full p-2 border border-gray-200 rounded-lg mt-1"
+                placeholder="Значение"
+              />
+            </div>
+            <span className="text-gray-400">{getTypeInfo(formData.type).unit}</span>
+          </div>
+          <textarea
+            value={formData.note}
+            onChange={e => setFormData(prev => ({ ...prev, note: e.target.value }))}
+            placeholder="Заметка (опционально)"
+            className="w-full p-2 border border-gray-200 rounded-lg"
+            rows={2}
+          />
+          <button
+            onClick={handleSave}
+            className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium"
+          >
+            Сохранить
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <h3 className="font-bold text-gray-900">История записей</h3>
+        {displayEntries.map(entry => {
+          const typeInfo = getTypeInfo(entry.type);
+          return (
+            <div key={entry.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-xl ${typeInfo.color}`}>
+                {typeInfo.icon}
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">{typeInfo.label}</div>
+                <div className="text-xs text-gray-400">{entry.date} {entry.note && `• ${entry.note}`}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-gray-900">{entry.value}</div>
+                <div className="text-xs text-gray-400">{typeInfo.unit}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
