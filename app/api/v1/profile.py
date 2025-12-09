@@ -25,7 +25,8 @@ class ProfileResponse(ProfileUpdate):
     id: int
     user_id: int
 
-@router.get("/", response_model=ProfileResponse)
+# Use empty string to avoid trailing slash redirects
+@router.get("", response_model=ProfileResponse)
 async def get_my_profile(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
@@ -44,7 +45,7 @@ async def get_my_profile(
         
     return profile
 
-@router.put("/", response_model=ProfileResponse)
+@router.put("", response_model=ProfileResponse)
 async def update_my_profile(
     profile_data: ProfileUpdate,
     current_user: User = Depends(get_current_user),

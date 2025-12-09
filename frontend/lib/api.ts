@@ -16,7 +16,7 @@ const getApiUrl = () => {
 const API_BASE_URL = getApiUrl();
 
 // Export for cache busting
-export const API_VERSION = 'v8-fixes';
+export const API_VERSION = 'v9-turnkey';
 
 // Debug log
 if (typeof window !== 'undefined') {
@@ -370,12 +370,11 @@ export const productsApi = {
 // API для профиля пациента
 export const profileApi = {
   async getMyProfile(): Promise<PatientProfile> {
-    // Trailing slash required by FastAPI router
-    return apiFetch<PatientProfile>('/profile/');
+    return apiFetch<PatientProfile>('/profile');
   },
   
   async update(data: Partial<PatientProfile>): Promise<PatientProfile> {
-    return apiFetch<PatientProfile>('/profile/', {
+    return apiFetch<PatientProfile>('/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });

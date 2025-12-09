@@ -349,69 +349,80 @@ async def list_analyses(
     
     Можно фильтровать по типу анализа.
     """
-    # Base query
-    conditions = [Analysis.user_id == user_id]
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if analysis_type:
-        conditions.append(Analysis.analysis_type == analysis_type)
-    
-    # Count total
-    count_stmt = select(func.count(Analysis.id)).where(and_(*conditions))
-    total = (await db.execute(count_stmt)).scalar() or 0
-    
-    # Get items
-    stmt = (
-        select(Analysis)
-        .where(and_(*conditions))
-        .order_by(Analysis.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
-    result = await db.execute(stmt)
-    analyses = result.scalars().all()
-    
-    # Get biomarker counts
-    items = []
-    for analysis in analyses:
-        bio_count_stmt = (
-            select(func.count(UserBiomarker.id))
-            .where(UserBiomarker.analysis_id == analysis.id)
-        )
-        bio_count = (await db.execute(bio_count_stmt)).scalar() or 0
+    try:
+        logger.info(f"Getting analyses for user_id={user_id}, page={page}")
         
-        out_of_range_stmt = (
-            select(func.count(UserBiomarker.id))
-            .where(
-                UserBiomarker.analysis_id == analysis.id,
-                UserBiomarker.status.in_([
-                    BiomarkerStatus.LOW,
-                    BiomarkerStatus.HIGH,
-                    BiomarkerStatus.CRITICAL_LOW,
-                    BiomarkerStatus.CRITICAL_HIGH,
-                ])
+        # Base query
+        conditions = [Analysis.user_id == user_id]
+        
+        if analysis_type:
+            conditions.append(Analysis.analysis_type == analysis_type)
+        
+        # Count total
+        count_stmt = select(func.count(Analysis.id)).where(and_(*conditions))
+        total = (await db.execute(count_stmt)).scalar() or 0
+        logger.info(f"Total analyses: {total}")
+        
+        # Get items
+        stmt = (
+            select(Analysis)
+            .where(and_(*conditions))
+            .order_by(Analysis.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        result = await db.execute(stmt)
+        analyses = result.scalars().all()
+        
+        # Get biomarker counts
+        items = []
+        for analysis in analyses:
+            bio_count_stmt = (
+                select(func.count(UserBiomarker.id))
+                .where(UserBiomarker.analysis_id == analysis.id)
             )
-        )
-        out_of_range = (await db.execute(out_of_range_stmt)).scalar() or 0
+            bio_count = (await db.execute(bio_count_stmt)).scalar() or 0
+            
+            out_of_range_stmt = (
+                select(func.count(UserBiomarker.id))
+                .where(
+                    UserBiomarker.analysis_id == analysis.id,
+                    UserBiomarker.status.in_([
+                        BiomarkerStatus.LOW,
+                        BiomarkerStatus.HIGH,
+                        BiomarkerStatus.CRITICAL_LOW,
+                        BiomarkerStatus.CRITICAL_HIGH,
+                    ])
+                )
+            )
+            out_of_range = (await db.execute(out_of_range_stmt)).scalar() or 0
+            
+            items.append(AnalysisListItem(
+                id=analysis.id,
+                title=analysis.title,
+                analysis_type=analysis.analysis_type,
+                lab_provider=analysis.lab_provider,
+                analysis_date=analysis.analysis_date,
+                status=analysis.status,
+                biomarkers_count=bio_count,
+                out_of_range_count=out_of_range,
+                created_at=analysis.created_at,
+            ))
         
-        items.append(AnalysisListItem(
-            id=analysis.id,
-            title=analysis.title,
-            analysis_type=analysis.analysis_type,
-            lab_provider=analysis.lab_provider,
-            analysis_date=analysis.analysis_date,
-            status=analysis.status,
-            biomarkers_count=bio_count,
-            out_of_range_count=out_of_range,
-            created_at=analysis.created_at,
-        ))
-    
-    return AnalysisListResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        pages=(total + page_size - 1) // page_size,
-        items=items,
-    )
+        logger.info(f"Returning {len(items)} analyses")
+        return AnalysisListResponse(
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=(total + page_size - 1) // page_size if page_size > 0 else 0,
+            items=items,
+        )
+    except Exception as e:
+        logger.exception(f"Error getting analyses: {e}")
+        raise
 
 
 @router.get(
