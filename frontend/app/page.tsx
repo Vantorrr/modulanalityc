@@ -46,7 +46,7 @@ export default function Home() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto">
-          {activeTab === "home" && <HomePage />}
+          {activeTab === "home" && <HomePage onNavigate={setActiveTab} />}
           {activeTab === "analyses" && <AnalysesPage />}
           {activeTab === "medcard" && <MedcardPage />}
           {activeTab === "calendar" && <CalendarPage />}
@@ -85,7 +85,7 @@ export default function Home() {
 }
 
 // Главная страница
-function HomePage() {
+function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [latestRec, setLatestRec] = useState<any>(null);
@@ -153,7 +153,10 @@ function HomePage() {
         
         <UploadAnalysisButton />
 
-        <button className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 hover:shadow-md transition-all">
+        <button 
+          onClick={() => onNavigate("medcard")}
+          className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 hover:shadow-md transition-all"
+        >
           <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
             <FolderIcon size={24} />
           </div>
@@ -723,6 +726,9 @@ function CalendarPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDate, setNewDate] = useState("");
 
   useEffect(() => {
     calendarApi.getAll()
@@ -730,6 +736,28 @@ function CalendarPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const handleAddReminder = async () => {
+    if (!newTitle || !newDate) {
+      alert("Заполните название и дату");
+      return;
+    }
+    try {
+      const reminder = await calendarApi.create({
+        title: newTitle,
+        reminder_date: newDate,
+        reminder_type: "analysis",
+        description: ""
+      });
+      setReminders(prev => [...prev, reminder]);
+      setShowAddForm(false);
+      setNewTitle("");
+      setNewDate("");
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при создании напоминания");
+    }
+  };
 
   // Демо данные
   const displayReminders = reminders.length > 0 ? reminders : [
@@ -818,30 +846,71 @@ function CalendarPage() {
         </div>
       </div>
 
-      <button className="w-full bg-emerald-500 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors">
-        <PlusIcon size={18} />
-        Добавить напоминание
-      </button>
+      {showAddForm ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <h3 className="font-bold text-gray-900">Новое напоминание</h3>
+          <input
+            type="text"
+            placeholder="Название (напр. Сдать анализ крови)"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            className="w-full p-3 border border-gray-200 rounded-lg text-sm"
+          />
+          <input
+            type="datetime-local"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+            className="w-full p-3 border border-gray-200 rounded-lg text-sm"
+          />
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowAddForm(false)}
+              className="flex-1 py-2 border border-gray-200 rounded-lg font-medium text-gray-600"
+            >
+              Отмена
+            </button>
+            <button 
+              onClick={handleAddReminder}
+              className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-medium"
+            >
+              Сохранить
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button 
+          onClick={() => setShowAddForm(true)}
+          className="w-full bg-emerald-500 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
+        >
+          <PlusIcon size={18} />
+          Добавить напоминание
+        </button>
+      )}
     </div>
   );
 }
 
 // Страница профиля
 function ProfilePage() {
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [userName, setUserName] = useState("Александр Иванов");
+  const [userEmail, setUserEmail] = useState("user@example.com");
+  const [notifications, setNotifications] = useState({ email: true, push: false, sms: false });
+
   const menu = [
-    { Icon: UserIcon, label: "Личные данные" },
-    { Icon: HistoryIcon, label: "История анализов" },
-    { Icon: BellIcon, label: "Уведомления" },
-    { Icon: ShieldIcon, label: "Конфиденциальность" },
+    { id: "personal", Icon: UserIcon, label: "Личные данные" },
+    { id: "history", Icon: HistoryIcon, label: "История анализов" },
+    { id: "notifications", Icon: BellIcon, label: "Уведомления" },
+    { id: "privacy", Icon: ShieldIcon, label: "Конфиденциальность" },
   ];
 
   return (
     <div className="px-4 py-5 space-y-4">
       <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
         <div className="w-20 h-20 rounded-xl bg-emerald-500 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-3">
-          АИ
+          {userName.split(' ').map(n => n[0]).join('')}
         </div>
-        <h2 className="text-lg font-bold text-gray-900">Александр Иванов</h2>
+        <h2 className="text-lg font-bold text-gray-900">{userName}</h2>
         <p className="text-sm text-gray-400 mt-1">Профиль в Health Tracker</p>
       </div>
 
@@ -860,18 +929,82 @@ function ProfilePage() {
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {menu.map((item, i) => (
-          <button
-            key={i}
-            className={`w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors ${
-              i !== menu.length - 1 ? "border-b border-gray-200" : ""
-            }`}
-          >
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-              <item.Icon size={18} />
-            </div>
-            <span className="flex-1 font-medium text-sm text-gray-900">{item.label}</span>
-            <ChevronRightIcon size={16} className="text-gray-400" />
-          </button>
+          <div key={item.id}>
+            <button
+              onClick={() => setActiveSection(activeSection === item.id ? null : item.id)}
+              className={`w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors ${
+                i !== menu.length - 1 && activeSection !== item.id ? "border-b border-gray-200" : ""
+              }`}
+            >
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                <item.Icon size={18} />
+              </div>
+              <span className="flex-1 font-medium text-sm text-gray-900">{item.label}</span>
+              <ChevronRightIcon size={16} className={`text-gray-400 transition-transform ${activeSection === item.id ? "rotate-90" : ""}`} />
+            </button>
+            
+            {activeSection === item.id && (
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                {item.id === "personal" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Имя</label>
+                      <input 
+                        type="text" 
+                        value={userName} 
+                        onChange={(e) => setUserName(e.target.value)}
+                        className="w-full p-2 border border-gray-200 rounded-lg mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
+                      <input 
+                        type="email" 
+                        value={userEmail} 
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        className="w-full p-2 border border-gray-200 rounded-lg mt-1"
+                      />
+                    </div>
+                    <button className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium text-sm">
+                      Сохранить
+                    </button>
+                  </div>
+                )}
+                {item.id === "history" && (
+                  <div className="text-sm text-gray-600">
+                    <p className="mb-2">Всего загружено: <b>12 анализов</b></p>
+                    <p className="mb-2">Первый анализ: <b>15 июня 2024</b></p>
+                    <p>Последний анализ: <b>28 ноября 2024</b></p>
+                  </div>
+                )}
+                {item.id === "notifications" && (
+                  <div className="space-y-3">
+                    {[
+                      { key: "email", label: "Email уведомления" },
+                      { key: "push", label: "Push уведомления" },
+                      { key: "sms", label: "SMS напоминания" },
+                    ].map(n => (
+                      <label key={n.key} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">{n.label}</span>
+                        <input 
+                          type="checkbox" 
+                          checked={notifications[n.key as keyof typeof notifications]}
+                          onChange={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key as keyof typeof notifications] }))}
+                          className="w-5 h-5 text-emerald-500"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {item.id === "privacy" && (
+                  <div className="space-y-3 text-sm text-gray-600">
+                    <p>Ваши данные защищены и хранятся в зашифрованном виде.</p>
+                    <button className="text-red-500 font-medium">Удалить все данные</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
