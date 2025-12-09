@@ -10,7 +10,8 @@ import {
 } from "../components/Icons";
 import {
   analysesApi, medcardApi, calendarApi, profileApi,
-  type Analysis, type MedicalDocument, type Reminder, type PatientProfile
+  type Analysis, type MedicalDocument, type Reminder, type PatientProfile,
+  API_VERSION
 } from "../lib/api";
 
 // Модуль встраивается в основное приложение заказчика
@@ -18,6 +19,11 @@ import {
 // Пользователь уже залогинен
 
 export default function Home() {
+  // Use API_VERSION to bust stale bundles
+  useEffect(() => {
+    console.log("API_VERSION", API_VERSION);
+  }, []);
+
   const [activeTab, setActiveTab] = useState("home");
 
   return (
