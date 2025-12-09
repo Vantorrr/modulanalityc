@@ -9,8 +9,8 @@ import {
   SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon
 } from "../components/Icons";
 import {
-  analysesApi, medcardApi, calendarApi,
-  type Analysis, type MedicalDocument, type Reminder
+  analysesApi, medcardApi, calendarApi, profileApi,
+  type Analysis, type MedicalDocument, type Reminder, type PatientProfile
 } from "../lib/api";
 
 // Модуль встраивается в основное приложение заказчика
@@ -88,18 +88,26 @@ export default function Home() {
 function HomePage() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
+  const [latestRec, setLatestRec] = useState<any>(null);
 
   useEffect(() => {
     analysesApi.getAll()
-      .then(setAnalyses)
+      .then(data => {
+        setAnalyses(data);
+        // Find latest recommendation
+        const withRecs = data.find((a: any) => a.ai_recommendations?.items?.length > 0);
+        if (withRecs) {
+            setLatestRec(withRecs.ai_recommendations.items[0]);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const totalAnalyses = analyses.length || 12;
+  const totalAnalyses = analyses.length;
   const outOfRangeCount = analyses.reduce((acc, a) => 
     acc + (a.biomarkers?.filter(b => b.status !== 'normal').length || 0), 0
-  ) || 3;
+  );
 
   return (
     <div className="px-4 py-5 space-y-5">
@@ -107,7 +115,7 @@ function HomePage() {
         <p className="text-sm text-gray-500 mb-1">Добрый день,</p>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Александр 👋</h1>
         
-        <div className="bg-emerald-500 rounded-2xl p-5 text-white">
+        <div className="bg-emerald-500 rounded-2xl p-5 text-white shadow-lg shadow-emerald-200">
           <p className="text-emerald-100 text-sm mb-1">Индекс здоровья</p>
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-3xl font-bold">87</span>
@@ -124,14 +132,14 @@ function HomePage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-gray-200">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-2">
             <DropletIcon size={22} />
           </div>
           <div className="text-2xl font-bold text-gray-900">{totalAnalyses}</div>
           <div className="text-xs text-gray-500 mt-1">Загружено анализов</div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-200">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center mb-2">
             <AlertCircleIcon size={22} />
           </div>
@@ -145,7 +153,7 @@ function HomePage() {
         
         <UploadAnalysisButton />
 
-        <button className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50">
+        <button className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 hover:shadow-md transition-all">
           <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
             <FolderIcon size={24} />
           </div>
@@ -155,21 +163,42 @@ function HomePage() {
           </div>
           <ChevronRightIcon size={20} className="text-gray-400" />
         </button>
+
+        <a href="https://telegra.ph/Consultation-08-16" target="_blank" rel="noopener noreferrer" className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+            <UserIcon size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold text-gray-900">Консультация врача</div>
+            <div className="text-sm text-gray-500">Записаться к нутрициологу</div>
+          </div>
+          <ChevronRightIcon size={20} className="text-gray-400" />
+        </a>
       </div>
       
-      <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 text-white">
-        <div className="flex items-center gap-2 mb-2">
-          <SparklesIcon size={16} />
-          <span className="text-xs font-bold uppercase">AI Рекомендация</span>
+      {latestRec ? (
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-200">
+            <div className="flex items-center gap-2 mb-2">
+            <SparklesIcon size={16} />
+            <span className="text-xs font-bold uppercase">AI Рекомендация</span>
+            </div>
+            <h3 className="text-lg font-bold mb-2">{latestRec.product?.name}</h3>
+            <p className="text-sm text-indigo-100 mb-4">
+            {latestRec.reason || "Подобрано на основе ваших анализов"}
+            </p>
+            <button className="bg-white text-indigo-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors shadow-sm">
+            Купить за {latestRec.product?.price} ₽
+            </button>
         </div>
-        <h3 className="text-lg font-bold mb-2">Дефицит железа?</h3>
-        <p className="text-sm text-indigo-100 mb-4">
-          На основе последних анализов мы подобрали для вас оптимальный курс витаминов.
-        </p>
-        <button className="bg-white text-indigo-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
-          Посмотреть подборку
-        </button>
-      </div>
+      ) : (
+        <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-5 text-gray-500">
+            <div className="flex items-center gap-2 mb-2">
+            <SparklesIcon size={16} />
+            <span className="text-xs font-bold uppercase">AI Ассистент</span>
+            </div>
+            <p className="text-sm">Загрузите анализы, чтобы получить персональные рекомендации товаров.</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -331,8 +360,225 @@ function AnalysesPage() {
   );
 }
 
+// Вкладка "О пациенте"
+function PatientAboutTab() {
+  const [profile, setProfile] = useState<PatientProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const data = await profileApi.getMyProfile();
+      setProfile(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (category: string, data: any) => {
+    if (!profile) return;
+    try {
+      // Map category to profile field
+      const fieldMap: Record<string, keyof PatientProfile> = {
+        "body": "body_parameters",
+        "gender": "gender_health",
+        "history": "medical_history",
+        "allergies": "allergies",
+        "chronic": "chronic_diseases",
+        "hereditary": "hereditary_diseases",
+        "lifestyle": "lifestyle",
+        "additional": "additional_info"
+      };
+      
+      const field = fieldMap[category];
+      if (field) {
+        await profileApi.update({ [field]: data });
+        loadProfile(); // Reload to update counts
+        setExpandedCategory(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка сохранения");
+    }
+  };
+
+  if (loading) return <div className="py-10 text-center text-gray-400">Загрузка...</div>;
+
+  const categories = [
+    { id: "body", label: "Параметры тела", icon: "📏", count: Object.keys(profile?.body_parameters || {}).length, total: 3 },
+    { id: "gender", label: "Мужское здоровье", icon: "♂️", count: Object.keys(profile?.gender_health || {}).length, total: 3 },
+    { id: "history", label: "Медицинская история", icon: "📋", count: (profile?.medical_history as any[])?.length || 0, total: 3 },
+    { id: "allergies", label: "Аллергические реакции", icon: "🌼", count: (profile?.allergies as any[])?.length || 0, total: 5 },
+    { id: "chronic", label: "Хронические заболевания", icon: "🩺", count: (profile?.chronic_diseases as any[])?.length || 0, total: 0 },
+    { id: "hereditary", label: "Наследственные заболевания", icon: "🧬", count: (profile?.hereditary_diseases as any[])?.length || 0, total: 0 },
+    { id: "lifestyle", label: "Образ жизни", icon: "🍎", count: Object.keys(profile?.lifestyle || {}).length, total: 5 },
+    { id: "additional", label: "Дополнительная информация", icon: "...", count: Object.keys(profile?.additional_info || {}).length, total: 6 },
+  ];
+
+  return (
+    <div className="space-y-3 pb-20">
+      <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-4">
+        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl">👤</div>
+        <div>
+          <div className="font-bold text-gray-900 text-lg">Пациент</div>
+          <div className="text-sm text-gray-500">33 года</div>
+        </div>
+        <div className="ml-auto text-emerald-500">
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </div>
+      </div>
+
+      {categories.map(cat => (
+        <div key={cat.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <button 
+            onClick={() => setExpandedCategory(expandedCategory === cat.id ? null : cat.id)}
+            className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{cat.icon}</span>
+              <span className="font-medium text-gray-900">{cat.label}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {cat.total > 0 && (
+                <span className={`text-sm ${cat.count > 0 ? "text-emerald-600 font-bold" : "text-rose-500"}`}>
+                  {cat.count}/{cat.total}
+                </span>
+              )}
+              <ChevronRightIcon size={16} className={`text-gray-400 transition-transform ${expandedCategory === cat.id ? "rotate-90" : ""}`} />
+            </div>
+          </button>
+          
+          {expandedCategory === cat.id && (
+            <div className="p-4 border-t border-gray-100 bg-gray-50">
+               <ProfileForm category={cat.id} initialData={profile} onSave={(data) => handleSave(cat.id, data)} />
+            </div>
+          )}
+        </div>
+      ))}
+      
+      <button className="w-full bg-amber-400 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-amber-500 transition-colors">
+        Сохранить
+      </button>
+    </div>
+  );
+}
+
+function ProfileForm({ category, initialData, onSave }: { category: string, initialData: any, onSave: (data: any) => void }) {
+  // Simple dynamic form based on category
+  const [formData, setFormData] = useState<any>({});
+  
+  useEffect(() => {
+     // Pre-fill logic based on category
+     const fieldMap: Record<string, keyof PatientProfile> = {
+        "body": "body_parameters",
+        "gender": "gender_health",
+        "lifestyle": "lifestyle",
+        "additional": "additional_info"
+      };
+      const field = fieldMap[category];
+      if (field && initialData[field]) {
+          setFormData(initialData[field]);
+      }
+  }, [category, initialData]);
+
+  const handleChange = (key: string, value: string) => {
+    setFormData((prev: any) => ({ ...prev, [key]: value }));
+  };
+
+  if (category === "body") {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Рост (см)</label>
+          <input type="number" value={formData.height || ""} onChange={e => handleChange("height", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="180" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Вес (кг)</label>
+          <input type="number" value={formData.weight || ""} onChange={e => handleChange("weight", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="75" />
+        </div>
+         <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Обхват талии (см)</label>
+          <input type="number" value={formData.waist || ""} onChange={e => handleChange("waist", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="80" />
+        </div>
+        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+  
+  if (category === "gender") {
+      return (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Уровень тестостерона (нмоль/л)</label>
+              <input type="number" value={formData.testosterone || ""} onChange={e => handleChange("testosterone", e.target.value)} className="w-full p-2 rounded border border-gray-300" />
+            </div>
+             <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Жалобы</label>
+              <textarea value={formData.complaints || ""} onChange={e => handleChange("complaints", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Опишите проблемы..." />
+            </div>
+            <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+          </div>
+      )
+  }
+
+  return (
+    <div className="text-center text-gray-500 py-4">
+      <p className="mb-2">Форма для этого раздела в разработке</p>
+      <button onClick={() => onSave({ updated: true })} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-sm">Отметить заполненным (тест)</button>
+    </div>
+  );
+}
+
 // Страница медкарты
 function MedcardPage() {
+  const [activeTab, setActiveTab] = useState("about"); // Default to About as requested
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="bg-white border-b border-gray-200 px-4">
+        <h1 className="text-xl font-bold text-gray-900 py-3">Электронная медкарта</h1>
+        <div className="flex gap-6 overflow-x-auto no-scrollbar">
+          {[
+            { id: "events", label: "События" },
+            { id: "about", label: "О пациенте" },
+            { id: "diaries", label: "Дневники" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`pb-3 text-sm font-medium whitespace-nowrap transition-colors relative ${
+                activeTab === tab.id ? "text-amber-400" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400 rounded-t-full"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+        {activeTab === "events" && <MedcardEvents />}
+        {activeTab === "about" && <PatientAboutTab />}
+        {activeTab === "diaries" && (
+            <div className="flex items-center justify-center h-40 text-gray-400">
+                Раздел дневников в разработке
+            </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MedcardEvents() {
   const [documents, setDocuments] = useState<MedicalDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);

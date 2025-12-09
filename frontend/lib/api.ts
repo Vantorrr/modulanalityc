@@ -72,6 +72,19 @@ export interface Product {
   image_url?: string;
 }
 
+export interface PatientProfile {
+  id: number;
+  user_id: number;
+  body_parameters?: Record<string, any>;
+  gender_health?: Record<string, any>;
+  medical_history?: any[];
+  allergies?: any[];
+  chronic_diseases?: any[];
+  hereditary_diseases?: any[];
+  lifestyle?: Record<string, any>;
+  additional_info?: Record<string, any>;
+}
+
 // Хранение токена
 let authToken: string | null = null;
 
@@ -152,7 +165,7 @@ export const authApi = {
     });
   },
   
-  logout() {
+  async logout() {
     setAuthToken(null);
   },
 };
@@ -311,5 +324,16 @@ export const productsApi = {
   },
 };
 
-
-
+// API для профиля пациента
+export const profileApi = {
+  async getMyProfile(): Promise<PatientProfile> {
+    return apiFetch<PatientProfile>('/profile');
+  },
+  
+  async update(data: Partial<PatientProfile>): Promise<PatientProfile> {
+    return apiFetch<PatientProfile>('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
