@@ -32,6 +32,8 @@ def get_sync_database_url() -> str:
     # Convert async URL to sync URL
     if "+asyncpg" in url:
         url = url.replace("+asyncpg", "")
+    if "+aiosqlite" in url:
+        url = url.replace("+aiosqlite", "")
     return url
 
 
