@@ -116,13 +116,18 @@ class AIParserService:
     
     def __init__(self):
         """Initialize the AI parser service."""
+        # OpenRouter requires extra headers
         self.client = AsyncOpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
+            default_headers={
+                "HTTP-Referer": "https://healthtracker.app",
+                "X-Title": "Health Tracker Medical Analysis",
+            }
         )
         self.model = settings.openai_model
-        # Vision model for image analysis
-        self.vision_model = "openai/gpt-4o-mini"  # Supports vision
+        # Vision model - same as main model (gpt-4o-mini supports vision)
+        self.vision_model = settings.openai_model
     
     async def extract_biomarkers_from_image(
         self,
