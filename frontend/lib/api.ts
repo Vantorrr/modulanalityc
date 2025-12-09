@@ -1,4 +1,5 @@
 // API клиент для работы с бэкендом
+// Build: 2024-12-09-v2 - Force HTTPS
 
 // Production API URL (always HTTPS)
 const PRODUCTION_API = 'https://modulanalityc-production.up.railway.app/api/v1';
