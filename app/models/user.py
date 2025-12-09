@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.biomarker import UserBiomarker
     from app.models.reminder import HealthReminder
     from app.models.medical_document import MedicalDocument
+    from app.models.patient_profile import PatientProfile
 
 
 class Gender(str, enum.Enum):
@@ -86,6 +87,12 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    profile: Mapped["PatientProfile"] = relationship(
+        "PatientProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     
     @property
     def full_name(self) -> str:
@@ -102,4 +109,3 @@ class User(Base):
         return today.year - self.birth_date.year - (
             (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
         )
-

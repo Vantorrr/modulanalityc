@@ -52,3 +52,4 @@ class MedicalDocumentList(BaseModel):
     category_filter: Optional[DocumentCategory] = None
 
 
+

@@ -85,3 +85,4 @@ class UserHealthProfile(BaseSchema):
     upcoming_reminders: int = 0
 
 
+

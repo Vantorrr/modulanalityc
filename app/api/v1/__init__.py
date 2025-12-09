@@ -4,7 +4,7 @@ API v1 router configuration.
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, analyses, recommendations, calendar, products, medcard
+from app.api.v1 import auth, users, analyses, recommendations, calendar, products, medcard, profile
 
 api_router = APIRouter()
 
@@ -49,3 +49,8 @@ api_router.include_router(
     tags=["Медицинская карта"],
 )
 
+api_router.include_router(
+    profile.router,
+    prefix="/profile",
+    tags=["Профиль пациента"],
+)

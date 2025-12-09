@@ -76,3 +76,4 @@ setup: install migrate seed
 	@echo "Setup complete! Run 'make dev' to start the server."
 
 
+

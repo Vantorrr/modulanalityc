@@ -1,26 +1,19 @@
-"""
-SQLAlchemy models for the Medical Analysis API.
-"""
-
 from app.models.user import User
-from app.models.analysis import Analysis, AnalysisFile
-from app.models.biomarker import Biomarker, BiomarkerReference, UserBiomarker
-from app.models.product import Product, ProductCategory, ProductRecommendation
+from app.models.analysis import Analysis
+from app.models.biomarker import UserBiomarker
+from app.models.medical_document import MedicalDocument
+from app.models.product import Product
 from app.models.reminder import HealthReminder
-from app.models.medical_document import MedicalDocument, DocumentCategory
+from app.models.patient_profile import PatientProfile
+from app.core.database import Base
 
 __all__ = [
+    "Base",
     "User",
     "Analysis",
-    "AnalysisFile",
-    "Biomarker",
-    "BiomarkerReference",
     "UserBiomarker",
-    "Product",
-    "ProductCategory",
-    "ProductRecommendation",
-    "HealthReminder",
     "MedicalDocument",
-    "DocumentCategory",
+    "Product",
+    "HealthReminder",
+    "PatientProfile",
 ]
-

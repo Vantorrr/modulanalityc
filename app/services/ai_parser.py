@@ -238,6 +238,70 @@ class AIParserService:
             logger.error(f"Summary generation failed: {e}")
             return self._generate_simple_summary(biomarkers)
     
+    async def generate_search_keywords(
+        self,
+        biomarkers: List[Dict[str, Any]],
+        patient_profile: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, List[str]]:
+        """
+        Generate search keywords for finding products based on analysis.
+        
+        Returns:
+            Dict where key is biomarker code (or 'general') and value is list of keywords.
+        """
+        if not settings.openai_api_key:
+            return {}
+        
+        try:
+            # Filter problem biomarkers
+            problem_biomarkers = [
+                b for b in biomarkers
+                if b.get("status") in ("low", "high", "critical_low", "critical_high")
+            ]
+            
+            if not problem_biomarkers:
+                return {}
+            
+            biomarker_text = self._format_biomarkers_for_prompt(problem_biomarkers)
+            
+            profile_text = ""
+            if patient_profile:
+                profile_text = f"\nПрофиль пациента: {json.dumps(patient_profile, ensure_ascii=False)}"
+            
+            prompt = f"""Проанализируй отклонения в анализах и предложи ключевые слова для поиска БАДов и товаров в интернет-магазине.
+            
+Отклонения:
+{biomarker_text}
+{profile_text}
+
+Верни JSON:
+{{
+    "biomarker_keywords": {{
+        "CODE": ["keyword1", "keyword2"]
+    }},
+    "general_keywords": ["keyword3", "keyword4"]
+}}
+"""
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": "Ты — помощник по поиску БАДов. Генерируй точные поисковые запросы на русском языке (например: 'Железо хелат', 'Витамин D3', 'Омега-3')."
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+            )
+            
+            result = json.loads(response.choices[0].message.content)
+            return result
+            
+        except Exception as e:
+            logger.error(f"Keyword generation failed: {e}")
+            return {}
+
     async def generate_recommendations(
         self,
         biomarkers: List[Dict[str, Any]],

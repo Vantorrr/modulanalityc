@@ -50,3 +50,4 @@ class MedicalDocument(Base):
         return f"<MedicalDocument(id={self.id}, category={self.category}, title={self.title})>"
 
 
+
