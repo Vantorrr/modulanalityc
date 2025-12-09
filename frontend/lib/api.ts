@@ -1,15 +1,26 @@
-// API клиент v6 - USE LOCAL PROXY
-// This avoids CORS and Mixed Content issues completely
+// API клиент v7 - HYBRID APPROACH
+// Client: Use local proxy /api/v1
+// Server: Use direct HTTPS URL
 
-// Use Next.js rewrite proxy - all API calls go through /api/*
-const API_BASE_URL = '/api/v1';
+const getApiUrl = () => {
+  // Client side - use proxy to avoid CORS/Mixed Content
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
+  
+  // Server side (SSR) - use direct HTTPS connection
+  // We can't use relative URL on server side
+  return 'https://modulanalityc-production.up.railway.app/api/v1';
+};
+
+const API_BASE_URL = getApiUrl();
 
 // Export for cache busting
-export const API_VERSION = 'v6-proxy';
+export const API_VERSION = 'v7-hybrid';
 
 // Debug log
 if (typeof window !== 'undefined') {
-  console.log('[API v6 PROXY]', API_BASE_URL);
+  console.log('[API v7]', API_BASE_URL);
 }
 
 // Типы данных
@@ -119,6 +130,7 @@ export function getAuthToken(): string | null {
 // Базовый fetch с авторизацией
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
+  const url = `${API_BASE_URL}${endpoint}`;
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -129,21 +141,36 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  console.log(`[API Request] ${options.method || 'GET'} ${url}`);
   
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Ошибка сервера' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+    
+    if (!response.ok) {
+      console.error(`[API Error] ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`[API Error Body]`, errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      } catch (e) {
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+    }
+    
+    if (response.status === 204) {
+      return {} as T;
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error(`[API Fetch Failed]`, err);
+    throw err;
   }
-  
-  if (response.status === 204) {
-    return {} as T;
-  }
-  
-  return response.json();
 }
 
 // API для авторизации
