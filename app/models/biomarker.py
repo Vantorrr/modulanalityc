@@ -18,7 +18,6 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.analysis import Analysis
-    from app.models.product import ProductRecommendation
 
 
 class BiomarkerCategory(str, enum.Enum):
@@ -255,11 +254,7 @@ class UserBiomarker(Base):
     user: Mapped["User"] = relationship("User", back_populates="biomarkers")
     analysis: Mapped["Analysis"] = relationship("Analysis", back_populates="biomarkers")
     biomarker: Mapped["Biomarker"] = relationship("Biomarker", back_populates="user_values")
-    recommendations: Mapped[list["ProductRecommendation"]] = relationship(
-        "ProductRecommendation",
-        back_populates="user_biomarker",
-        cascade="all, delete-orphan",
-    )
+    # recommendations relationship removed as ProductRecommendation table is deleted
 
 
 
