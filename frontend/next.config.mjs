@@ -1,17 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Force new build ID to break cache
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
   },
+  // Disable static optimization to ensure fresh builds
+  output: 'standalone',
 };
 
 export default nextConfig;
