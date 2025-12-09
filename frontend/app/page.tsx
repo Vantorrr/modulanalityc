@@ -36,7 +36,10 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative text-gray-600 hover:bg-gray-200 transition-colors">
+              <button 
+                onClick={() => alert("Уведомления:\n\n• Запланирован анализ через 3 дня\n• Витамин D - проверить через неделю\n\n(Функция уведомлений в разработке)")}
+                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative text-gray-600 hover:bg-gray-200 transition-colors"
+              >
                 <BellIcon size={18} />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
