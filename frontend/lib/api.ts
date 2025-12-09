@@ -1,16 +1,15 @@
-// API клиент - HTTPS only v5 - FORCE CACHE BUST
-// Date: 2024-12-09 18:40
+// API клиент v6 - USE LOCAL PROXY
+// This avoids CORS and Mixed Content issues completely
 
-// HARDCODED HTTPS - no environment variables
-const API_BASE_URL = 'https://modulanalityc-production.up.railway.app/api/v1';
+// Use Next.js rewrite proxy - all API calls go through /api/*
+const API_BASE_URL = '/api/v1';
 
 // Export for cache busting
-export const API_VERSION = 'v5-https-only';
-export const BUILD_TIME = '2024-12-09T18:40:00Z';
+export const API_VERSION = 'v6-proxy';
 
 // Debug log
 if (typeof window !== 'undefined') {
-  console.log('[API v5]', API_BASE_URL, BUILD_TIME);
+  console.log('[API v6 PROXY]', API_BASE_URL);
 }
 
 // Типы данных

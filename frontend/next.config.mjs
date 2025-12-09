@@ -10,8 +10,17 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable static optimization to ensure fresh builds
   output: 'standalone',
+  
+  // Proxy API calls to avoid CORS/Mixed Content issues
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://modulanalityc-production.up.railway.app/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
