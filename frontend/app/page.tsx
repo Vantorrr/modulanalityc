@@ -913,10 +913,11 @@ function CalendarPage() {
     try {
       const reminder = await calendarApi.create({
         title: newTitle,
-        reminder_date: newDate,
-        reminder_type: "analysis",
-        description: ""
-      });
+        scheduled_date: newDate,
+        reminder_type: "custom",
+        description: "",
+        frequency: "once"
+      } as any);
       setReminders(prev => [...prev, reminder]);
       setShowAddForm(false);
       setNewTitle("");
@@ -929,16 +930,16 @@ function CalendarPage() {
 
   // Демо данные
   const displayReminders = reminders.length > 0 ? reminders : [
-    { id: 1, title: "Общий анализ крови", reminder_date: "2024-12-15T09:00:00", reminder_type: "analysis" as const },
-    { id: 2, title: "Витамин D", reminder_date: "2024-12-20T10:30:00", reminder_type: "analysis" as const },
-    { id: 3, title: "Прием эндокринолога", reminder_date: "2024-12-22T14:00:00", reminder_type: "checkup" as const },
+    { id: 1, title: "Общий анализ крови", scheduled_date: "2024-12-15", reminder_type: "analysis" as const },
+    { id: 2, title: "Витамин D", scheduled_date: "2024-12-20", reminder_type: "analysis" as const },
+    { id: 3, title: "Прием эндокринолога", scheduled_date: "2024-12-22", reminder_type: "checkup" as const },
   ] as any[];
 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
 
-  const reminderDays = displayReminders.map(r => new Date(r.reminder_date).getDate());
+  const reminderDays = displayReminders.map(r => new Date(r.scheduled_date).getDate());
   const today = new Date().getDate();
   const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear();
 
@@ -996,7 +997,7 @@ function CalendarPage() {
               <LoaderIcon size={24} className="text-emerald-500" />
             </div>
           ) : displayReminders.map((r) => {
-            const date = new Date(r.reminder_date);
+            const date = new Date(r.scheduled_date);
             return (
               <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">

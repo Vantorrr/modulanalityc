@@ -63,8 +63,10 @@ export interface Reminder {
   user_id: number;
   title: string;
   description?: string;
-  reminder_date: string;
-  reminder_type: 'analysis' | 'checkup' | 'medication' | 'other';
+  scheduled_date: string;  // Backend field name
+  scheduled_time?: string;
+  reminder_type: 'analysis' | 'checkup' | 'medication' | 'custom';
+  frequency?: 'once' | 'daily' | 'weekly' | 'monthly';
   is_completed: boolean;
 }
 
@@ -284,7 +286,8 @@ export const medcardApi = {
 // API для календаря/напоминаний
 export const calendarApi = {
   async getAll(): Promise<Reminder[]> {
-    return apiFetch<Reminder[]>('/calendar/reminders');
+    const response = await apiFetch<{ items: Reminder[], total: number }>('/calendar/reminders');
+    return response.items || [];
   },
   
   async create(data: Omit<Reminder, 'id' | 'user_id' | 'is_completed'>): Promise<Reminder> {
