@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+// Build: v2.0 - force rebuild
 export const metadata: Metadata = {
   title: "Health AI | Медицинский ассистент",
   description: "Загружайте анализы, получайте расшифровку и персональные рекомендации",
