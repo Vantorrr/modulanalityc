@@ -1,11 +1,16 @@
-// API клиент - HTTPS only v4
+// API клиент - HTTPS only v5 - FORCE CACHE BUST
+// Date: 2024-12-09 18:40
 
-// HARDCODED HTTPS - no environment variables, no build-time issues
+// HARDCODED HTTPS - no environment variables
 const API_BASE_URL = 'https://modulanalityc-production.up.railway.app/api/v1';
+
+// Export for cache busting
+export const API_VERSION = 'v5-https-only';
+export const BUILD_TIME = '2024-12-09T18:40:00Z';
 
 // Debug log
 if (typeof window !== 'undefined') {
-  console.log('[API] Using URL:', API_BASE_URL);
+  console.log('[API v5]', API_BASE_URL, BUILD_TIME);
 }
 
 // Типы данных
