@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import {
   HomeIcon, ClipboardIcon, FolderIcon, CalendarIcon, UserIcon,
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
@@ -8,7 +8,8 @@ import {
   FileTextIcon, ImageIcon, ArchiveIcon, BarChartIcon, ShieldIcon,
   SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon,
   RulerIcon, GenderMaleIcon, MedicalHistoryIcon, AllergyIcon,
-  StethoscopeIcon, DnaIcon, AppleIcon, InfoCircleIcon, HeartPulseIcon
+  StethoscopeIcon, DnaIcon, AppleIcon, InfoCircleIcon, HeartPulseIcon,
+  XIcon
 } from "../components/Icons";
 import {
   analysesApi, medcardApi, calendarApi, profileApi,
@@ -19,6 +20,101 @@ import {
 // Модуль встраивается в основное приложение заказчика
 // Авторизация происходит на стороне основного приложения
 // Пользователь уже залогинен
+
+// ===== Контекст профиля медкарты =====
+interface MedcardContextType {
+  isProfileFilled: boolean;
+  showMedcardModal: boolean;
+  setShowMedcardModal: (show: boolean) => void;
+  checkAndPromptMedcard: () => boolean; // Returns true if profile is filled, false if modal shown
+  refreshProfile: () => Promise<void>;
+}
+
+const MedcardContext = createContext<MedcardContextType>({
+  isProfileFilled: false,
+  showMedcardModal: false,
+  setShowMedcardModal: () => {},
+  checkAndPromptMedcard: () => false,
+  refreshProfile: async () => {},
+});
+
+const useMedcard = () => useContext(MedcardContext);
+
+// ===== Модальное окно медкарты =====
+function MedcardPromptModal({ 
+  onFill, 
+  onSkip 
+}: { 
+  onFill: () => void; 
+  onSkip: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        {/* Header with icon */}
+        <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-6 text-center">
+          <div className="w-20 h-20 bg-white/20 rounded-full mx-auto flex items-center justify-center mb-4">
+            <FolderIcon size={40} className="text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Заполните медкарту</h2>
+        </div>
+        
+        {/* Content */}
+        <div className="p-6 text-center">
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            Для получения <span className="font-semibold text-emerald-600">персонализированных рекомендаций</span> и 
+            точной расшифровки анализов укажите ваши данные: рост, вес, аллергии и хронические заболевания.
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={onFill}
+              className="w-full py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+            >
+              Заполнить медкарту
+            </button>
+            <button
+              onClick={onSkip}
+              className="w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
+            >
+              Пропустить
+            </button>
+          </div>
+          
+          <p className="text-xs text-gray-400 mt-4">
+            Без медкарты AI не сможет учесть ваши индивидуальные особенности
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== Кнопка заполнения медкарты (для главной страницы) =====
+function FillMedcardBanner({ onFill }: { onFill: () => void }) {
+  return (
+    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <AlertCircleIcon size={22} className="text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-gray-900 text-sm mb-1">Медкарта не заполнена</h3>
+          <p className="text-xs text-gray-600 mb-3">
+            Заполните данные для персонализированных рекомендаций AI
+          </p>
+          <button
+            onClick={onFill}
+            className="text-sm font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+          >
+            Заполнить данные
+            <ChevronRightIcon size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Компонент уведомлений
 function NotificationBell() {
@@ -96,70 +192,151 @@ export default function Home() {
   }, []);
 
   const [activeTab, setActiveTab] = useState("home");
+  const [isProfileFilled, setIsProfileFilled] = useState(true); // Default true to avoid flash
+  const [showMedcardModal, setShowMedcardModal] = useState(false);
+  const [profileChecked, setProfileChecked] = useState(false);
+
+  // Check if profile is filled (has essential data)
+  const checkProfileFilled = (profile: PatientProfile | null): boolean => {
+    if (!profile) return false;
+    const body = profile.body_parameters as any;
+    // Consider filled if at least height and weight are set
+    return !!(body?.height && body?.weight);
+  };
+
+  // Load and check profile on mount
+  const refreshProfile = async () => {
+    try {
+      const profile = await profileApi.getMyProfile();
+      const filled = checkProfileFilled(profile);
+      setIsProfileFilled(filled);
+      
+      // Show modal on first visit if not filled and not skipped
+      if (!profileChecked) {
+        const wasSkipped = localStorage.getItem('medcard_skipped');
+        if (!filled && !wasSkipped) {
+          setShowMedcardModal(true);
+        }
+        setProfileChecked(true);
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+      setIsProfileFilled(false);
+      // Show modal if profile doesn't exist
+      if (!profileChecked) {
+        const wasSkipped = localStorage.getItem('medcard_skipped');
+        if (!wasSkipped) {
+          setShowMedcardModal(true);
+        }
+        setProfileChecked(true);
+      }
+    }
+  };
+
+  useEffect(() => {
+    refreshProfile();
+  }, []);
+
+  // Check if profile is filled before allowing analysis - returns true if can proceed
+  const checkAndPromptMedcard = (): boolean => {
+    if (isProfileFilled) return true;
+    setShowMedcardModal(true);
+    return false;
+  };
+
+  const handleFillMedcard = () => {
+    setShowMedcardModal(false);
+    localStorage.removeItem('medcard_skipped');
+    setActiveTab("medcard");
+  };
+
+  const handleSkipMedcard = () => {
+    setShowMedcardModal(false);
+    localStorage.setItem('medcard_skipped', 'true');
+  };
+
+  const contextValue: MedcardContextType = {
+    isProfileFilled,
+    showMedcardModal,
+    setShowMedcardModal,
+    checkAndPromptMedcard,
+    refreshProfile,
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col shadow-xl">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white">
-                <ActivityIcon size={22} />
+    <MedcardContext.Provider value={contextValue}>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col shadow-xl">
+          {/* Header */}
+          <header className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white">
+                  <ActivityIcon size={22} />
+                </div>
+                <div>
+                  <h1 className="text-base font-bold text-gray-900">Анализы</h1>
+                  <p className="text-xs text-emerald-600 font-semibold">Health Tracker</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-base font-bold text-gray-900">Анализы</h1>
-                <p className="text-xs text-emerald-600 font-semibold">Health Tracker</p>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell />
+          </header>
+
+          {/* Content */}
+          <main className="flex-1 overflow-y-auto">
+            {activeTab === "home" && <HomePage onNavigate={setActiveTab} />}
+            {activeTab === "analyses" && <AnalysesPage />}
+            {activeTab === "medcard" && <MedcardPage />}
+            {activeTab === "calendar" && <CalendarPage />}
+            {activeTab === "profile" && <ProfilePage />}
+          </main>
+
+          {/* Bottom Navigation */}
+          <nav className="bg-white border-t border-gray-200 px-2 py-2">
+            <div className="flex items-center justify-around">
+              {[
+                { id: "home", label: "Главная", Icon: HomeIcon },
+                { id: "analyses", label: "Анализы", Icon: ClipboardIcon },
+                { id: "medcard", label: "Медкарта", Icon: FolderIcon },
+                { id: "calendar", label: "Календарь", Icon: CalendarIcon },
+                { id: "profile", label: "Профиль", Icon: UserIcon },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex flex-col items-center gap-1 py-1 px-3"
+                >
+                  <tab.Icon
+                    size={22}
+                    className={activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}
+                  />
+                  <span className={`text-[10px] font-semibold ${activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}`}>
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
             </div>
-          </div>
-        </header>
+          </nav>
+        </div>
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto">
-          {activeTab === "home" && <HomePage onNavigate={setActiveTab} />}
-          {activeTab === "analyses" && <AnalysesPage />}
-          {activeTab === "medcard" && <MedcardPage />}
-          {activeTab === "calendar" && <CalendarPage />}
-          {activeTab === "profile" && <ProfilePage />}
-        </main>
-
-        {/* Bottom Navigation */}
-        <nav className="bg-white border-t border-gray-200 px-2 py-2">
-          <div className="flex items-center justify-around">
-            {[
-              { id: "home", label: "Главная", Icon: HomeIcon },
-              { id: "analyses", label: "Анализы", Icon: ClipboardIcon },
-              { id: "medcard", label: "Медкарта", Icon: FolderIcon },
-              { id: "calendar", label: "Календарь", Icon: CalendarIcon },
-              { id: "profile", label: "Профиль", Icon: UserIcon },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="flex flex-col items-center gap-1 py-1 px-3"
-              >
-                <tab.Icon
-                  size={22}
-                  className={activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}
-                />
-                <span className={`text-[10px] font-semibold ${activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}`}>
-                  {tab.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </nav>
+        {/* Modal for medcard prompt */}
+        {showMedcardModal && (
+          <MedcardPromptModal
+            onFill={handleFillMedcard}
+            onSkip={handleSkipMedcard}
+          />
+        )}
       </div>
-    </div>
+    </MedcardContext.Provider>
   );
 }
 
 // Главная страница
 function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const { isProfileFilled, checkAndPromptMedcard } = useMedcard();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [latestRec, setLatestRec] = useState<any>(null);
@@ -185,6 +362,11 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
   return (
     <div className="px-4 py-5 space-y-5">
+      {/* Banner for unfilled medcard */}
+      {!isProfileFilled && (
+        <FillMedcardBanner onFill={() => onNavigate("medcard")} />
+      )}
+
       <div>
         <p className="text-sm text-gray-500 mb-1">Добрый день,</p>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Александр 👋</h1>
@@ -225,7 +407,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       <div className="space-y-3">
         <h2 className="text-lg font-bold text-gray-900">Быстрые действия</h2>
         
-        <UploadAnalysisButton />
+        <UploadAnalysisButton onBeforeUpload={checkAndPromptMedcard} />
 
         <button 
           onClick={() => onNavigate("medcard")}
@@ -281,9 +463,17 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 }
 
 // Кнопка загрузки анализа
-function UploadAnalysisButton() {
+function UploadAnalysisButton({ onBeforeUpload }: { onBeforeUpload?: () => boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  const handleClick = () => {
+    // Check if profile is filled before allowing upload
+    if (onBeforeUpload && !onBeforeUpload()) {
+      return; // Modal will be shown, don't proceed
+    }
+    fileInputRef.current?.click();
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -304,7 +494,7 @@ function UploadAnalysisButton() {
   return (
     <>
       <button
-        onClick={() => fileInputRef.current?.click()}
+        onClick={handleClick}
         disabled={uploading}
         className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 disabled:opacity-50"
       >
@@ -330,6 +520,7 @@ function UploadAnalysisButton() {
 
 // Страница анализов
 function AnalysesPage() {
+  const { isProfileFilled, checkAndPromptMedcard } = useMedcard();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -346,6 +537,14 @@ function AnalysesPage() {
       .then(setAnalyses)
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  const handleUploadClick = () => {
+    // Check if profile is filled before allowing upload
+    if (!checkAndPromptMedcard()) {
+      return; // Modal will be shown, don't proceed
+    }
+    fileInputRef.current?.click();
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -516,10 +715,15 @@ function AnalysesPage() {
 
   return (
     <div className="px-4 py-5 space-y-4">
+      {/* Banner for unfilled medcard */}
+      {!isProfileFilled && (
+        <FillMedcardBanner onFill={() => {}} />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Мои анализы</h1>
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleUploadClick}
           disabled={uploading}
           className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50"
         >
