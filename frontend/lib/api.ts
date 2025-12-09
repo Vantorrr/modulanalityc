@@ -1,18 +1,15 @@
 // API клиент для работы с бэкендом
 
-// В production всегда используем HTTPS
+// Production API URL (always HTTPS)
+const PRODUCTION_API = 'https://modulanalityc-production.up.railway.app/api/v1';
+
 const getApiUrl = () => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (envUrl) {
-    // Force HTTPS in production
-    return envUrl.replace('http://', 'https://');
-  }
-  // Local development
+  // Local development only
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:8000/api/v1';
   }
-  // Fallback for Railway deployment
-  return 'https://modulanalityc-production.up.railway.app/api/v1';
+  // Production - always use HTTPS
+  return PRODUCTION_API;
 };
 
 const API_BASE_URL = getApiUrl();
