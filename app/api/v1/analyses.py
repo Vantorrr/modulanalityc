@@ -213,10 +213,29 @@ async def process_analysis_file(
                 "ref_max": ub.ref_max,
             })
         
+        # Fetch patient profile for personalized summary
+        from app.models.patient_profile import PatientProfile
+        profile_stmt = select(PatientProfile).where(PatientProfile.user_id == analysis.user_id)
+        profile_result = await db.execute(profile_stmt)
+        patient_profile = profile_result.scalar_one_or_none()
+        
+        # Prepare profile data for AI
+        profile_data = None
+        if patient_profile:
+            profile_data = {
+                "body_parameters": patient_profile.body_parameters or {},
+                "allergies": patient_profile.allergies or [],
+                "chronic_diseases": patient_profile.chronic_diseases or [],
+                "hereditary_diseases": patient_profile.hereditary_diseases or [],
+                "lifestyle": patient_profile.lifestyle or {},
+                "gender_health": patient_profile.gender_health or {},
+            }
+        
         summary = await ai_parser.generate_summary(
             biomarkers_data,
             user.gender.value if user and user.gender else None,
             user.age if user else None,
+            patient_profile=profile_data,  # ← Передаём профиль в AI
         )
         
         analysis.ai_summary = summary

@@ -93,19 +93,23 @@ EXTRACTION_USER_PROMPT = """Извлеки биомаркеры из следу�
 
 SUMMARY_SYSTEM_PROMPT = """Ты — опытный врач-терапевт, специализирующийся на интерпретации анализов.
 
-Твоя задача — дать краткую, понятную интерпретацию результатов анализов для пациента.
+Твоя задача — дать ПЕРСОНАЛИЗИРОВАННУЮ интерпретацию результатов анализов с учётом профиля пациента.
 
 Правила:
-1. Пиши простым языком, избегай сложных медицинских терминов
-2. Сначала укажи показатели вне нормы
-3. Объясни, что могут означать отклонения
-4. Дай общие рекомендации (но не конкретные препараты)
-5. Напомни, что окончательную интерпретацию должен давать врач
+1. ОБЯЗАТЕЛЬНО учитывай данные профиля пациента (рост, вес, возраст, пол, аллергии, хронические заболевания)
+2. Пиши простым языком, избегай сложных медицинских терминов
+3. Сначала укажи показатели вне нормы
+4. Объясни, что могут означать отклонения ИМЕННО ДЛЯ ЭТОГО ПАЦИЕНТА
+5. Учитывай взаимосвязь показателей с хроническими заболеваниями пациента
+6. Если есть аллергии — учитывай их при рекомендациях
+7. Дай персональные рекомендации по образу жизни
+8. Напомни, что окончательную интерпретацию должен давать врач
 
 Формат ответа:
 - Используй эмодзи для наглядности (✅ норма, ⚠️ внимание, ❌ отклонение)
+- Начни с краткого профиля пациента
 - Структурируй по разделам
-- Будь лаконичен"""
+- Будь лаконичен но информативен"""
 
 
 class AIParserService:
@@ -277,6 +281,7 @@ class AIParserService:
         biomarkers: List[Dict[str, Any]],
         user_gender: Optional[str] = None,
         user_age: Optional[int] = None,
+        patient_profile: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Generate a human-readable summary of analysis results.
@@ -285,6 +290,7 @@ class AIParserService:
             biomarkers: List of biomarker data with status
             user_gender: User's gender for context
             user_age: User's age for context
+            patient_profile: Full patient profile data
             
         Returns:
             Human-readable summary text
@@ -296,25 +302,66 @@ class AIParserService:
             # Prepare biomarker data for prompt
             biomarker_text = self._format_biomarkers_for_prompt(biomarkers)
             
-            context = ""
-            if user_gender or user_age:
-                context = f"\n\nПациент: "
-                if user_gender:
-                    context += f"{'мужчина' if user_gender == 'male' else 'женщина'}"
-                if user_age:
-                    context += f", {user_age} лет"
+            # Build comprehensive patient context
+            context = "\n\n👤 **ПРОФИЛЬ ПАЦИЕНТА:**"
+            
+            if user_gender:
+                context += f"\n- Пол: {'мужчина' if user_gender == 'male' else 'женщина'}"
+            if user_age:
+                context += f"\n- Возраст: {user_age} лет"
+            
+            if patient_profile:
+                # Body parameters (height, weight, waist)
+                body = patient_profile.get("body_parameters", {})
+                if body:
+                    if body.get("height"):
+                        context += f"\n- Рост: {body['height']} см"
+                    if body.get("weight"):
+                        context += f"\n- Вес: {body['weight']} кг"
+                    if body.get("waist"):
+                        context += f"\n- Обхват талии: {body['waist']} см"
+                    # Calculate BMI if possible
+                    if body.get("height") and body.get("weight"):
+                        height_m = float(body["height"]) / 100
+                        bmi = float(body["weight"]) / (height_m * height_m)
+                        context += f"\n- ИМТ: {bmi:.1f}"
+                
+                # Allergies
+                allergies = patient_profile.get("allergies", [])
+                if allergies:
+                    context += f"\n- ⚠️ Аллергии: {', '.join(allergies)}"
+                
+                # Chronic diseases
+                chronic = patient_profile.get("chronic_diseases", [])
+                if chronic:
+                    context += f"\n- 🏥 Хронические заболевания: {', '.join(chronic)}"
+                
+                # Hereditary diseases
+                hereditary = patient_profile.get("hereditary_diseases", [])
+                if hereditary:
+                    context += f"\n- 🧬 Наследственные заболевания: {', '.join(hereditary)}"
+                
+                # Lifestyle
+                lifestyle = patient_profile.get("lifestyle", {})
+                if lifestyle:
+                    context += f"\n- Образ жизни: {json.dumps(lifestyle, ensure_ascii=False)}"
+            
+            prompt = f"""Проанализируй результаты анализов с учётом профиля пациента.
+{context}
+
+📊 **РЕЗУЛЬТАТЫ АНАЛИЗОВ:**
+{biomarker_text}
+
+Дай ПЕРСОНАЛИЗИРОВАННУЮ расшифровку, учитывая все особенности пациента."""
             
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": f"Проанализируй результаты анализов:{context}\n\n{biomarker_text}"
-                    },
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
-                max_tokens=1500,
+                max_tokens=2000,
             )
             
             return response.choices[0].message.content
