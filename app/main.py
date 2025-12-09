@@ -46,31 +46,38 @@ async def lifespan(app: FastAPI):
 
 async def create_demo_user():
     """Create demo user for testing if not exists."""
-    from app.core.database import async_session_maker
+    from app.core.database import async_session_maker, Base, engine
     from app.models.user import User
     from app.core.security import get_password_hash
     from sqlalchemy import select
     
-    async with async_session_maker() as session:
-        # Check if demo user exists
-        result = await session.execute(select(User).where(User.id == 1))
-        user = result.scalar_one_or_none()
+    try:
+        # Ensure tables exist (for fresh deployments)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         
-        if not user:
-            demo_user = User(
-                id=1,
-                email="demo@healthtracker.app",
-                hashed_password=get_password_hash("demo123"),
-                first_name="Демо",
-                last_name="Пользователь",
-                is_active=True,
-                is_verified=True,
-            )
-            session.add(demo_user)
-            await session.commit()
-            logger.info("Demo user created (id=1)")
-        else:
-            logger.info("Demo user already exists")
+        async with async_session_maker() as session:
+            # Check if demo user exists
+            result = await session.execute(select(User).where(User.id == 1))
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                demo_user = User(
+                    id=1,
+                    email="demo@healthtracker.app",
+                    hashed_password=get_password_hash("demo123"),
+                    first_name="Демо",
+                    last_name="Пользователь",
+                    is_active=True,
+                    is_verified=True,
+                )
+                session.add(demo_user)
+                await session.commit()
+                logger.info("Demo user created (id=1)")
+            else:
+                logger.info("Demo user already exists")
+    except Exception as e:
+        logger.warning(f"Could not create demo user: {e}")
 
 
 # Create FastAPI app
