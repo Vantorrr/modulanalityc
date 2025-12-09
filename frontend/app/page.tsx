@@ -409,6 +409,16 @@ function PatientAboutTab() {
   };
 
   if (loading) return <div className="py-10 text-center text-gray-400">Загрузка...</div>;
+  
+  // Handle API errors gracefully
+  if (!profile) {
+    return (
+      <div className="py-10 text-center text-gray-400">
+        <p className="mb-2">Не удалось загрузить профиль</p>
+        <button onClick={loadProfile} className="text-emerald-500 font-bold">Повторить</button>
+      </div>
+    );
+  }
 
   const categories = [
     { id: "body", label: "Параметры тела", icon: "📏", count: Object.keys(profile?.body_parameters || {}).length, total: 3 },
@@ -482,7 +492,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
         "additional": "additional_info"
       };
       const field = fieldMap[category];
-      if (field && initialData[field]) {
+      if (field && initialData && initialData[field]) {
           setFormData(initialData[field]);
       }
   }, [category, initialData]);

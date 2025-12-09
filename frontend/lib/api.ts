@@ -1,6 +1,21 @@
 // API клиент для работы с бэкендом
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// В production всегда используем HTTPS
+const getApiUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) {
+    // Force HTTPS in production
+    return envUrl.replace('http://', 'https://');
+  }
+  // Local development
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000/api/v1';
+  }
+  // Fallback for Railway deployment
+  return 'https://modulanalityc-production.up.railway.app/api/v1';
+};
+
+const API_BASE_URL = getApiUrl();
 
 // Типы данных
 export interface User {
