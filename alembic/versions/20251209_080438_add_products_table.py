@@ -26,10 +26,6 @@ def upgrade() -> None:
     op.drop_index('ix_product_recommendations_user_biomarker_id', table_name='product_recommendations')
     op.drop_table('product_recommendations')
     
-    op.drop_index('ix_product_categories_id', table_name='product_categories')
-    op.drop_index('ix_product_categories_slug', table_name='product_categories')
-    op.drop_table('product_categories')
-    
     # Removed dropping of health_reminders
     
     op.add_column('products', sa.Column('composition', sa.Text(), nullable=True))
@@ -48,7 +44,7 @@ def upgrade() -> None:
     op.drop_index('ix_products_slug', table_name='products')
     op.create_index(op.f('ix_products_name'), 'products', ['name'], unique=False)
     
-    # Check if constraint exists before dropping (safe for SQLite/Postgres difference)
+    # First drop foreign key constraint
     try:
         op.drop_constraint('products_category_id_fkey', 'products', type_='foreignkey')
     except Exception:
@@ -65,7 +61,15 @@ def upgrade() -> None:
     op.drop_column('products', 'is_active')
     op.drop_column('products', 'target_biomarkers')
     op.drop_column('products', 'in_stock')
+    
+    # Drop category_id column
     op.drop_column('products', 'category_id')
+    
+    # NOW we can safely drop product_categories table
+    op.drop_index('ix_product_categories_id', table_name='product_categories')
+    op.drop_index('ix_product_categories_slug', table_name='product_categories')
+    op.drop_table('product_categories')
+
     op.drop_column('products', 'image_url')
     op.drop_column('products', 'created_at')
     op.drop_column('products', 'slug')
