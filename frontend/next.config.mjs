@@ -10,7 +10,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
   
   // Disable caching of built assets to avoid stale bundles on Railway
   async headers() {
