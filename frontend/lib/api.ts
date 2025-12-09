@@ -1,19 +1,33 @@
 // API клиент для работы с бэкендом
-// Build: 2024-12-09-v2 - Force HTTPS
-
-// Production API URL (always HTTPS)
-const PRODUCTION_API = 'https://modulanalityc-production.up.railway.app/api/v1';
+// Build: 2024-12-09-v3 - Runtime HTTPS detection
 
 const getApiUrl = () => {
-  // Local development only
+  // Local development
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:8000/api/v1';
   }
-  // Production - always use HTTPS
-  return PRODUCTION_API;
+  
+  // Production - detect protocol at runtime
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol; // 'https:' or 'http:'
+    return `${protocol}//modulanalityc-production.up.railway.app/api/v1`;
+  }
+  
+  // SSR fallback
+  return 'https://modulanalityc-production.up.railway.app/api/v1';
 };
 
-const API_BASE_URL = getApiUrl();
+// Lazy initialization - will use correct protocol at runtime
+let _apiBaseUrl: string | null = null;
+const getApiBaseUrl = () => {
+  if (!_apiBaseUrl) {
+    _apiBaseUrl = getApiUrl();
+  }
+  return _apiBaseUrl;
+};
+
+// For backwards compatibility  
+const API_BASE_URL = typeof window !== 'undefined' ? getApiUrl() : 'https://modulanalityc-production.up.railway.app/api/v1';
 
 // Типы данных
 export interface User {
