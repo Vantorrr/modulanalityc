@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# Exit on error
-set -e
-
 echo "🚀 Starting deployment script..."
 
-# Run database migrations
+# Run database migrations (don't exit on error)
 echo "📦 Running database migrations..."
-alembic upgrade head
+alembic upgrade head || echo "⚠️ Migration failed, continuing anyway..."
 
 # Import products - DISABLED for stability
 # To run import manually: python -m app.scripts.import_products
