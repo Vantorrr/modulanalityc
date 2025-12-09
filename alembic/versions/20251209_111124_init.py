@@ -1,8 +1,8 @@
-"""Add medical_documents table for medcard
+"""init
 
-Revision ID: f8b216e1b663
+Revision ID: 7f10c16ee5c1
 Revises: 
-Create Date: 2025-12-07 10:19:20.134040+00:00
+Create Date: 2025-12-09 11:11:24.420833+00:00
 """
 
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "f8b216e1b663"
+revision: str = "7f10c16ee5c1"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -98,28 +98,32 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_biomarkers_code"), "biomarkers", ["code"], unique=True)
-    op.create_index(op.f("ix_biomarkers_id"), "biomarkers", ["id"], unique=False)
+    with op.batch_alter_table("biomarkers", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_biomarkers_code"), ["code"], unique=True)
+        batch_op.create_index(batch_op.f("ix_biomarkers_id"), ["id"], unique=False)
+
     op.create_table(
-        "product_categories",
+        "products",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("slug", sa.String(length=100), nullable=False),
+        sa.Column("external_id", sa.String(), nullable=True),
+        sa.Column("name", sa.String(), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column(
-            "icon", sa.String(length=100), nullable=True, comment="Icon name or emoji"
-        ),
-        sa.Column("sort_order", sa.Integer(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.Column("price", sa.Float(), nullable=True),
+        sa.Column("composition", sa.Text(), nullable=True),
+        sa.Column("composition_table", sa.Text(), nullable=True),
+        sa.Column("quantity", sa.Integer(), nullable=True),
+        sa.Column("sale_count", sa.Integer(), nullable=True),
+        sa.Column("filter_stocks", sa.String(), nullable=True),
+        sa.Column("value", sa.String(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("name"),
     )
-    op.create_index(
-        op.f("ix_product_categories_id"), "product_categories", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_product_categories_slug"), "product_categories", ["slug"], unique=True
-    )
+    with op.batch_alter_table("products", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_products_external_id"), ["external_id"], unique=False
+        )
+        batch_op.create_index(batch_op.f("ix_products_id"), ["id"], unique=False)
+        batch_op.create_index(batch_op.f("ix_products_name"), ["name"], unique=False)
+
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -154,11 +158,13 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
-    op.create_index(
-        op.f("ix_users_external_user_id"), "users", ["external_user_id"], unique=False
-    )
-    op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
+    with op.batch_alter_table("users", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_users_email"), ["email"], unique=True)
+        batch_op.create_index(
+            batch_op.f("ix_users_external_user_id"), ["external_user_id"], unique=False
+        )
+        batch_op.create_index(batch_op.f("ix_users_id"), ["id"], unique=False)
+
     op.create_table(
         "analyses",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -254,8 +260,12 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_analyses_id"), "analyses", ["id"], unique=False)
-    op.create_index(op.f("ix_analyses_user_id"), "analyses", ["user_id"], unique=False)
+    with op.batch_alter_table("analyses", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_analyses_id"), ["id"], unique=False)
+        batch_op.create_index(
+            batch_op.f("ix_analyses_user_id"), ["user_id"], unique=False
+        )
+
     op.create_table(
         "biomarker_references",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -298,15 +308,16 @@ def upgrade() -> None:
             name="uq_biomarker_reference",
         ),
     )
-    op.create_index(
-        op.f("ix_biomarker_references_biomarker_id"),
-        "biomarker_references",
-        ["biomarker_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_biomarker_references_id"), "biomarker_references", ["id"], unique=False
-    )
+    with op.batch_alter_table("biomarker_references", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_biomarker_references_biomarker_id"),
+            ["biomarker_id"],
+            unique=False,
+        )
+        batch_op.create_index(
+            batch_op.f("ix_biomarker_references_id"), ["id"], unique=False
+        )
+
     op.create_table(
         "health_reminders",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -383,27 +394,24 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_health_reminders_id"), "health_reminders", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_health_reminders_next_occurrence"),
-        "health_reminders",
-        ["next_occurrence"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_health_reminders_scheduled_date"),
-        "health_reminders",
-        ["scheduled_date"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_health_reminders_user_id"),
-        "health_reminders",
-        ["user_id"],
-        unique=False,
-    )
+    with op.batch_alter_table("health_reminders", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_health_reminders_id"), ["id"], unique=False
+        )
+        batch_op.create_index(
+            batch_op.f("ix_health_reminders_next_occurrence"),
+            ["next_occurrence"],
+            unique=False,
+        )
+        batch_op.create_index(
+            batch_op.f("ix_health_reminders_scheduled_date"),
+            ["scheduled_date"],
+            unique=False,
+        )
+        batch_op.create_index(
+            batch_op.f("ix_health_reminders_user_id"), ["user_id"], unique=False
+        )
+
     op.create_table(
         "medical_documents",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -432,84 +440,77 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_medical_documents_id"), "medical_documents", ["id"], unique=False
-    )
+    with op.batch_alter_table("medical_documents", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_medical_documents_id"), ["id"], unique=False
+        )
+
     op.create_table(
-        "products",
+        "patient_profiles",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("category_id", sa.Integer(), nullable=True),
-        sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("slug", sa.String(length=255), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("short_description", sa.String(length=500), nullable=True),
-        sa.Column("price", sa.Float(), nullable=False),
-        sa.Column("old_price", sa.Float(), nullable=True),
-        sa.Column("currency", sa.String(length=3), nullable=False),
-        sa.Column("image_url", sa.String(length=500), nullable=True),
-        sa.Column("images", sa.JSON(), nullable=True),
-        sa.Column("in_stock", sa.Boolean(), nullable=False),
-        sa.Column("stock_quantity", sa.Integer(), nullable=True),
+        sa.Column("user_id", sa.Integer(), nullable=True),
         sa.Column(
-            "external_id",
-            sa.String(length=100),
-            nullable=True,
-            comment="ID в каталоге заказчика",
+            "body_parameters", sa.JSON(), nullable=True, comment="Рост, вес, ИМТ и т.д."
         ),
         sa.Column(
-            "external_url",
-            sa.String(length=500),
+            "gender_health",
+            sa.JSON(),
             nullable=True,
-            comment="Ссылка на товар в магазине заказчика",
+            comment="Мужское/Женское здоровье",
         ),
         sa.Column(
-            "active_ingredients",
-            sa.Text(),
-            nullable=True,
-            comment="Comma-separated active ingredients",
+            "medical_history", sa.JSON(), nullable=True, comment="История болезней"
         ),
         sa.Column(
-            "health_benefits",
-            sa.Text(),
-            nullable=True,
-            comment="Comma-separated health benefits/tags",
+            "allergies", sa.JSON(), nullable=True, comment="Аллергические реакции"
         ),
         sa.Column(
-            "target_biomarkers",
-            sa.Text(),
+            "chronic_diseases",
+            sa.JSON(),
             nullable=True,
-            comment="Comma-separated biomarker codes this product helps with",
+            comment="Хронические заболевания",
         ),
-        sa.Column("brand", sa.String(length=100), nullable=True),
-        sa.Column("rating", sa.Float(), nullable=True),
-        sa.Column("reviews_count", sa.Integer(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column("is_featured", sa.Boolean(), nullable=False),
+        sa.Column(
+            "hereditary_diseases",
+            sa.JSON(),
+            nullable=True,
+            comment="Наследственные заболевания",
+        ),
+        sa.Column(
+            "lifestyle",
+            sa.JSON(),
+            nullable=True,
+            comment="Образ жизни (спорт, курение, диета)",
+        ),
+        sa.Column(
+            "additional_info",
+            sa.JSON(),
+            nullable=True,
+            comment="Дополнительная информация",
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
+            nullable=True,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
+            nullable=True,
         ),
-        sa.ForeignKeyConstraint(
-            ["category_id"], ["product_categories.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_products_category_id"), "products", ["category_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_products_external_id"), "products", ["external_id"], unique=False
-    )
-    op.create_index(op.f("ix_products_id"), "products", ["id"], unique=False)
-    op.create_index(op.f("ix_products_slug"), "products", ["slug"], unique=True)
+    with op.batch_alter_table("patient_profiles", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_patient_profiles_id"), ["id"], unique=False
+        )
+        batch_op.create_index(
+            batch_op.f("ix_patient_profiles_user_id"), ["user_id"], unique=True
+        )
+
     op.create_table(
         "analysis_files",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -530,15 +531,12 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["analysis_id"], ["analyses.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_analysis_files_analysis_id"),
-        "analysis_files",
-        ["analysis_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_analysis_files_id"), "analysis_files", ["id"], unique=False
-    )
+    with op.batch_alter_table("analysis_files", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_analysis_files_analysis_id"), ["analysis_id"], unique=False
+        )
+        batch_op.create_index(batch_op.f("ix_analysis_files_id"), ["id"], unique=False)
+
     op.create_table(
         "user_biomarkers",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -587,141 +585,79 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_user_biomarkers_analysis_id"),
-        "user_biomarkers",
-        ["analysis_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_user_biomarkers_biomarker_id"),
-        "user_biomarkers",
-        ["biomarker_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_user_biomarkers_id"), "user_biomarkers", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_user_biomarkers_user_id"), "user_biomarkers", ["user_id"], unique=False
-    )
-    op.create_table(
-        "product_recommendations",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_biomarker_id", sa.Integer(), nullable=False),
-        sa.Column("product_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "reason",
-            sa.Text(),
-            nullable=False,
-            comment="Why this product is recommended",
-        ),
-        sa.Column(
-            "priority", sa.Integer(), nullable=False, comment="1 = highest priority"
-        ),
-        sa.Column(
-            "confidence", sa.Float(), nullable=False, comment="AI confidence score 0-1"
-        ),
-        sa.Column(
-            "is_dismissed",
-            sa.Boolean(),
-            nullable=False,
-            comment="User dismissed this recommendation",
-        ),
-        sa.Column(
-            "is_purchased",
-            sa.Boolean(),
-            nullable=False,
-            comment="User purchased this product",
-        ),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
-        sa.ForeignKeyConstraint(["product_id"], ["products.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["user_biomarker_id"], ["user_biomarkers.id"], ondelete="CASCADE"
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_product_recommendations_id"),
-        "product_recommendations",
-        ["id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_product_recommendations_product_id"),
-        "product_recommendations",
-        ["product_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_product_recommendations_user_biomarker_id"),
-        "product_recommendations",
-        ["user_biomarker_id"],
-        unique=False,
-    )
+    with op.batch_alter_table("user_biomarkers", schema=None) as batch_op:
+        batch_op.create_index(
+            batch_op.f("ix_user_biomarkers_analysis_id"), ["analysis_id"], unique=False
+        )
+        batch_op.create_index(
+            batch_op.f("ix_user_biomarkers_biomarker_id"),
+            ["biomarker_id"],
+            unique=False,
+        )
+        batch_op.create_index(batch_op.f("ix_user_biomarkers_id"), ["id"], unique=False)
+        batch_op.create_index(
+            batch_op.f("ix_user_biomarkers_user_id"), ["user_id"], unique=False
+        )
+
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade database schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(
-        op.f("ix_product_recommendations_user_biomarker_id"),
-        table_name="product_recommendations",
-    )
-    op.drop_index(
-        op.f("ix_product_recommendations_product_id"),
-        table_name="product_recommendations",
-    )
-    op.drop_index(
-        op.f("ix_product_recommendations_id"), table_name="product_recommendations"
-    )
-    op.drop_table("product_recommendations")
-    op.drop_index(op.f("ix_user_biomarkers_user_id"), table_name="user_biomarkers")
-    op.drop_index(op.f("ix_user_biomarkers_id"), table_name="user_biomarkers")
-    op.drop_index(op.f("ix_user_biomarkers_biomarker_id"), table_name="user_biomarkers")
-    op.drop_index(op.f("ix_user_biomarkers_analysis_id"), table_name="user_biomarkers")
+    with op.batch_alter_table("user_biomarkers", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_user_biomarkers_user_id"))
+        batch_op.drop_index(batch_op.f("ix_user_biomarkers_id"))
+        batch_op.drop_index(batch_op.f("ix_user_biomarkers_biomarker_id"))
+        batch_op.drop_index(batch_op.f("ix_user_biomarkers_analysis_id"))
+
     op.drop_table("user_biomarkers")
-    op.drop_index(op.f("ix_analysis_files_id"), table_name="analysis_files")
-    op.drop_index(op.f("ix_analysis_files_analysis_id"), table_name="analysis_files")
+    with op.batch_alter_table("analysis_files", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_analysis_files_id"))
+        batch_op.drop_index(batch_op.f("ix_analysis_files_analysis_id"))
+
     op.drop_table("analysis_files")
-    op.drop_index(op.f("ix_products_slug"), table_name="products")
-    op.drop_index(op.f("ix_products_id"), table_name="products")
-    op.drop_index(op.f("ix_products_external_id"), table_name="products")
-    op.drop_index(op.f("ix_products_category_id"), table_name="products")
-    op.drop_table("products")
-    op.drop_index(op.f("ix_medical_documents_id"), table_name="medical_documents")
+    with op.batch_alter_table("patient_profiles", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_patient_profiles_user_id"))
+        batch_op.drop_index(batch_op.f("ix_patient_profiles_id"))
+
+    op.drop_table("patient_profiles")
+    with op.batch_alter_table("medical_documents", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_medical_documents_id"))
+
     op.drop_table("medical_documents")
-    op.drop_index(op.f("ix_health_reminders_user_id"), table_name="health_reminders")
-    op.drop_index(
-        op.f("ix_health_reminders_scheduled_date"), table_name="health_reminders"
-    )
-    op.drop_index(
-        op.f("ix_health_reminders_next_occurrence"), table_name="health_reminders"
-    )
-    op.drop_index(op.f("ix_health_reminders_id"), table_name="health_reminders")
+    with op.batch_alter_table("health_reminders", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_health_reminders_user_id"))
+        batch_op.drop_index(batch_op.f("ix_health_reminders_scheduled_date"))
+        batch_op.drop_index(batch_op.f("ix_health_reminders_next_occurrence"))
+        batch_op.drop_index(batch_op.f("ix_health_reminders_id"))
+
     op.drop_table("health_reminders")
-    op.drop_index(op.f("ix_biomarker_references_id"), table_name="biomarker_references")
-    op.drop_index(
-        op.f("ix_biomarker_references_biomarker_id"), table_name="biomarker_references"
-    )
+    with op.batch_alter_table("biomarker_references", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_biomarker_references_id"))
+        batch_op.drop_index(batch_op.f("ix_biomarker_references_biomarker_id"))
+
     op.drop_table("biomarker_references")
-    op.drop_index(op.f("ix_analyses_user_id"), table_name="analyses")
-    op.drop_index(op.f("ix_analyses_id"), table_name="analyses")
+    with op.batch_alter_table("analyses", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_analyses_user_id"))
+        batch_op.drop_index(batch_op.f("ix_analyses_id"))
+
     op.drop_table("analyses")
-    op.drop_index(op.f("ix_users_id"), table_name="users")
-    op.drop_index(op.f("ix_users_external_user_id"), table_name="users")
-    op.drop_index(op.f("ix_users_email"), table_name="users")
+    with op.batch_alter_table("users", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_users_id"))
+        batch_op.drop_index(batch_op.f("ix_users_external_user_id"))
+        batch_op.drop_index(batch_op.f("ix_users_email"))
+
     op.drop_table("users")
-    op.drop_index(op.f("ix_product_categories_slug"), table_name="product_categories")
-    op.drop_index(op.f("ix_product_categories_id"), table_name="product_categories")
-    op.drop_table("product_categories")
-    op.drop_index(op.f("ix_biomarkers_id"), table_name="biomarkers")
-    op.drop_index(op.f("ix_biomarkers_code"), table_name="biomarkers")
+    with op.batch_alter_table("products", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_products_name"))
+        batch_op.drop_index(batch_op.f("ix_products_id"))
+        batch_op.drop_index(batch_op.f("ix_products_external_id"))
+
+    op.drop_table("products")
+    with op.batch_alter_table("biomarkers", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_biomarkers_id"))
+        batch_op.drop_index(batch_op.f("ix_biomarkers_code"))
+
     op.drop_table("biomarkers")
     # ### end Alembic commands ###

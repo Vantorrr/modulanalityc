@@ -259,14 +259,20 @@ function AnalysesPage() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    loadAnalyses();
+  }, []);
+
+  const loadAnalyses = () => {
+    setLoading(true);
     analysesApi.getAll()
       .then(setAnalyses)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -276,24 +282,163 @@ function AnalysesPage() {
     try {
       const newAnalysis = await analysesApi.upload(file);
       setAnalyses(prev => [newAnalysis, ...prev]);
-    } catch (err) {
+      alert("✅ Анализ загружен! AI обрабатывает данные...");
+    } catch (err: any) {
       console.error(err);
+      alert("Ошибка загрузки: " + (err.message || "Попробуйте позже"));
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  // Демо данные
-  const displayAnalyses = analyses.length > 0 ? analyses : [
-    { id: 1, title: "Биохимия крови", analysis_date: "28.11.2024", status: "completed" as const, biomarkers: [{ status: "low" as const, name: "Железо ↓" }, { status: "low" as const, name: "Ферритин ↓" }] },
-    { id: 2, title: "Общий анализ крови", analysis_date: "28.11.2024", status: "completed" as const, biomarkers: [{ status: "normal" as const, name: "Все в норме" }] },
-    { id: 3, title: "Витамин D", analysis_date: "15.11.2024", status: "completed" as const, biomarkers: [{ status: "low" as const, name: "25-OH D ↓" }] },
-    { id: 4, title: "Гормоны щитовидной", analysis_date: "01.10.2024", status: "completed" as const, biomarkers: [{ status: "normal" as const, name: "ТТГ" }, { status: "normal" as const, name: "Т4 св." }] },
-  ] as any[];
+  // Демо данные если API не вернул данные
+  const demoAnalyses = [
+    { 
+      id: 1, 
+      title: "Биохимия крови", 
+      analysis_date: "28.11.2024", 
+      status: "completed",
+      ai_summary: "⬇️ Выявлен дефицит железа и ферритина. Рекомендуется прием препаратов железа и консультация терапевта.",
+      biomarkers: [
+        { name: "Железо", value: 8.2, unit: "мкмоль/л", status: "low", ref_min: 12.5, ref_max: 32.2 },
+        { name: "Ферритин", value: 12, unit: "нг/мл", status: "low", ref_min: 20, ref_max: 250 },
+        { name: "Гемоглобин", value: 125, unit: "г/л", status: "normal", ref_min: 120, ref_max: 160 },
+      ],
+      ai_recommendations: {
+        items: [
+          { product: { id: 1, name: "Железо хелат 25мг", price: 890 }, reason: "Восполнение дефицита железа" },
+          { product: { id: 2, name: "Витамин С 1000мг", price: 590 }, reason: "Улучшает усвоение железа" },
+        ]
+      }
+    },
+    { 
+      id: 2, 
+      title: "Общий анализ крови", 
+      analysis_date: "28.11.2024", 
+      status: "completed",
+      ai_summary: "✅ Все показатели в пределах нормы. Продолжайте поддерживать здоровый образ жизни!",
+      biomarkers: [
+        { name: "Эритроциты", value: 4.8, unit: "×10¹²/л", status: "normal", ref_min: 4.0, ref_max: 5.5 },
+        { name: "Лейкоциты", value: 6.2, unit: "×10⁹/л", status: "normal", ref_min: 4.0, ref_max: 9.0 },
+        { name: "Тромбоциты", value: 245, unit: "×10⁹/л", status: "normal", ref_min: 180, ref_max: 320 },
+      ],
+      ai_recommendations: { items: [] }
+    },
+    { 
+      id: 3, 
+      title: "Витамин D", 
+      analysis_date: "15.11.2024", 
+      status: "completed",
+      ai_summary: "⬇️ Уровень витамина D ниже нормы. Рекомендуется прием витамина D3 в дозировке 2000-4000 МЕ в день.",
+      biomarkers: [
+        { name: "25-OH Витамин D", value: 18, unit: "нг/мл", status: "low", ref_min: 30, ref_max: 100 },
+      ],
+      ai_recommendations: {
+        items: [
+          { product: { id: 3, name: "Витамин D3 5000 МЕ", price: 690 }, reason: "Восполнение дефицита витамина D" },
+          { product: { id: 4, name: "Витамин K2 MK-7", price: 790 }, reason: "Улучшает усвоение витамина D" },
+        ]
+      }
+    },
+  ];
 
-  const outOfRangeCount = displayAnalyses.reduce((acc, a) => 
+  const displayAnalyses = analyses.length > 0 ? analyses : demoAnalyses;
+
+  const outOfRangeCount = displayAnalyses.reduce((acc, a: any) => 
     acc + (a.biomarkers?.filter((b: any) => b.status !== 'normal').length || 0), 0
   );
+
+  // Детальный просмотр анализа
+  if (selectedAnalysis) {
+    return (
+      <div className="px-4 py-5 space-y-4">
+        <button 
+          onClick={() => setSelectedAnalysis(null)}
+          className="flex items-center gap-2 text-emerald-600 font-medium"
+        >
+          <ChevronLeftIcon size={20} />
+          Назад к списку
+        </button>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h1 className="text-xl font-bold text-gray-900 mb-1">{selectedAnalysis.title}</h1>
+          <p className="text-sm text-gray-400">{selectedAnalysis.analysis_date || selectedAnalysis.created_at?.split('T')[0]}</p>
+        </div>
+
+        {selectedAnalysis.ai_summary && (
+          <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
+            <div className="flex items-center gap-2 mb-2">
+              <SparklesIcon size={16} className="text-indigo-600" />
+              <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
+            </div>
+            <p className="text-sm text-gray-700">{selectedAnalysis.ai_summary}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h2 className="font-bold text-gray-900 mb-3">Показатели</h2>
+          <div className="space-y-3">
+            {selectedAnalysis.biomarkers?.map((b: any, i: number) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div>
+                  <div className="font-medium text-sm text-gray-900">{b.name}</div>
+                  <div className="text-xs text-gray-400">
+                    Норма: {b.ref_min} - {b.ref_max} {b.unit}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`font-bold ${
+                    b.status === 'normal' ? 'text-emerald-600' : 
+                    b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
+                  }`}>
+                    {b.value} {b.unit}
+                  </div>
+                  <div className={`text-xs ${
+                    b.status === 'normal' ? 'text-emerald-500' : 
+                    b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
+                  }`}>
+                    {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {selectedAnalysis.ai_recommendations?.items?.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <SparklesIcon size={16} className="text-violet-600" />
+              <h2 className="font-bold text-gray-900">AI Рекомендации</h2>
+            </div>
+            <div className="space-y-3">
+              {selectedAnalysis.ai_recommendations.items.map((rec: any, i: number) => (
+                <div key={i} className="bg-gray-50 rounded-lg p-3">
+                  <div className="font-medium text-sm text-gray-900">{rec.product?.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">{rec.reason}</div>
+                  {rec.product?.price && (
+                    <button className="mt-2 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-lg">
+                      Купить за {rec.product.price} ₽
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <a 
+          href="https://telegra.ph/Consultation-08-16" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block w-full bg-cyan-500 text-white rounded-xl py-3 font-semibold text-center hover:bg-cyan-600 transition-colors"
+        >
+          👨‍⚕️ Консультация врача
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-5 space-y-4">
@@ -301,9 +446,10 @@ function AnalysesPage() {
         <h1 className="text-xl font-bold text-gray-900">Мои анализы</h1>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+          disabled={uploading}
+          className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50"
         >
-          {uploading ? <LoaderIcon size={20} /> : <PlusIcon size={20} />}
+          {uploading ? <LoaderIcon size={20} className="animate-spin" /> : <PlusIcon size={20} />}
         </button>
         <input
           ref={fileInputRef}
@@ -322,7 +468,7 @@ function AnalysesPage() {
           <div>
             <div className="font-bold text-rose-900 text-sm mb-1">Внимание: {outOfRangeCount} показателя вне нормы</div>
             <div className="text-xs text-rose-700">
-              Рекомендуем проконсультироваться с врачом.
+              Нажмите на анализ для просмотра рекомендаций.
             </div>
           </div>
         </div>
@@ -331,12 +477,16 @@ function AnalysesPage() {
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center py-8">
-            <LoaderIcon size={24} className="text-emerald-500" />
+            <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
           </div>
-        ) : displayAnalyses.map((item, i) => {
+        ) : displayAnalyses.map((item: any, i) => {
           const hasIssues = item.biomarkers?.some((b: any) => b.status !== 'normal');
           return (
-            <div key={item.id || i} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div 
+              key={item.id || i} 
+              onClick={() => setSelectedAnalysis(item)}
+              className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+            >
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="font-bold text-gray-900 text-sm">{item.title}</div>
@@ -350,10 +500,18 @@ function AnalysesPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {item.biomarkers?.slice(0, 3).map((b: any, j: number) => (
-                  <span key={j} className="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded border border-gray-200">
-                    {b.name || (b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : '✓')}
+                  <span key={j} className={`text-xs px-2 py-1 rounded border ${
+                    b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                    b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                    'bg-rose-50 text-rose-600 border-rose-200'
+                  }`}>
+                    {b.name} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
                   </span>
                 ))}
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-xs text-gray-400">Нажмите для подробностей</span>
+                <ChevronRightIcon size={16} className="text-gray-400" />
               </div>
             </div>
           );
@@ -699,10 +857,20 @@ function MedcardEvents() {
         <div className="space-y-2">
           {loading ? (
             <div className="flex justify-center py-8">
-              <LoaderIcon size={24} className="text-emerald-500" />
+              <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
             </div>
-          ) : displayDocuments.map((doc) => (
-            <div key={doc.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
+          ) : displayDocuments.map((doc: any) => (
+            <div 
+              key={doc.id} 
+              onClick={() => {
+                if (doc.id && typeof doc.id === 'number') {
+                  window.open(medcardApi.getDownloadUrl(doc.id), '_blank');
+                } else {
+                  alert(`📄 ${doc.title}\n\nДокумент из демо-данных. Загрузите реальный документ для просмотра.`);
+                }
+              }}
+              className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+            >
               <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-200 text-gray-500">
                 {getFileIcon(doc.file_type)}
               </div>
