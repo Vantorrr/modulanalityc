@@ -80,6 +80,24 @@ async def process_analysis_file(
             analysis.lab_provider,
         )
         
+        # If OCR didn't find enough biomarkers, try Vision API
+        if len(extracted_data.get("biomarkers", [])) < 3 and file_record.content_type.startswith("image/"):
+            import logging
+            import base64
+            logger = logging.getLogger(__name__)
+            logger.info(f"OCR found only {len(extracted_data.get('biomarkers', []))} biomarkers, trying Vision API")
+            
+            image_base64 = base64.b64encode(file_bytes).decode('utf-8')
+            vision_data = await ai_parser.extract_biomarkers_from_image(
+                image_base64,
+                file_record.content_type,
+            )
+            
+            # Use vision data if it found more biomarkers
+            if len(vision_data.get("biomarkers", [])) > len(extracted_data.get("biomarkers", [])):
+                logger.info(f"Vision API found {len(vision_data.get('biomarkers', []))} biomarkers, using this result")
+                extracted_data = vision_data
+        
         # Update analysis metadata if found
         if extracted_data.get("lab_name") and not analysis.lab_name:
             analysis.lab_name = extracted_data["lab_name"]

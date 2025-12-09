@@ -121,6 +121,86 @@ class AIParserService:
             base_url=settings.openai_base_url,
         )
         self.model = settings.openai_model
+        # Vision model for image analysis
+        self.vision_model = "openai/gpt-4o-mini"  # Supports vision
+    
+    async def extract_biomarkers_from_image(
+        self,
+        image_base64: str,
+        content_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        """
+        Extract biomarkers directly from image using GPT-4 Vision.
+        Better for handwritten or low-quality scans.
+        
+        Args:
+            image_base64: Base64 encoded image
+            content_type: MIME type of the image
+            
+        Returns:
+            Dictionary with extracted biomarkers
+        """
+        if not settings.openai_api_key:
+            logger.warning("OpenAI API key not configured")
+            return {"lab_name": None, "analysis_date": None, "biomarkers": []}
+        
+        try:
+            logger.info("Using Vision API to extract biomarkers from image")
+            
+            response = await self.client.chat.completions.create(
+                model=self.vision_model,
+                messages=[
+                    {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": """Извлеки ВСЕ биомаркеры из этого изображения анализа крови.
+                                
+ВАЖНО: Внимательно прочитай ВСЕ значения, включая рукописные!
+
+Верни JSON:
+{
+    "lab_name": "название лаборатории если есть",
+    "analysis_date": "дата в формате YYYY-MM-DD если есть",
+    "biomarkers": [
+        {"code": "HGB", "raw_name": "Гемоглобин", "value": 132, "unit": "г/л", "ref_min": 80, "ref_max": 150}
+    ]
+}"""
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{content_type};base64,{image_base64}"
+                                }
+                            }
+                        ]
+                    },
+                ],
+                temperature=0.1,
+                max_tokens=4000,
+            )
+            
+            result_text = response.choices[0].message.content
+            
+            # Try to extract JSON from response
+            import re
+            json_match = re.search(r'\{[\s\S]*\}', result_text)
+            if json_match:
+                result = json.loads(json_match.group())
+            else:
+                result = json.loads(result_text)
+            
+            result = self._validate_extraction(result)
+            
+            logger.info(f"Vision extraction completed: {len(result.get('biomarkers', []))} biomarkers found")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Vision extraction failed: {e}")
+            return {"lab_name": None, "analysis_date": None, "biomarkers": []}
     
     async def extract_biomarkers(
         self,
