@@ -26,7 +26,6 @@ from app.schemas.biomarker import (
 )
 from app.schemas.product import (
     ProductResponse,
-    ProductCategoryResponse,
     RecommendationResponse,
 )
 from app.schemas.reminder import (
@@ -56,7 +55,6 @@ __all__ = [
     "BiomarkerHistoryResponse",
     # Product
     "ProductResponse",
-    "ProductCategoryResponse",
     "RecommendationResponse",
     # Reminder
     "ReminderCreate",
