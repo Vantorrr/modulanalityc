@@ -255,5 +255,116 @@ export function LoaderIcon({ size = 24, className = "" }: IconProps) {
   );
 }
 
+// Иконки для раздела "О пациенте"
+export function RulerIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/>
+      <path d="m14.5 12.5 2-2"/>
+      <path d="m11.5 9.5 2-2"/>
+      <path d="m8.5 6.5 2-2"/>
+      <path d="m17.5 15.5 2-2"/>
+    </svg>
+  );
+}
+
+export function GenderMaleIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="10" cy="14" r="5"/>
+      <path d="M19 5l-5.4 5.4"/>
+      <path d="M15 5h4v4"/>
+    </svg>
+  );
+}
+
+export function GenderFemaleIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="8" r="5"/>
+      <path d="M12 13v8"/>
+      <path d="M9 18h6"/>
+    </svg>
+  );
+}
+
+export function MedicalHistoryIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <path d="M14 2v6h6"/>
+      <path d="M12 18v-6"/>
+      <path d="M9 15h6"/>
+    </svg>
+  );
+}
+
+export function AllergyIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 2a10 10 0 1 0 10 10"/>
+      <path d="M12 2v4"/>
+      <path d="M12 12l7-7"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+export function StethoscopeIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/>
+      <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/>
+      <circle cx="20" cy="10" r="2"/>
+    </svg>
+  );
+}
+
+export function DnaIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M2 15c6.667-6 13.333 0 20-6"/>
+      <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/>
+      <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/>
+      <path d="m17 6-2.5-2.5"/>
+      <path d="m14 8-1-1"/>
+      <path d="m7 18 2.5 2.5"/>
+      <path d="m3.5 14.5.5.5"/>
+      <path d="m20 9 .5.5"/>
+      <path d="m6.5 12.5 1 1"/>
+      <path d="m16.5 10.5 1 1"/>
+      <path d="m10 16 1.5 1.5"/>
+    </svg>
+  );
+}
+
+export function AppleIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/>
+      <path d="M10 2c1 .5 2 2 2 5"/>
+    </svg>
+  );
+}
+
+export function InfoCircleIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 16v-4"/>
+      <path d="M12 8h.01"/>
+    </svg>
+  );
+}
+
+export function HeartPulseIcon({ size = 24, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+    </svg>
+  );
+}
+
 
 

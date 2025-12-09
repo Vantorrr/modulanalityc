@@ -6,7 +6,9 @@ import {
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
   ChevronRightIcon, ChevronLeftIcon, SearchIcon,
   FileTextIcon, ImageIcon, ArchiveIcon, BarChartIcon, ShieldIcon,
-  SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon
+  SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon,
+  RulerIcon, GenderMaleIcon, MedicalHistoryIcon, AllergyIcon,
+  StethoscopeIcon, DnaIcon, AppleIcon, InfoCircleIcon, HeartPulseIcon
 } from "../components/Icons";
 import {
   analysesApi, medcardApi, calendarApi, profileApi,
@@ -654,14 +656,14 @@ function PatientAboutTab() {
   }
 
   const categories = [
-    { id: "body", label: "Параметры тела", icon: "📏", count: Object.keys(profile?.body_parameters || {}).length, total: 3 },
-    { id: "gender", label: "Мужское здоровье", icon: "♂️", count: Object.keys(profile?.gender_health || {}).length, total: 3 },
-    { id: "history", label: "Медицинская история", icon: "📋", count: (profile?.medical_history as any[])?.length || 0, total: 3 },
-    { id: "allergies", label: "Аллергические реакции", icon: "🌼", count: (profile?.allergies as any[])?.length || 0, total: 5 },
-    { id: "chronic", label: "Хронические заболевания", icon: "🩺", count: (profile?.chronic_diseases as any[])?.length || 0, total: 0 },
-    { id: "hereditary", label: "Наследственные заболевания", icon: "🧬", count: (profile?.hereditary_diseases as any[])?.length || 0, total: 0 },
-    { id: "lifestyle", label: "Образ жизни", icon: "🍎", count: Object.keys(profile?.lifestyle || {}).length, total: 5 },
-    { id: "additional", label: "Дополнительная информация", icon: "...", count: Object.keys(profile?.additional_info || {}).length, total: 6 },
+    { id: "body", label: "Параметры тела", Icon: RulerIcon, color: "bg-blue-50 text-blue-600", count: Object.keys(profile?.body_parameters || {}).length, total: 3 },
+    { id: "gender", label: "Мужское здоровье", Icon: GenderMaleIcon, color: "bg-indigo-50 text-indigo-600", count: Object.keys(profile?.gender_health || {}).length, total: 3 },
+    { id: "history", label: "Медицинская история", Icon: MedicalHistoryIcon, color: "bg-violet-50 text-violet-600", count: (profile?.medical_history as any[])?.length || 0, total: 3 },
+    { id: "allergies", label: "Аллергические реакции", Icon: AllergyIcon, color: "bg-amber-50 text-amber-600", count: (profile?.allergies as any[])?.length || 0, total: 5 },
+    { id: "chronic", label: "Хронические заболевания", Icon: StethoscopeIcon, color: "bg-rose-50 text-rose-600", count: (profile?.chronic_diseases as any[])?.length || 0, total: 0 },
+    { id: "hereditary", label: "Наследственные заболевания", Icon: DnaIcon, color: "bg-purple-50 text-purple-600", count: (profile?.hereditary_diseases as any[])?.length || 0, total: 0 },
+    { id: "lifestyle", label: "Образ жизни", Icon: AppleIcon, color: "bg-emerald-50 text-emerald-600", count: Object.keys(profile?.lifestyle || {}).length, total: 5 },
+    { id: "additional", label: "Дополнительная информация", Icon: InfoCircleIcon, color: "bg-gray-100 text-gray-600", count: Object.keys(profile?.additional_info || {}).length, total: 6 },
   ];
 
   return (
@@ -684,7 +686,9 @@ function PatientAboutTab() {
             className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
           >
             <div className="flex items-center gap-3">
-              <span className="text-xl">{cat.icon}</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cat.color}`}>
+                <cat.Icon size={20} />
+              </div>
               <span className="font-medium text-gray-900">{cat.label}</span>
             </div>
             <div className="flex items-center gap-2">
