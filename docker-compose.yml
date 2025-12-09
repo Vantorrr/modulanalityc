@@ -13,7 +13,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/medical_db
       - REDIS_URL=redis://redis:6379/0
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
       - OPENAI_BASE_URL=https://openrouter.ai/api/v1
       - OPENAI_MODEL=openai/gpt-4o-mini
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
