@@ -54,6 +54,17 @@ class Settings(BaseSettings):
         if self.database_url.startswith("postgresql://"):
             return self.database_url.replace("postgresql://", "postgresql+asyncpg://")
         return self.database_url
+    
+    @property
+    def sync_database_url(self) -> str:
+        """Get sync database URL for scripts and migrations."""
+        url = self.database_url
+        # Remove async driver suffixes
+        url = url.replace("+asyncpg", "").replace("+aiosqlite", "")
+        # Ensure postgresql:// prefix
+        if url.startswith("postgresql+"):
+            url = "postgresql://" + url.split("://", 1)[1]
+        return url
 
 
 @lru_cache

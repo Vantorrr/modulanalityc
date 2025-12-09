@@ -16,7 +16,7 @@ const getApiUrl = () => {
 const API_BASE_URL = getApiUrl();
 
 // Export for cache busting
-export const API_VERSION = 'v7-hybrid';
+export const API_VERSION = 'v8-fixes';
 
 // Debug log
 if (typeof window !== 'undefined') {
@@ -225,7 +225,9 @@ export const userApi = {
 // API для анализов
 export const analysesApi = {
   async getAll(): Promise<Analysis[]> {
-    return apiFetch<Analysis[]>('/analyses');
+    // Backend returns paginated response
+    const response = await apiFetch<{ items: Analysis[], total: number }>('/analyses');
+    return response.items || [];
   },
   
   async getById(id: number): Promise<Analysis> {
@@ -262,7 +264,9 @@ export const analysesApi = {
 export const medcardApi = {
   async getAll(category?: string): Promise<MedicalDocument[]> {
     const query = category ? `?category=${category}` : '';
-    return apiFetch<MedicalDocument[]>(`/medcard${query}`);
+    // Backend returns paginated response
+    const response = await apiFetch<{ items: MedicalDocument[], total: number }>(`/medcard${query}`);
+    return response.items || [];
   },
   
   async getById(id: number): Promise<MedicalDocument> {
@@ -366,11 +370,12 @@ export const productsApi = {
 // API для профиля пациента
 export const profileApi = {
   async getMyProfile(): Promise<PatientProfile> {
-    return apiFetch<PatientProfile>('/profile');
+    // Trailing slash required by FastAPI router
+    return apiFetch<PatientProfile>('/profile/');
   },
   
   async update(data: Partial<PatientProfile>): Promise<PatientProfile> {
-    return apiFetch<PatientProfile>('/profile', {
+    return apiFetch<PatientProfile>('/profile/', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
