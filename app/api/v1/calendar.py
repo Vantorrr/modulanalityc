@@ -10,7 +10,7 @@ from sqlalchemy import select, and_, func, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_async_session
-from app.core.security import CurrentUserID
+from app.core.security import get_current_user_id
 from app.models.reminder import HealthReminder, ReminderType, ReminderFrequency
 from app.schemas.reminder import (
     ReminderCreate,
@@ -79,7 +79,7 @@ def reminder_to_response(reminder: HealthReminder) -> ReminderResponse:
 )
 async def create_reminder(
     reminder_data: ReminderCreate,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -142,7 +142,7 @@ async def list_reminders(
     page_size: int = Query(20, ge=1, le=100),
     reminder_type: Optional[ReminderType] = None,
     include_completed: bool = Query(False, description="Включить выполненные"),
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -189,7 +189,7 @@ async def list_reminders(
     summary="Предстоящие напоминания",
 )
 async def get_upcoming_reminders(
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -276,7 +276,7 @@ async def get_upcoming_reminders(
 async def get_month_calendar(
     year: int,
     month: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -345,7 +345,7 @@ async def get_month_calendar(
 )
 async def get_reminder(
     reminder_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -375,7 +375,7 @@ async def get_reminder(
 async def update_reminder(
     reminder_id: int,
     update_data: ReminderUpdate,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -421,7 +421,7 @@ async def update_reminder(
 )
 async def complete_reminder(
     reminder_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -457,7 +457,7 @@ async def complete_reminder(
 )
 async def delete_reminder(
     reminder_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """

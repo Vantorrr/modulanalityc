@@ -12,7 +12,7 @@ from app.core.security import (
     get_password_hash,
     create_token_pair,
     decode_token,
-    CurrentUserID,
+    get_current_user_id,
 )
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse
@@ -148,7 +148,7 @@ async def refresh_token(
     summary="Текущий пользователь",
 )
 async def get_current_user(
-    user_id: CurrentUserID,
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """

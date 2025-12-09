@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import get_async_session
-from app.core.security import CurrentUserID
+from app.core.security import get_current_user_id
 from app.models.analysis import Analysis, AnalysisFile, AnalysisStatus, AnalysisType, LabProvider
 from app.models.biomarker import UserBiomarker, Biomarker, BiomarkerReference, BiomarkerStatus
 from app.models.user import User
@@ -242,7 +242,7 @@ async def upload_analysis(
     title: Optional[str] = Query(None, description="Название анализа"),
     analysis_type: AnalysisType = Query(AnalysisType.OTHER, description="Тип анализа"),
     lab_provider: Optional[LabProvider] = Query(None, description="Лаборатория"),
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -341,7 +341,7 @@ async def list_analyses(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     analysis_type: Optional[AnalysisType] = None,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -432,7 +432,7 @@ async def list_analyses(
 )
 async def get_analysis(
     analysis_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -521,7 +521,7 @@ async def get_analysis(
 )
 async def get_analysis_status(
     analysis_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -574,7 +574,7 @@ async def get_analysis_status(
 )
 async def delete_analysis(
     analysis_id: int,
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """

@@ -9,7 +9,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_async_session
-from app.core.security import CurrentUserID
+from app.core.security import get_current_user_id
 from app.services.recommendations import RecommendationService
 from app.models.analysis import Analysis, AnalysisStatus
 
@@ -21,7 +21,7 @@ router = APIRouter()
     summary="Последние рекомендации",
 )
 async def get_latest_recommendations(
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ) -> List[Dict[str, Any]]:
     """
@@ -59,7 +59,7 @@ async def get_latest_recommendations(
 )
 async def regenerate_recommendations(
     analysis_id: Optional[int] = Query(None, description="ID анализа"),
-    user_id: int = Depends(CurrentUserID),
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """

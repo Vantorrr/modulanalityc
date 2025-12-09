@@ -7,7 +7,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_async_session
-from app.core.security import CurrentUserID, get_password_hash
+from app.core.security import get_current_user_id, get_password_hash
 from app.models.user import User
 from app.models.analysis import Analysis
 from app.models.biomarker import UserBiomarker, BiomarkerStatus
@@ -23,7 +23,7 @@ router = APIRouter()
     summary="Профиль пользователя",
 )
 async def get_profile(
-    user_id: CurrentUserID,
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -49,7 +49,7 @@ async def get_profile(
 )
 async def update_profile(
     update_data: UserUpdate,
-    user_id: CurrentUserID,
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -89,7 +89,7 @@ async def update_profile(
     summary="Сводка по здоровью",
 )
 async def get_health_summary(
-    user_id: CurrentUserID,
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -175,7 +175,7 @@ async def get_health_summary(
 async def change_password(
     current_password: str,
     new_password: str,
-    user_id: CurrentUserID,
+    user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
