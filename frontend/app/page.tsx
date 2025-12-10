@@ -1476,9 +1476,13 @@ function CalendarPage() {
       return;
     }
     try {
+      // Parse datetime-local value "2025-12-20T14:30" into date and time
+      const [datePart, timePart] = newDate.split('T');
+      
       const reminder = await calendarApi.create({
         title: newTitle,
-        scheduled_date: newDate,
+        scheduled_date: datePart, // "2025-12-20"
+        scheduled_time: timePart ? `${timePart}:00` : null, // "14:30:00" or null
         reminder_type: "custom",
         description: "",
         frequency: "once"
