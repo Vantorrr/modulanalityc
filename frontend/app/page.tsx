@@ -267,23 +267,36 @@ export default function Home() {
     <MedcardContext.Provider value={contextValue}>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col shadow-xl">
-          {/* Header */}
-          <header className="bg-white border-b border-gray-200 px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white">
-                  <ActivityIcon size={22} />
-                </div>
-                <div>
-                  <h1 className="text-base font-bold text-gray-900">Анализы</h1>
-                  <p className="text-xs text-emerald-600 font-semibold">Health Tracker</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <NotificationBell />
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Кнопка "Назад" - возврат в основное приложение */}
+              <button 
+                onClick={() => {
+                  // Навигация в корень основного приложения
+                  // Используем window.parent для встраиваемого модуля или history.back()
+                  if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'NAVIGATE_BACK' }, '*');
+                  } else {
+                    window.history.back();
+                  }
+                }}
+                className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                title="Вернуться в приложение"
+              >
+                <ChevronLeftIcon size={22} />
+              </button>
+              <div>
+                <h1 className="text-base font-bold text-gray-900">Анализы</h1>
+                <p className="text-xs text-emerald-600 font-semibold">Health Tracker</p>
               </div>
             </div>
-          </header>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
+          </div>
+        </header>
 
           {/* Content */}
           <main className="flex-1 overflow-y-auto">
@@ -921,67 +934,321 @@ function PatientAboutTab() {
 }
 
 function ProfileForm({ category, initialData, onSave }: { category: string, initialData: any, onSave: (data: any) => void }) {
-  // Simple dynamic form based on category
   const [formData, setFormData] = useState<any>({});
+  const [listItems, setListItems] = useState<string[]>([]);
+  const [newItem, setNewItem] = useState("");
   
   useEffect(() => {
-     // Pre-fill logic based on category
-     const fieldMap: Record<string, keyof PatientProfile> = {
-        "body": "body_parameters",
-        "gender": "gender_health",
-        "lifestyle": "lifestyle",
-        "additional": "additional_info"
-      };
-      const field = fieldMap[category];
-      if (field && initialData && initialData[field]) {
-          setFormData(initialData[field]);
+    // Pre-fill logic based on category
+    const fieldMap: Record<string, keyof PatientProfile> = {
+      "body": "body_parameters",
+      "gender": "gender_health",
+      "history": "medical_history",
+      "allergies": "allergies",
+      "chronic": "chronic_diseases",
+      "hereditary": "hereditary_diseases",
+      "lifestyle": "lifestyle",
+      "additional": "additional_info"
+    };
+    const field = fieldMap[category];
+    if (field && initialData && initialData[field]) {
+      const data = initialData[field];
+      if (Array.isArray(data)) {
+        setListItems(data);
+      } else {
+        setFormData(data);
       }
+    }
   }, [category, initialData]);
 
   const handleChange = (key: string, value: string) => {
     setFormData((prev: any) => ({ ...prev, [key]: value }));
   };
 
+  const addItem = () => {
+    if (newItem.trim()) {
+      setListItems(prev => [...prev, newItem.trim()]);
+      setNewItem("");
+    }
+  };
+
+  const removeItem = (index: number) => {
+    setListItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Параметры тела
   if (category === "body") {
     return (
       <div className="space-y-3">
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase">Рост (см)</label>
-          <input type="number" value={formData.height || ""} onChange={e => handleChange("height", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="180" />
+          <input type="number" min="100" max="250" value={formData.height || ""} onChange={e => handleChange("height", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="180" />
         </div>
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase">Вес (кг)</label>
-          <input type="number" value={formData.weight || ""} onChange={e => handleChange("weight", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="75" />
+          <input type="number" min="30" max="300" step="0.1" value={formData.weight || ""} onChange={e => handleChange("weight", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="75" />
         </div>
-         <div>
+        <div>
           <label className="text-xs font-bold text-gray-500 uppercase">Обхват талии (см)</label>
-          <input type="number" value={formData.waist || ""} onChange={e => handleChange("waist", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="80" />
+          <input type="number" min="40" max="200" value={formData.waist || ""} onChange={e => handleChange("waist", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="80" />
         </div>
         <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
   
+  // Мужское/Женское здоровье
   if (category === "gender") {
-      return (
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase">Уровень тестостерона (нмоль/л)</label>
-              <input type="number" value={formData.testosterone || ""} onChange={e => handleChange("testosterone", e.target.value)} className="w-full p-2 rounded border border-gray-300" />
-            </div>
-             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase">Жалобы</label>
-              <textarea value={formData.complaints || ""} onChange={e => handleChange("complaints", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Опишите проблемы..." />
-            </div>
-            <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Уровень тестостерона (нмоль/л)</label>
+          <input type="number" step="0.1" value={formData.testosterone || ""} onChange={e => handleChange("testosterone", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="12.5" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Жалобы</label>
+          <textarea value={formData.complaints || ""} onChange={e => handleChange("complaints", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Опишите проблемы..." rows={2} />
+        </div>
+        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Медицинская история (список операций/госпитализаций)
+  if (category === "history") {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500">Перенесённые операции, госпитализации, серьёзные заболевания</p>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={newItem} 
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            className="flex-1 p-2 rounded border border-gray-300" 
+            placeholder="Напр: Аппендэктомия 2019" 
+          />
+          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+        </div>
+        {listItems.length > 0 && (
+          <div className="space-y-1">
+            {listItems.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                <span className="flex-1 text-sm">{item}</span>
+                <button onClick={() => removeItem(i)} className="text-red-500 text-xs hover:text-red-700">✕</button>
+              </div>
+            ))}
           </div>
-      )
+        )}
+        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Аллергические реакции (список)
+  if (category === "allergies") {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500">Укажите аллергены: лекарства, продукты, вещества</p>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={newItem} 
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            className="flex-1 p-2 rounded border border-gray-300" 
+            placeholder="Напр: Пенициллин, орехи" 
+          />
+          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+        </div>
+        {listItems.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {listItems.map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 rounded-full px-3 py-1 text-sm">
+                {item}
+                <button onClick={() => removeItem(i)} className="text-amber-600 hover:text-amber-800">✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Хронические заболевания (список)
+  if (category === "chronic") {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500">Диагностированные хронические заболевания</p>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={newItem} 
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            className="flex-1 p-2 rounded border border-gray-300" 
+            placeholder="Напр: Гипертония, Диабет 2 типа" 
+          />
+          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+        </div>
+        {listItems.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {listItems.map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 rounded-full px-3 py-1 text-sm">
+                {item}
+                <button onClick={() => removeItem(i)} className="text-rose-600 hover:text-rose-800">✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Наследственные заболевания (список)
+  if (category === "hereditary") {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500">Заболевания у близких родственников (родители, бабушки, дедушки)</p>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={newItem} 
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            className="flex-1 p-2 rounded border border-gray-300" 
+            placeholder="Напр: Онкология (мама), Диабет (дедушка)" 
+          />
+          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+        </div>
+        {listItems.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {listItems.map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-sm">
+                {item}
+                <button onClick={() => removeItem(i)} className="text-purple-600 hover:text-purple-800">✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Образ жизни
+  if (category === "lifestyle") {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Физическая активность</label>
+          <select value={formData.activity || ""} onChange={e => handleChange("activity", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="sedentary">Сидячий образ жизни</option>
+            <option value="light">Лёгкая активность (1-2 раза/нед)</option>
+            <option value="moderate">Умеренная активность (3-4 раза/нед)</option>
+            <option value="active">Активный образ жизни (5+ раз/нед)</option>
+            <option value="athlete">Профессиональный спорт</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Курение</label>
+          <select value={formData.smoking || ""} onChange={e => handleChange("smoking", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="never">Никогда не курил(а)</option>
+            <option value="former">Бросил(а) курить</option>
+            <option value="occasional">Иногда</option>
+            <option value="regular">Регулярно</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Употребление алкоголя</label>
+          <select value={formData.alcohol || ""} onChange={e => handleChange("alcohol", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="never">Не употребляю</option>
+            <option value="rare">Редко (праздники)</option>
+            <option value="moderate">Умеренно (1-2 раза/мес)</option>
+            <option value="regular">Регулярно</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Качество сна</label>
+          <select value={formData.sleep || ""} onChange={e => handleChange("sleep", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="excellent">Отличное (7-9 ч, легко засыпаю)</option>
+            <option value="good">Хорошее (6-8 ч)</option>
+            <option value="average">Среднее (проблемы с засыпанием)</option>
+            <option value="poor">Плохое (бессонница, пробуждения)</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Уровень стресса</label>
+          <select value={formData.stress || ""} onChange={e => handleChange("stress", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="low">Низкий</option>
+            <option value="moderate">Умеренный</option>
+            <option value="high">Высокий</option>
+            <option value="chronic">Хронический стресс</option>
+          </select>
+        </div>
+        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
+  }
+
+  // Дополнительная информация
+  if (category === "additional") {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Группа крови</label>
+          <select value={formData.blood_type || ""} onChange={e => handleChange("blood_type", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="I+">I (O) Rh+</option>
+            <option value="I-">I (O) Rh-</option>
+            <option value="II+">II (A) Rh+</option>
+            <option value="II-">II (A) Rh-</option>
+            <option value="III+">III (B) Rh+</option>
+            <option value="III-">III (B) Rh-</option>
+            <option value="IV+">IV (AB) Rh+</option>
+            <option value="IV-">IV (AB) Rh-</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Принимаемые препараты</label>
+          <textarea value={formData.medications || ""} onChange={e => handleChange("medications", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Перечислите через запятую" rows={2} />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Витамины и БАДы</label>
+          <textarea value={formData.supplements || ""} onChange={e => handleChange("supplements", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Перечислите через запятую" rows={2} />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Особенности питания</label>
+          <select value={formData.diet || ""} onChange={e => handleChange("diet", e.target.value)} className="w-full p-2 rounded border border-gray-300">
+            <option value="">Выберите...</option>
+            <option value="regular">Обычное питание</option>
+            <option value="vegetarian">Вегетарианство</option>
+            <option value="vegan">Веганство</option>
+            <option value="keto">Кето-диета</option>
+            <option value="low_carb">Низкоуглеводная</option>
+            <option value="gluten_free">Безглютеновая</option>
+            <option value="lactose_free">Безлактозная</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Дополнительные заметки</label>
+          <textarea value={formData.notes || ""} onChange={e => handleChange("notes", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Любая важная информация о здоровье" rows={2} />
+        </div>
+        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+      </div>
+    );
   }
 
   return (
     <div className="text-center text-gray-500 py-4">
       <p className="mb-2">Форма для этого раздела в разработке</p>
-      <button onClick={() => onSave({ updated: true })} className="bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-sm">Отметить заполненным (тест)</button>
     </div>
   );
 }
@@ -1173,6 +1440,8 @@ function CalendarPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const upcomingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     calendarApi.getAll()
@@ -1215,11 +1484,38 @@ function CalendarPage() {
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
 
-  const reminderDays = displayReminders.map(r => new Date(r.scheduled_date).getDate());
+  // Получаем напоминания для текущего месяца с датами
+  const getRemindersForMonth = () => {
+    return displayReminders.filter(r => {
+      const rDate = new Date(r.scheduled_date);
+      return rDate.getMonth() === currentMonth.getMonth() && rDate.getFullYear() === currentMonth.getFullYear();
+    });
+  };
+  
+  const monthReminders = getRemindersForMonth();
+  const reminderDaysMap = new Map<number, Reminder[]>();
+  monthReminders.forEach(r => {
+    const day = new Date(r.scheduled_date).getDate();
+    if (!reminderDaysMap.has(day)) reminderDaysMap.set(day, []);
+    reminderDaysMap.get(day)!.push(r);
+  });
+
   const today = new Date().getDate();
   const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear();
 
   const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
+  // Клик по дню с напоминанием - открыть и прокрутить к нему
+  const handleDayClick = (day: number) => {
+    const dayReminders = reminderDaysMap.get(day);
+    if (dayReminders && dayReminders.length > 0) {
+      setSelectedReminder(dayReminders[0]);
+      // Прокрутить к секции "Предстоящие"
+      setTimeout(() => {
+        upcomingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   return (
     <div className="px-4 py-5 space-y-4">
@@ -1250,22 +1546,30 @@ function CalendarPage() {
           {Array.from({ length: adjustedFirstDay }).map((_, i) => (
             <div key={`empty-${i}`} className="py-2"></div>
           ))}
-          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-            <button
-              key={day}
-              className={`py-2 rounded-lg font-medium text-sm transition-colors ${
-                isCurrentMonth && day === today ? "bg-emerald-500 text-white" :
-                reminderDays.includes(day) ? "bg-yellow-50 text-yellow-600 font-bold" :
-                "text-gray-900 hover:bg-gray-50"
-              }`}
-            >
-              {day}
-            </button>
-          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+            const hasReminder = reminderDaysMap.has(day);
+            const isToday = isCurrentMonth && day === today;
+            return (
+              <button
+                key={day}
+                onClick={() => handleDayClick(day)}
+                className={`py-2 rounded-lg font-medium text-sm transition-colors ${
+                  isToday ? "bg-emerald-500 text-white" :
+                  hasReminder ? "bg-pink-100 text-pink-600 font-bold hover:bg-pink-200" :
+                  "text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                {day}
+                {hasReminder && !isToday && (
+                  <div className="w-1 h-1 bg-pink-500 rounded-full mx-auto mt-0.5"></div>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3" ref={upcomingRef}>
         <h2 className="text-base font-bold text-gray-900">Предстоящие</h2>
         <div className="space-y-2">
           {loading ? (
@@ -1274,9 +1578,17 @@ function CalendarPage() {
             </div>
           ) : displayReminders.map((r) => {
             const date = new Date(r.scheduled_date);
+            const isSelected = selectedReminder?.id === r.id;
             return (
-              <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div 
+                key={r.id} 
+                className={`bg-white border rounded-xl p-3 flex items-center gap-3 transition-all ${
+                  isSelected ? "border-pink-400 ring-2 ring-pink-100 shadow-md" : "border-gray-200"
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  isSelected ? "bg-pink-100 text-pink-600" : "bg-emerald-50 text-emerald-600"
+                }`}>
                   <CalendarIcon size={18} />
                 </div>
                 <div className="flex-1">
@@ -1292,31 +1604,49 @@ function CalendarPage() {
       </div>
 
       {showAddForm ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <h3 className="font-bold text-gray-900">Новое напоминание</h3>
-          <input
-            type="text"
-            placeholder="Название (напр. Сдать анализ крови)"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg text-sm"
-          />
-          <input
-            type="datetime-local"
-            value={newDate}
-            onChange={(e) => setNewDate(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg text-sm"
-          />
+          
+          {/* Название */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Название</label>
+            <input
+              type="text"
+              placeholder="Например: Сдать анализ крови"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          
+          {/* Дата и время */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Дата и время</label>
+            <div className="relative">
+              <input
+                type="datetime-local"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+              {!newDate && (
+                <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-gray-400 text-sm">
+                  📅 Выберите дату и время
+                </div>
+              )}
+            </div>
+          </div>
+          
           <div className="flex gap-2">
             <button 
               onClick={() => setShowAddForm(false)}
-              className="flex-1 py-2 border border-gray-200 rounded-lg font-medium text-gray-600"
+              className="flex-1 py-2.5 border border-gray-200 rounded-lg font-medium text-gray-600 hover:bg-gray-50"
             >
               Отмена
             </button>
             <button 
               onClick={handleAddReminder}
-              className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-medium"
+              className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
             >
               Сохранить
             </button>
@@ -1337,42 +1667,121 @@ function CalendarPage() {
 
 // Раздел дневников
 function DiariesSection() {
-  const [entries, setEntries] = useState<any[]>([]);
+  // Загружаем историю из localStorage при инициализации
+  const [entries, setEntries] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('diary_entries');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ type: "mood", value: 3, note: "" });
+  const [formData, setFormData] = useState<{ type: string; value: string; note: string }>({ type: "mood", value: "", note: "" });
+  const [error, setError] = useState("");
 
-  // Демо данные
+  // Сохраняем в localStorage при изменении
+  useEffect(() => {
+    if (entries.length > 0) {
+      localStorage.setItem('diary_entries', JSON.stringify(entries));
+    }
+  }, [entries]);
+
+  // Демо данные (показываем если нет реальных записей)
   const demoEntries = [
-    { id: 1, date: "2024-12-09", type: "mood", value: 4, note: "Хорошее настроение после тренировки" },
-    { id: 2, date: "2024-12-08", type: "sleep", value: 7.5, note: "Спал крепко" },
-    { id: 3, date: "2024-12-08", type: "water", value: 2.5, note: "Пил больше воды" },
-    { id: 4, date: "2024-12-07", type: "mood", value: 3, note: "Обычный день" },
-    { id: 5, date: "2024-12-07", type: "weight", value: 74.5, note: "" },
+    { id: 1, date: "2024-12-09", type: "mood", value: "4", note: "Хорошее настроение после тренировки" },
+    { id: 2, date: "2024-12-08", type: "sleep", value: "7.5", note: "Спал крепко" },
+    { id: 3, date: "2024-12-08", type: "water", value: "2.5", note: "Пил больше воды" },
+    { id: 4, date: "2024-12-07", type: "mood", value: "3", note: "Обычный день" },
+    { id: 5, date: "2024-12-07", type: "weight", value: "74.5", note: "" },
   ];
 
   const displayEntries = entries.length > 0 ? entries : demoEntries;
 
   const diaryTypes = [
-    { id: "mood", label: "Настроение", icon: "😊", unit: "/ 5", color: "bg-amber-50 text-amber-600" },
-    { id: "sleep", label: "Сон", icon: "😴", unit: "ч", color: "bg-indigo-50 text-indigo-600" },
-    { id: "water", label: "Вода", icon: "💧", unit: "л", color: "bg-cyan-50 text-cyan-600" },
-    { id: "weight", label: "Вес", icon: "⚖️", unit: "кг", color: "bg-emerald-50 text-emerald-600" },
-    { id: "pressure", label: "Давление", icon: "❤️", unit: "мм", color: "bg-rose-50 text-rose-600" },
-    { id: "sugar", label: "Сахар", icon: "🩸", unit: "ммоль/л", color: "bg-red-50 text-red-600" },
+    { id: "mood", label: "Настроение", icon: "😊", unit: "/ 5", color: "bg-amber-50 text-amber-600", min: 0, max: 5, step: 1 },
+    { id: "sleep", label: "Сон", icon: "😴", unit: "ч", color: "bg-indigo-50 text-indigo-600", min: 0, max: 24, step: 0.5 },
+    { id: "water", label: "Вода", icon: "💧", unit: "л", color: "bg-cyan-50 text-cyan-600", min: 0, max: 10, step: 0.1 },
+    { id: "weight", label: "Вес", icon: "⚖️", unit: "кг", color: "bg-emerald-50 text-emerald-600", min: 20, max: 300, step: 0.1 },
+    { id: "pressure", label: "Давление", icon: "❤️", unit: "мм рт.ст.", color: "bg-rose-50 text-rose-600", min: 0, max: 300, step: 1 },
+    { id: "sugar", label: "Сахар", icon: "🩸", unit: "ммоль/л", color: "bg-red-50 text-red-600", min: 0, max: 30, step: 0.1 },
   ];
 
+  const getTypeInfo = (type: string) => diaryTypes.find(t => t.id === type) || diaryTypes[0];
+
+  // Валидация по типу записи
+  const validateValue = (type: string, value: string): string | null => {
+    const typeInfo = getTypeInfo(type);
+    
+    if (type === "pressure") {
+      // Проверка формата давления ###/##
+      if (!/^\d{2,3}\/\d{2,3}$/.test(value)) {
+        return "Формат: 120/80";
+      }
+      const [sys, dia] = value.split('/').map(Number);
+      if (sys < 60 || sys > 250 || dia < 40 || dia > 150) {
+        return "Некорректные значения давления";
+      }
+      return null;
+    }
+    
+    const num = parseFloat(value);
+    if (isNaN(num)) return "Введите число";
+    if (num < typeInfo.min) return `Минимум: ${typeInfo.min}`;
+    if (num > typeInfo.max) return `Максимум: ${typeInfo.max}`;
+    
+    return null;
+  };
+
+  // Обработка ввода давления с маской ###/##
+  const handlePressureInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^\d/]/g, ''); // Только цифры и /
+    
+    // Автоматическая вставка /
+    if (value.length === 3 && !value.includes('/')) {
+      value = value + '/';
+    }
+    
+    // Ограничение длины
+    if (value.length > 7) value = value.slice(0, 7);
+    
+    setFormData(prev => ({ ...prev, value }));
+    setError("");
+  };
+
+  // Обработка обычного числового ввода
+  const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({ ...prev, value }));
+    setError("");
+  };
+
   const handleSave = () => {
+    const validationError = validateValue(formData.type, formData.value);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    
     const newEntry = {
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
-      ...formData
+      type: formData.type,
+      value: formData.value,
+      note: formData.note
     };
+    
+    // Добавляем к существующим записям (накопительно!)
     setEntries(prev => [newEntry, ...prev]);
     setShowForm(false);
-    setFormData({ type: "mood", value: 3, note: "" });
+    setFormData({ type: "mood", value: "", note: "" });
+    setError("");
   };
 
-  const getTypeInfo = (type: string) => diaryTypes.find(t => t.id === type) || diaryTypes[0];
+  const openForm = (type: string) => {
+    setFormData({ type, value: "", note: "" });
+    setShowForm(true);
+    setError("");
+  };
 
   return (
     <div className="space-y-4 pb-20">
@@ -1380,7 +1789,7 @@ function DiariesSection() {
         {diaryTypes.map(type => (
           <button
             key={type.id}
-            onClick={() => { setFormData(prev => ({ ...prev, type: type.id })); setShowForm(true); }}
+            onClick={() => openForm(type.id)}
             className={`p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-1 hover:shadow-md transition-all ${type.color}`}
           >
             <span className="text-2xl">{type.icon}</span>
@@ -1399,14 +1808,49 @@ function DiariesSection() {
             <span className="text-3xl">{getTypeInfo(formData.type).icon}</span>
             <div className="flex-1">
               <div className="font-medium text-gray-900">{getTypeInfo(formData.type).label}</div>
-              <input
-                type="number"
-                step="0.1"
-                value={formData.value}
-                onChange={e => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
-                className="w-full p-2 border border-gray-200 rounded-lg mt-1"
-                placeholder="Значение"
-              />
+              
+              {/* Специальный инпут для давления */}
+              {formData.type === "pressure" ? (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.value}
+                  onChange={handlePressureInput}
+                  placeholder="120/80"
+                  className={`w-full p-2 border rounded-lg mt-1 ${error ? 'border-red-400' : 'border-gray-200'}`}
+                />
+              ) : formData.type === "mood" ? (
+                // Специальный инпут для настроения (0-5)
+                <div className="flex items-center gap-2 mt-1">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setFormData(prev => ({ ...prev, value: String(n) }))}
+                      className={`w-10 h-10 rounded-lg font-bold text-lg transition-colors ${
+                        formData.value === String(n) 
+                          ? 'bg-amber-500 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                // Обычный числовой инпут
+                <input
+                  type="number"
+                  step={getTypeInfo(formData.type).step}
+                  min={getTypeInfo(formData.type).min}
+                  max={getTypeInfo(formData.type).max}
+                  value={formData.value}
+                  onChange={handleNumberInput}
+                  placeholder={`${getTypeInfo(formData.type).min} - ${getTypeInfo(formData.type).max}`}
+                  className={`w-full p-2 border rounded-lg mt-1 ${error ? 'border-red-400' : 'border-gray-200'}`}
+                />
+              )}
+              
+              {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
             <span className="text-gray-400">{getTypeInfo(formData.type).unit}</span>
           </div>
@@ -1419,7 +1863,8 @@ function DiariesSection() {
           />
           <button
             onClick={handleSave}
-            className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium"
+            disabled={!formData.value}
+            className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Сохранить
           </button>
@@ -1427,7 +1872,10 @@ function DiariesSection() {
       )}
 
       <div className="space-y-2">
-        <h3 className="font-bold text-gray-900">История записей</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-gray-900">История записей</h3>
+          <span className="text-xs text-gray-400">{displayEntries.length} записей</span>
+        </div>
         {displayEntries.map(entry => {
           const typeInfo = getTypeInfo(entry.type);
           return (
@@ -1454,16 +1902,61 @@ function DiariesSection() {
 // Страница профиля
 function ProfilePage() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [userName, setUserName] = useState("Александр Иванов");
-  const [userEmail, setUserEmail] = useState("user@example.com");
-  const [notifications, setNotifications] = useState({ email: true, push: false, sms: false });
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
+  // Данные из родительского приложения (только для отображения)
+  const userName = "Александр Иванов"; // Получать из parent app
+  
+  useEffect(() => {
+    analysesApi.getAll().then(setAnalyses).catch(console.error);
+  }, []);
 
+  // Вычисляем статистику
+  const totalAnalyses = analyses.length;
+  const normalCount = analyses.reduce((acc, a) => 
+    acc + (a.biomarkers?.filter((b: any) => b.status === 'normal').length || 0), 0
+  );
+  const totalBiomarkers = analyses.reduce((acc, a) => acc + (a.biomarkers?.length || 0), 0);
+  const normalPercent = totalBiomarkers > 0 ? Math.round((normalCount / totalBiomarkers) * 100) : 0;
+  
+  // Вычисляем срок использования раздела
+  const firstAnalysis = analyses.length > 0 
+    ? analyses.reduce((min, a) => new Date(a.created_at) < new Date(min.created_at) ? a : min)
+    : null;
+  const monthsUsing = firstAnalysis 
+    ? Math.max(1, Math.round((Date.now() - new Date(firstAnalysis.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)))
+    : 0;
+
+  // Меню профиля (убраны "Личные данные" и "Уведомления" - они в основном приложении)
   const menu = [
-    { id: "personal", Icon: UserIcon, label: "Личные данные" },
     { id: "history", Icon: HistoryIcon, label: "История анализов" },
-    { id: "notifications", Icon: BellIcon, label: "Уведомления" },
     { id: "privacy", Icon: ShieldIcon, label: "Конфиденциальность" },
   ];
+
+  // Удаление всех медицинских данных
+  const handleDeleteAllData = async () => {
+    setDeleting(true);
+    try {
+      // Удаляем все анализы
+      for (const analysis of analyses) {
+        await analysesApi.delete(analysis.id);
+      }
+      // Очищаем localStorage
+      localStorage.removeItem('diary_entries');
+      localStorage.removeItem('medcard_skipped');
+      
+      setAnalyses([]);
+      setShowDeleteConfirm(false);
+      alert("✅ Все медицинские данные удалены");
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при удалении данных");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="px-4 py-5 space-y-4">
@@ -1472,20 +1965,29 @@ function ProfilePage() {
           {userName.split(' ').map(n => n[0]).join('')}
         </div>
         <h2 className="text-lg font-bold text-gray-900">{userName}</h2>
-        <p className="text-sm text-gray-400 mt-1">Профиль в Health Tracker</p>
+        <p className="text-sm text-gray-400 mt-1">Раздел Health Tracker</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {[
-          { value: "12", label: "Анализов" },
-          { value: "87%", label: "В норме", color: "text-emerald-600" },
-          { value: "6", label: "Месяцев" },
-        ].map((s, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
-            <p className={`text-2xl font-bold ${s.color || "text-gray-900"}`}>{s.value}</p>
-            <p className="text-[10px] text-gray-400 mt-1">{s.label}</p>
+        <button 
+          onClick={() => setActiveSection(activeSection === "history" ? null : "history")}
+          className="bg-white border border-gray-200 rounded-xl p-3 text-center hover:border-emerald-300 hover:shadow-sm transition-all"
+        >
+          <p className="text-2xl font-bold text-gray-900">{totalAnalyses}</p>
+          <p className="text-[10px] text-gray-400 mt-1">Анализов</p>
+        </button>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 text-center">
+          <p className="text-2xl font-bold text-emerald-600">{normalPercent}%</p>
+          <p className="text-[10px] text-gray-400 mt-1">В норме</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 text-center relative group">
+          <p className="text-2xl font-bold text-gray-900">{monthsUsing || '—'}</p>
+          <p className="text-[10px] text-gray-400 mt-1">Мес. в разделе</p>
+          {/* Подсказка */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Срок использования раздела анализов
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -1506,61 +2008,54 @@ function ProfilePage() {
             
             {activeSection === item.id && (
               <div className="p-4 bg-gray-50 border-b border-gray-200">
-                {item.id === "personal" && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Имя</label>
-                      <input 
-                        type="text" 
-                        value={userName} 
-                        onChange={(e) => setUserName(e.target.value)}
-                        className="w-full p-2 border border-gray-200 rounded-lg mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
-                      <input 
-                        type="email" 
-                        value={userEmail} 
-                        onChange={(e) => setUserEmail(e.target.value)}
-                        className="w-full p-2 border border-gray-200 rounded-lg mt-1"
-                      />
-                    </div>
-                    <button className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium text-sm">
-                      Сохранить
-                    </button>
-                  </div>
-                )}
                 {item.id === "history" && (
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-2">Всего загружено: <b>12 анализов</b></p>
-                    <p className="mb-2">Первый анализ: <b>15 июня 2024</b></p>
-                    <p>Последний анализ: <b>28 ноября 2024</b></p>
-                  </div>
-                )}
-                {item.id === "notifications" && (
                   <div className="space-y-3">
-                    {[
-                      { key: "email", label: "Email уведомления" },
-                      { key: "push", label: "Push уведомления" },
-                      { key: "sms", label: "SMS напоминания" },
-                    ].map(n => (
-                      <label key={n.key} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">{n.label}</span>
-                        <input 
-                          type="checkbox" 
-                          checked={notifications[n.key as keyof typeof notifications]}
-                          onChange={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key as keyof typeof notifications] }))}
-                          className="w-5 h-5 text-emerald-500"
-                        />
-                      </label>
-                    ))}
+                    <HistoryStatsClickable analyses={analyses} />
                   </div>
                 )}
                 {item.id === "privacy" && (
-                  <div className="space-y-3 text-sm text-gray-600">
-                    <p>Ваши данные защищены и хранятся в зашифрованном виде.</p>
-                    <button className="text-red-500 font-medium">Удалить все данные</button>
+                  <div className="space-y-4">
+                    <div className="text-sm text-gray-600">
+                      <p className="mb-2">🔒 Ваши медицинские данные защищены и хранятся в зашифрованном виде.</p>
+                      <p className="text-xs text-gray-400">Данные доступны только вам и используются для персонализированных рекомендаций.</p>
+                    </div>
+                    
+                    <div className="border-t border-gray-200 pt-4">
+                      <h4 className="font-bold text-sm text-gray-900 mb-2">Удаление данных</h4>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Будут удалены: все загруженные анализы, записи дневников, история напоминаний.
+                        Данные основного профиля (имя, email) не затрагиваются.
+                      </p>
+                      
+                      {showDeleteConfirm ? (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
+                          <p className="text-sm font-bold text-red-700">Вы уверены?</p>
+                          <p className="text-xs text-red-600">Это действие нельзя отменить.</p>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => setShowDeleteConfirm(false)}
+                              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-600"
+                            >
+                              Отмена
+                            </button>
+                            <button 
+                              onClick={handleDeleteAllData}
+                              disabled={deleting}
+                              className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                            >
+                              {deleting ? "Удаление..." : "Удалить"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="text-red-500 font-medium text-sm hover:text-red-600"
+                        >
+                          🗑️ Удалить все медицинские данные
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1568,6 +2063,87 @@ function ProfilePage() {
           </div>
         ))}
       </div>
+      
+      {/* Ссылка на настройки основного приложения */}
+      <p className="text-xs text-gray-400 text-center px-4">
+        Личные данные и уведомления настраиваются в основном профиле приложения
+      </p>
+    </div>
+  );
+}
+
+// Компонент кликабельной статистики истории
+function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
+  const [view, setView] = useState<'stats' | 'list'>('stats');
+  
+  const sortedAnalyses = [...analyses].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  
+  const firstAnalysis = sortedAnalyses[sortedAnalyses.length - 1];
+  const lastAnalysis = sortedAnalyses[0];
+  
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  if (view === 'list') {
+    return (
+      <div className="space-y-2">
+        <button 
+          onClick={() => setView('stats')}
+          className="flex items-center gap-1 text-emerald-600 text-sm font-medium mb-2"
+        >
+          <ChevronLeftIcon size={16} />
+          Назад к статистике
+        </button>
+        {sortedAnalyses.length === 0 ? (
+          <p className="text-gray-400 text-sm">Нет загруженных анализов</p>
+        ) : (
+          sortedAnalyses.map(a => (
+            <div key={a.id} className="bg-white border border-gray-200 rounded-lg p-2 flex items-center gap-2">
+              <ClipboardIcon size={16} className="text-emerald-500" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">{a.title}</p>
+                <p className="text-xs text-gray-400">{formatDate(a.created_at)}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <button 
+        onClick={() => setView('list')}
+        className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+      >
+        <span className="text-sm text-gray-600">Всего загружено: </span>
+        <span className="font-bold text-emerald-600 group-hover:underline">{analyses.length} анализов →</span>
+      </button>
+      
+      {firstAnalysis && (
+        <button 
+          onClick={() => setView('list')}
+          className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+        >
+          <span className="text-sm text-gray-600">Первый анализ: </span>
+          <span className="font-bold text-gray-900 group-hover:underline">{formatDate(firstAnalysis.created_at)} →</span>
+        </button>
+      )}
+      
+      {lastAnalysis && (
+        <button 
+          onClick={() => setView('list')}
+          className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+        >
+          <span className="text-sm text-gray-600">Последний анализ: </span>
+          <span className="font-bold text-gray-900 group-hover:underline">{formatDate(lastAnalysis.created_at)} →</span>
+        </button>
+      )}
     </div>
   );
 }
