@@ -197,7 +197,7 @@ export default function Home() {
       fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'demo@example.com', password: 'demo123456' }),
+        body: JSON.stringify({ email: 'demo@healthtracker.app', password: 'demo123' }),
       })
         .then(res => res.json())
         .then(data => {
