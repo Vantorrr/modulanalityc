@@ -186,9 +186,29 @@ function NotificationBell() {
 }
 
 export default function Home() {
-  // Use API_VERSION to bust stale bundles
+  // Auto-login as demo user if not authenticated
   useEffect(() => {
     console.log("API_VERSION", API_VERSION);
+    
+    // Check if already logged in
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      // Auto-login as demo user
+      fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'demo@example.com', password: 'demo123456' }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.access_token) {
+            localStorage.setItem('auth_token', data.access_token);
+            console.log('[Auth] Demo user logged in');
+            window.location.reload(); // Reload to apply token
+          }
+        })
+        .catch(err => console.log('[Auth] Auto-login failed:', err));
+    }
   }, []);
 
   const [activeTab, setActiveTab] = useState("home");
