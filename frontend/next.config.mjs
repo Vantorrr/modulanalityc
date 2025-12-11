@@ -12,6 +12,7 @@ const nextConfig = {
   },
   
   // Disable caching of built assets to avoid stale bundles on Railway
+  output: 'standalone',
   async headers() {
     return [
       {

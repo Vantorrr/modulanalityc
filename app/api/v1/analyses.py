@@ -130,6 +130,13 @@ async def process_analysis_file(
             except ValueError:
                 pass
         
+        # Check if any biomarkers found
+        if not extracted_data.get("biomarkers"):
+            analysis.status = AnalysisStatus.FAILED
+            analysis.error_message = "Не удалось распознать данные. Попробуйте более четкое фото или другой формат."
+            await db.commit()
+            return
+
         # Get user for reference ranges
         user = await db.get(User, analysis.user_id)
         

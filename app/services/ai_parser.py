@@ -181,7 +181,8 @@ class AIParserService:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:{content_type};base64,{image_base64}"
+                                    "url": f"data:{content_type};base64,{image_base64}",
+                                    "detail": "high"
                                 }
                             }
                         ]
@@ -189,6 +190,7 @@ class AIParserService:
                 ],
                 temperature=0.1,
                 max_tokens=4000,
+                response_format={"type": "json_object"},
             )
             
             result_text = response.choices[0].message.content

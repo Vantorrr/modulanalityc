@@ -50,7 +50,7 @@ function MedcardPromptModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
         {/* Header with icon */}
         <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-6 text-center">
           <div className="w-20 h-20 bg-white/20 rounded-full mx-auto flex items-center justify-center mb-4">
@@ -239,8 +239,17 @@ export default function Home() {
         }
         setProfileChecked(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load profile:', err);
+      
+      // Auto-fix for invalid token (401)
+      if (err.message?.includes('401') || err.message?.includes('token') || err.message?.includes('авторизаци')) {
+        console.log('[Auth] Invalid token, clearing and reloading...');
+        localStorage.removeItem('auth_token');
+        window.location.reload();
+        return;
+      }
+
       setIsProfileFilled(false);
       // Show modal if profile doesn't exist
       if (!profileChecked) {
@@ -1498,28 +1507,38 @@ function CalendarPage() {
   };
 
   // Демо данные
+  const todayDate = new Date();
+  const currentYear = todayDate.getFullYear();
+  const currentMonthNum = todayDate.getMonth() + 1;
+  const currentMonthStr = currentMonthNum < 10 ? `0${currentMonthNum}` : currentMonthNum;
+
   const displayReminders = reminders.length > 0 ? reminders : [
-    { id: 1, title: "Общий анализ крови", scheduled_date: "2024-12-15", reminder_type: "analysis" as const },
-    { id: 2, title: "Витамин D", scheduled_date: "2024-12-20", reminder_type: "analysis" as const },
-    { id: 3, title: "Прием эндокринолога", scheduled_date: "2024-12-22", reminder_type: "checkup" as const },
+    { id: 1, title: "Общий анализ крови", scheduled_date: `${currentYear}-${currentMonthStr}-15`, reminder_type: "analysis" as const },
+    { id: 2, title: "Витамин D", scheduled_date: `${currentYear}-${currentMonthStr}-20`, reminder_type: "analysis" as const },
+    { id: 3, title: "Прием эндокринолога", scheduled_date: `${currentYear}-${currentMonthStr}-22`, reminder_type: "checkup" as const },
   ] as any[];
 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
 
-  // Получаем напоминания для текущего месяца с датами
+  // Получаем напоминания для текущего месяца с датами (безопасный парсинг)
   const getRemindersForMonth = () => {
     return displayReminders.filter(r => {
-      const rDate = new Date(r.scheduled_date);
-      return rDate.getMonth() === currentMonth.getMonth() && rDate.getFullYear() === currentMonth.getFullYear();
+      if (!r.scheduled_date) return false;
+      const parts = r.scheduled_date.toString().split('T')[0].split('-');
+      if (parts.length < 3) return false;
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1; // 0-indexed
+      return month === currentMonth.getMonth() && year === currentMonth.getFullYear();
     });
   };
   
   const monthReminders = getRemindersForMonth();
   const reminderDaysMap = new Map<number, Reminder[]>();
   monthReminders.forEach(r => {
-    const day = new Date(r.scheduled_date).getDate();
+    const parts = r.scheduled_date.toString().split('T')[0].split('-');
+    const day = parseInt(parts[2]);
     if (!reminderDaysMap.has(day)) reminderDaysMap.set(day, []);
     reminderDaysMap.get(day)!.push(r);
   });
