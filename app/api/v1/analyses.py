@@ -61,31 +61,50 @@ async def process_analysis_file(
         await db.flush()
         
         # Run OCR
+        import logging
+        import base64
+        logger = logging.getLogger(__name__)
+        
         with open(file_record.file_path, "rb") as f:
             file_bytes = f.read()
         
-        ocr_text, confidence = await ocr_service.extract_text_from_bytes(
-            file_bytes,
-            file_record.content_type,
-        )
+        ocr_text = ""
+        ocr_success = False
+        extracted_data = {"biomarkers": []}
         
-        # Save OCR result
-        file_record.ocr_text = ocr_text
-        analysis.raw_text = (analysis.raw_text or "") + f"\n\n{ocr_text}"
-        await db.flush()
+        # Try OCR first
+        try:
+            ocr_text, confidence = await ocr_service.extract_text_from_bytes(
+                file_bytes,
+                file_record.content_type,
+            )
+            ocr_success = True
+            logger.info(f"OCR completed with confidence {confidence:.2f}, text length: {len(ocr_text)}")
+        except Exception as ocr_error:
+            logger.warning(f"OCR failed: {ocr_error}, will use Vision API directly")
         
-        # Parse with AI
-        extracted_data = await ai_parser.extract_biomarkers(
-            ocr_text,
-            analysis.lab_provider,
-        )
+        # Save OCR result if any
+        if ocr_text:
+            file_record.ocr_text = ocr_text
+            analysis.raw_text = (analysis.raw_text or "") + f"\n\n{ocr_text}"
+            await db.flush()
+            
+            # Parse with AI from OCR text
+            extracted_data = await ai_parser.extract_biomarkers(
+                ocr_text,
+                analysis.lab_provider,
+            )
         
-        # If OCR didn't find enough biomarkers, try Vision API
-        if len(extracted_data.get("biomarkers", [])) < 3 and file_record.content_type.startswith("image/"):
-            import logging
-            import base64
-            logger = logging.getLogger(__name__)
-            logger.info(f"OCR found only {len(extracted_data.get('biomarkers', []))} biomarkers, trying Vision API")
+        # Use Vision API if:
+        # 1. OCR failed completely, OR
+        # 2. OCR didn't find enough biomarkers (< 3)
+        use_vision = (
+            not ocr_success or 
+            len(extracted_data.get("biomarkers", [])) < 3
+        ) and file_record.content_type.startswith("image/")
+        
+        if use_vision:
+            logger.info(f"Using Vision API (OCR found {len(extracted_data.get('biomarkers', []))} biomarkers)")
             
             image_base64 = base64.b64encode(file_bytes).decode('utf-8')
             vision_data = await ai_parser.extract_biomarkers_from_image(
@@ -93,7 +112,7 @@ async def process_analysis_file(
                 file_record.content_type,
             )
             
-            # Use vision data if it found more biomarkers
+            # Use vision data if it found more biomarkers (or if OCR failed)
             if len(vision_data.get("biomarkers", [])) > len(extracted_data.get("biomarkers", [])):
                 logger.info(f"Vision API found {len(vision_data.get('biomarkers', []))} biomarkers, using this result")
                 extracted_data = vision_data
