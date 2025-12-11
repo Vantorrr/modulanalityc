@@ -432,6 +432,9 @@ async def list_analyses(
         # Get items
         stmt = (
             select(Analysis)
+            .options(
+                selectinload(Analysis.biomarkers).selectinload(UserBiomarker.biomarker)
+            )
             .where(and_(*conditions))
             .order_by(Analysis.created_at.desc())
             .offset((page - 1) * page_size)
@@ -440,9 +443,30 @@ async def list_analyses(
         result = await db.execute(stmt)
         analyses = result.scalars().all()
         
-        # Get biomarker counts
+        # Get biomarker counts and previews
         items = []
         for analysis in analyses:
+            # Format biomarkers preview (top 5)
+            biomarkers_list = []
+            # Sort by abnormal status first if needed, but for now just take first ones
+            sorted_biomarkers = sorted(
+                analysis.biomarkers, 
+                key=lambda x: 0 if x.status != BiomarkerStatus.NORMAL else 1
+            )
+            
+            for ub in sorted_biomarkers[:5]:
+                biomarkers_list.append(AnalysisBiomarkerResponse(
+                    id=ub.id,
+                    biomarker_code=ub.biomarker.code,
+                    biomarker_name=ub.biomarker.name_ru,
+                    value=ub.value,
+                    unit=ub.unit,
+                    status=ub.status.value,
+                    ref_min=ub.ref_min,
+                    ref_max=ub.ref_max,
+                    raw_name=ub.raw_name,
+                ))
+
             bio_count_stmt = (
                 select(func.count(UserBiomarker.id))
                 .where(UserBiomarker.analysis_id == analysis.id)
@@ -473,6 +497,7 @@ async def list_analyses(
                 biomarkers_count=bio_count,
                 out_of_range_count=out_of_range,
                 created_at=analysis.created_at,
+                biomarkers=biomarkers_list,
             ))
         
         logger.info(f"Returning {len(items)} analyses")

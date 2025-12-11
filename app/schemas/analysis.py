@@ -94,6 +94,7 @@ class AnalysisListItem(BaseSchema):
     biomarkers_count: int = 0
     out_of_range_count: int = 0
     created_at: datetime
+    biomarkers: List[AnalysisBiomarkerResponse] = []
 
 
 class AnalysisListResponse(PaginatedResponse):
