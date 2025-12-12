@@ -2025,10 +2025,24 @@ function CalendarPage() {
   // Устанавливаем время по умолчанию на текущее + 1 час
   const getDefaultTime = () => {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    const hour = now.getHours().toString().padStart(2, '0');
-    const minute = Math.ceil(now.getMinutes() / 5) * 5; // Округляем до ближайших 5 минут
-    return { hour, minute: minute === 60 ? '00' : minute.toString().padStart(2, '0') };
+    let hours = now.getHours() + 1;
+    let minutes = Math.ceil(now.getMinutes() / 5) * 5; // Округляем до ближайших 5 минут
+    
+    // Если минуты = 60, переходим на следующий час
+    if (minutes >= 60) {
+      minutes = 0;
+      hours += 1;
+    }
+    
+    // Если часы >= 24, сбрасываем на 0
+    if (hours >= 24) {
+      hours = 0;
+    }
+    
+    return { 
+      hour: hours.toString().padStart(2, '0'), 
+      minute: minutes.toString().padStart(2, '0') 
+    };
   };
   
   const [selectedHour, setSelectedHour] = useState(getDefaultTime().hour);
