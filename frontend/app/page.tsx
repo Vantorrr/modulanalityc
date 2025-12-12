@@ -2021,8 +2021,18 @@ function CalendarPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedHour, setSelectedHour] = useState("12");
-  const [selectedMinute, setSelectedMinute] = useState("00");
+  
+  // Устанавливаем время по умолчанию на текущее + 1 час
+  const getDefaultTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const hour = now.getHours().toString().padStart(2, '0');
+    const minute = Math.ceil(now.getMinutes() / 5) * 5; // Округляем до ближайших 5 минут
+    return { hour, minute: minute === 60 ? '00' : minute.toString().padStart(2, '0') };
+  };
+  
+  const [selectedHour, setSelectedHour] = useState(getDefaultTime().hour);
+  const [selectedMinute, setSelectedMinute] = useState(getDefaultTime().minute);
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
 
@@ -2035,9 +2045,19 @@ function CalendarPage() {
 
   const handleAddReminder = async () => {
     if (!newTitle || !selectedDate) {
-      alert("Заполните название и дату");
+      alert("⚠️ Заполните название и дату");
       return;
     }
+    
+    // Проверка на прошедшую дату/время
+    const selectedDateTime = new Date(`${selectedDate}T${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`);
+    const now = new Date();
+    
+    if (selectedDateTime < now) {
+      alert("⏰ Нельзя создать напоминание на прошедшее время");
+      return;
+    }
+    
     try {
       const timeStr = `${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
       
@@ -2053,11 +2073,12 @@ function CalendarPage() {
       setShowAddForm(false);
       setNewTitle("");
       setSelectedDate("");
-      setSelectedHour("12");
-      setSelectedMinute("00");
+      const defaultTime = getDefaultTime();
+      setSelectedHour(defaultTime.hour);
+      setSelectedMinute(defaultTime.minute);
     } catch (err) {
       console.error(err);
-      alert("Ошибка при создании напоминания");
+      alert("❌ Ошибка при создании напоминания");
     }
   };
 
@@ -2070,17 +2091,18 @@ function CalendarPage() {
     return `${date.getDate()} ${months[date.getMonth()]}`;
   };
 
-  // Демо данные
-  const todayDate = new Date();
-  const currentYear = todayDate.getFullYear();
-  const currentMonthNum = todayDate.getMonth() + 1;
-  const currentMonthStr = currentMonthNum < 10 ? `0${currentMonthNum}` : currentMonthNum;
+  // Фильтруем только будущие напоминания
+  const now = new Date();
+  const upcomingReminders = reminders.filter(r => {
+    const reminderDateTime = new Date(`${r.scheduled_date}T${r.scheduled_time || '00:00:00'}`);
+    return reminderDateTime >= now;
+  }).sort((a, b) => {
+    const dateA = new Date(`${a.scheduled_date}T${a.scheduled_time || '00:00:00'}`);
+    const dateB = new Date(`${b.scheduled_date}T${b.scheduled_time || '00:00:00'}`);
+    return dateA.getTime() - dateB.getTime();
+  });
 
-  const displayReminders = reminders.length > 0 ? reminders : [
-    { id: 1, title: "Общий анализ крови", scheduled_date: `${currentYear}-${currentMonthStr}-15`, reminder_type: "analysis" as const },
-    { id: 2, title: "Витамин D", scheduled_date: `${currentYear}-${currentMonthStr}-20`, reminder_type: "analysis" as const },
-    { id: 3, title: "Прием эндокринолога", scheduled_date: `${currentYear}-${currentMonthStr}-22`, reminder_type: "checkup" as const },
-  ] as any[];
+  const displayReminders = reminders.length > 0 ? reminders : [];
 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
@@ -2183,9 +2205,24 @@ function CalendarPage() {
             <div className="flex justify-center py-8">
               <LoaderIcon size={24} className="text-emerald-500" />
             </div>
-          ) : displayReminders.map((r) => {
-            const date = new Date(r.scheduled_date);
+          ) : upcomingReminders.length === 0 ? (
+            <div className="bg-gray-50 rounded-xl p-6 text-center border-2 border-dashed border-gray-200">
+              <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-3 shadow-sm">
+                <CalendarIcon size={28} className="text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500">Нет предстоящих напоминаний</p>
+              <p className="text-xs text-gray-400 mt-1">Нажмите "+" чтобы создать</p>
+            </div>
+          ) : upcomingReminders.map((r) => {
+            // Правильное объединение даты и времени
+            const dateTimeStr = `${r.scheduled_date}T${r.scheduled_time || '00:00:00'}`;
+            const dateTime = new Date(dateTimeStr);
             const isSelected = selectedReminder?.id === r.id;
+            
+            // Форматируем дату и время отдельно
+            const dateStr = dateTime.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+            const timeStr = r.scheduled_time ? r.scheduled_time.substring(0, 5) : '00:00'; // HH:MM
+            
             return (
               <div 
                 key={r.id} 
@@ -2201,7 +2238,7 @@ function CalendarPage() {
                 <div className="flex-1">
                   <div className="font-medium text-sm text-gray-900">{r.title}</div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    {date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} • {date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    {dateStr} • {timeStr}
                   </div>
                 </div>
               </div>
@@ -2240,6 +2277,7 @@ function CalendarPage() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
                   className="flex-1 bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm font-medium text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none h-10"
                 />
                 
@@ -2280,6 +2318,9 @@ function CalendarPage() {
                 setShowAddForm(false);
                 setNewTitle("");
                 setSelectedDate("");
+                const defaultTime = getDefaultTime();
+                setSelectedHour(defaultTime.hour);
+                setSelectedMinute(defaultTime.minute);
               }}
               className="flex-1 py-3.5 text-gray-500 font-medium hover:bg-gray-50 transition-colors border-r border-gray-200"
             >
