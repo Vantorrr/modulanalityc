@@ -560,6 +560,28 @@ function UploadAnalysisButton({ onBeforeUpload }: { onBeforeUpload?: () => boole
   );
 }
 
+// ===== UI Components =====
+function Toast({ message, type = 'success', onClose }: { message: string, type?: 'success' | 'error', onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed bottom-20 left-4 right-4 z-50 p-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${
+      type === 'success' ? 'bg-gray-900 text-white' : 'bg-red-500 text-white'
+    }`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+        type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+      }`}>
+        {type === 'success' ? <CheckCircleIcon size={18} /> : <AlertCircleIcon size={18} />}
+      </div>
+      <div className="flex-1 font-medium text-sm">{message}</div>
+      <button onClick={onClose} className="opacity-70 hover:opacity-100">✕</button>
+    </div>
+  );
+}
+
 // Страница анализов
 function AnalysesPage() {
   const { isProfileFilled, checkAndPromptMedcard } = useMedcard();
@@ -567,25 +589,73 @@ function AnalysesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<any | null>(null);
+  const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Track IDs that are currently processing
+  const [processingIds, setProcessingIds] = useState<number[]>([]);
 
   useEffect(() => {
     loadAnalyses();
   }, []);
 
+  // Polling logic for processing analyses
+  useEffect(() => {
+    if (processingIds.length === 0) return;
+
+    const interval = setInterval(async () => {
+      console.log('Polling status for:', processingIds);
+      
+      for (const id of processingIds) {
+        try {
+          // Check status using the detailed endpoint to get full data if ready
+          const detail = await analysesApi.getById(id);
+          
+          if (detail.status === 'completed') {
+            // Success!
+            setProcessingIds(prev => prev.filter(pid => pid !== id));
+            
+            // Update item in list with full details (including biomarkers)
+            setAnalyses(prev => prev.map(a => a.id === id ? detail : a));
+            
+            setToast({ 
+              msg: `✅ Анализ "${detail.title}" готов! Найдено показателей: ${detail.biomarkers?.length || 0}`, 
+              type: 'success' 
+            });
+          } else if (detail.status === 'failed') {
+            // Failed
+            setProcessingIds(prev => prev.filter(pid => pid !== id));
+            setAnalyses(prev => prev.map(a => a.id === id ? detail : a));
+            setToast({ 
+              msg: `❌ Ошибка обработки: ${detail.error_message || 'Не удалось распознать'}`, 
+              type: 'error' 
+            });
+          }
+          // If still processing/pending, do nothing and wait for next poll
+        } catch (e) {
+          console.error("Poll error", e);
+        }
+      }
+    }, 3000); // Check every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [processingIds]);
+
   const loadAnalyses = () => {
     setLoading(true);
     analysesApi.getAll()
-      .then(setAnalyses)
+      .then(data => {
+        setAnalyses(data);
+        // Add any pending/processing items to poll list
+        const pending = data.filter(a => a.status === 'pending' || a.status === 'processing').map(a => a.id);
+        if (pending.length > 0) setProcessingIds(prev => [...new Set([...prev, ...pending])]);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   const handleUploadClick = () => {
-    // Check if profile is filled before allowing upload
-    if (!checkAndPromptMedcard()) {
-      return; // Modal will be shown, don't proceed
-    }
+    if (!checkAndPromptMedcard()) return;
     fileInputRef.current?.click();
   };
 
@@ -596,16 +666,24 @@ function AnalysesPage() {
     setUploading(true);
     try {
       const newAnalysis = await analysesApi.upload(file);
+      // Add to list immediately with "pending" status
       setAnalyses(prev => [newAnalysis, ...prev]);
-      alert("✅ Анализ загружен! AI обрабатывает данные...");
+      // Start polling
+      setProcessingIds(prev => [...prev, newAnalysis.id]);
+      
+      setToast({ msg: '🚀 Анализ загружен! AI начал обработку...', type: 'success' });
     } catch (err: any) {
       console.error(err);
-      alert("Ошибка загрузки: " + (err.message || "Попробуйте позже"));
+      setToast({ msg: "Ошибка загрузки: " + (err.message || "Попробуйте позже"), type: 'error' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // ... rest of the component (demoAnalyses, render logic) ...
+  // Need to patch the return statement to include Toast and updated card rendering
+
 
   // Демо данные если API не вернул данные
   const demoAnalyses = [
@@ -800,43 +878,85 @@ function AnalysesPage() {
             <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
           </div>
         ) : displayAnalyses.map((item: any, i) => {
+          const isProcessing = item.status === 'pending' || item.status === 'processing';
+          const isFailed = item.status === 'failed';
           const hasIssues = item.biomarkers?.some((b: any) => b.status !== 'normal');
+          
           return (
             <button 
               key={item.id || i} 
-              onClick={() => setSelectedAnalysis(item)}
-              className="w-full text-left bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+              onClick={() => !isProcessing && setSelectedAnalysis(item)}
+              disabled={isProcessing}
+              className={`w-full text-left bg-white rounded-xl border p-4 transition-all relative overflow-hidden ${
+                isProcessing ? 'border-emerald-200 shadow-sm' : 
+                isFailed ? 'border-red-200 opacity-80' :
+                'border-gray-200 hover:shadow-md hover:border-emerald-200 active:scale-[0.98]'
+              }`}
             >
+              {isProcessing && (
+                <div className="absolute inset-0 bg-emerald-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                  <div className="flex flex-col items-center gap-2">
+                    <LoaderIcon size={24} className="text-emerald-500" />
+                    <span className="text-xs font-bold text-emerald-700 animate-pulse">AI обрабатывает...</span>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="font-bold text-gray-900 text-sm">{item.title}</div>
                   <div className="text-xs text-gray-400 mt-1">{item.analysis_date || item.created_at?.split('T')[0]}</div>
                 </div>
-                <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                  !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                }`}>
-                  {!hasIssues ? "Норма" : "Отклонение"}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {item.biomarkers?.slice(0, 3).map((b: any, j: number) => (
-                  <span key={j} className={`text-xs px-2 py-1 rounded border ${
-                    b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                    b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                    'bg-rose-50 text-rose-600 border-rose-200'
+                {!isProcessing && (
+                  <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                    isFailed ? "bg-red-100 text-red-600" :
+                    !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                   }`}>
-                    {b.name} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
-                  </span>
-                ))}
+                    {isFailed ? "Ошибка" : !hasIssues ? "Норма" : "Отклонение"}
+                  </div>
+                )}
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-400">Нажмите для подробностей</span>
-                <ChevronRightIcon size={16} className="text-gray-400" />
-              </div>
+              
+              {!isProcessing && !isFailed && (
+                <div className="flex flex-wrap gap-2">
+                  {item.biomarkers?.slice(0, 3).map((b: any, j: number) => (
+                    <span key={j} className={`text-xs px-2 py-1 rounded border ${
+                      b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                      b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                      'bg-rose-50 text-rose-600 border-rose-200'
+                    }`}>
+                      {b.name || b.biomarker_code || b.code} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
+                    </span>
+                  ))}
+                  {(!item.biomarkers || item.biomarkers.length === 0) && (
+                    <span className="text-xs text-gray-400 italic">Нет данных о показателях</span>
+                  )}
+                </div>
+              )}
+              
+              {isFailed && (
+                <p className="text-xs text-red-500 mt-2">{item.error_message || "Сбой обработки"}</p>
+              )}
+
+              {!isProcessing && !isFailed && (
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Нажмите для подробностей</span>
+                  <ChevronRightIcon size={16} className="text-gray-400" />
+                </div>
+              )}
             </button>
           );
         })}
       </div>
+      
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast 
+          message={toast.msg} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }
