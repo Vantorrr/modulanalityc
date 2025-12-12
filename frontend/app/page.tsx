@@ -800,7 +800,7 @@ function AnalysesPage() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedAnalysis, setSelectedAnalysis] = useState<any | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -808,21 +808,27 @@ function AnalysesPage() {
   // Track IDs that are currently processing
   const [processingIds, setProcessingIds] = useState<number[]>([]);
 
-  const openAnalysisDetails = async (summaryItem: any) => {
-    // Show what we have immediately
-    setSelectedAnalysis(summaryItem);
-    
-    // If it's a completed analysis, fetch full details to get ai_summary and all biomarkers
-    if (summaryItem.status === 'completed' && (!summaryItem.ai_summary || summaryItem.biomarkers?.length <= 5)) {
-      setLoadingDetails(true);
-      try {
-        const fullData = await analysesApi.getById(summaryItem.id);
-        setSelectedAnalysis(fullData);
-      } catch (err) {
-        console.error("Failed to load details", err);
-        setToast({ msg: "Не удалось загрузить полные детали", type: 'error' });
-      } finally {
-        setLoadingDetails(false);
+  // Раскрытие/сворачивание карточки анализа
+  const toggleExpand = async (item: any) => {
+    if (expandedId === item.id) {
+      // Сворачиваем
+      setExpandedId(null);
+    } else {
+      // Раскрываем и загружаем детали
+      setExpandedId(item.id);
+      
+      // Загружаем полные данные если анализ готов и у нас еще нет ai_summary
+      if (item.status === 'completed' && !item.ai_summary) {
+        setLoadingDetails(true);
+        try {
+          const fullData = await analysesApi.getById(item.id);
+          // Обновляем анализ в списке
+          setAnalyses(prev => prev.map(a => a.id === item.id ? fullData : a));
+        } catch (err) {
+          console.error("Failed to load details", err);
+        } finally {
+          setLoadingDetails(false);
+        }
       }
     }
   };
@@ -976,113 +982,6 @@ function AnalysesPage() {
     acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter((b: any) => b.status !== 'normal').length : 0), 0
   );
 
-  // Детальный просмотр анализа
-  if (selectedAnalysis) {
-    return (
-      <div className="px-4 py-5 space-y-4">
-        <button 
-          onClick={() => setSelectedAnalysis(null)}
-          className="flex items-center gap-2 text-emerald-600 font-medium"
-        >
-          <ChevronLeftIcon size={20} />
-          Назад к списку
-        </button>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">{selectedAnalysis.title}</h1>
-          <p className="text-sm text-gray-400">{selectedAnalysis.analysis_date || selectedAnalysis.created_at?.split('T')[0]}</p>
-        </div>
-
-        {loadingDetails && (
-           <div className="flex flex-col items-center justify-center py-8 gap-3">
-             <LoaderIcon size={32} className="text-emerald-500 animate-spin" />
-             <span className="text-sm font-medium text-gray-500">AI формирует полный отчет...</span>
-           </div>
-        )}
-
-        {!loadingDetails && selectedAnalysis.ai_summary && (
-          <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
-            <div className="flex items-center gap-2 mb-2">
-              <SparklesIcon size={16} className="text-indigo-600" />
-              <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">
-              {typeof selectedAnalysis.ai_summary === 'string' 
-                ? selectedAnalysis.ai_summary 
-                : "Отчет сформирован"}
-            </p>
-          </div>
-        )}
-
-        <div className={`bg-white rounded-xl border border-gray-200 p-4 transition-opacity ${loadingDetails ? 'opacity-50' : 'opacity-100'}`}>
-          <h2 className="font-bold text-gray-900 mb-3">
-            Показатели {loadingDetails ? '(загрузка...)' : `(${selectedAnalysis.biomarkers?.length || 0})`}
-          </h2>
-          <div className="space-y-3">
-            {Array.isArray(selectedAnalysis.biomarkers) && selectedAnalysis.biomarkers.map((b: any, i: number) => (
-              <div key={b.id || i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <div>
-                  <div className="font-medium text-sm text-gray-900">{b.name || b.biomarker_name || b.biomarker_code || "Показатель"}</div>
-                  <div className="text-xs text-gray-400">
-                    Норма: {b.ref_min ?? "?"} - {b.ref_max ?? "?"} {b.unit || ""}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-bold ${
-                    b.status === 'normal' ? 'text-emerald-600' : 
-                    b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
-                  }`}>
-                    {b.value} {b.unit || ""}
-                  </div>
-                  <div className={`text-xs ${
-                    b.status === 'normal' ? 'text-emerald-500' : 
-                    b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
-                  }`}>
-                    {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {(!selectedAnalysis.biomarkers || selectedAnalysis.biomarkers.length === 0) && !loadingDetails && (
-               <p className="text-sm text-gray-400 italic">Показатели не найдены или не распознаны</p>
-            )}
-          </div>
-        </div>
-
-        {selectedAnalysis.ai_recommendations?.items?.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <SparklesIcon size={16} className="text-violet-600" />
-              <h2 className="font-bold text-gray-900">AI Рекомендации</h2>
-            </div>
-            <div className="space-y-3">
-              {selectedAnalysis.ai_recommendations.items.map((rec: any, i: number) => (
-                <div key={i} className="bg-gray-50 rounded-lg p-3">
-                  <div className="font-medium text-sm text-gray-900">{rec.product?.name}</div>
-                  <div className="text-xs text-gray-500 mt-1">{rec.reason}</div>
-                  {rec.product?.price && (
-                    <button className="mt-2 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-lg">
-                      Купить за {rec.product.price} ₽
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <a 
-          href="https://telegra.ph/Consultation-08-16" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="block w-full bg-cyan-500 text-white rounded-xl py-3 font-semibold text-center hover:bg-cyan-600 transition-colors"
-        >
-          👨‍⚕️ Консультация врача
-        </a>
-      </div>
-    );
-  }
-
   return (
     <div className="px-4 py-5 space-y-4">
       {/* Banner for unfilled medcard */}
@@ -1135,6 +1034,7 @@ function AnalysesPage() {
           const isFailed = item.status === 'failed';
           const biomarkers = Array.isArray(item.biomarkers) ? item.biomarkers : [];
           const hasIssues = biomarkers.some((b: any) => b.status !== 'normal');
+          const isExpanded = expandedId === item.id;
           
           // Проверяем, не завис ли анализ (более 5 минут в pending/processing)
           const createdAt = new Date(item.created_at).getTime();
@@ -1143,70 +1043,172 @@ function AnalysesPage() {
           const isStuck = isProcessing && minutesPending > 5;
           
           return (
-            <button 
+            <div 
               key={item.id || i} 
-              onClick={() => !isProcessing && !isStuck && openAnalysisDetails(item)}
-              disabled={isProcessing && !isStuck}
-              className={`w-full text-left bg-white rounded-xl border p-4 transition-all relative overflow-hidden ${
+              className={`w-full bg-white rounded-xl border transition-all relative overflow-hidden ${
                 isProcessing && !isStuck ? 'border-emerald-200 shadow-sm' : 
                 isFailed || isStuck ? 'border-red-200 opacity-80' :
-                'border-gray-200 hover:shadow-md hover:border-emerald-200 active:scale-[0.98]'
+                isExpanded ? 'border-emerald-300 shadow-lg' :
+                'border-gray-200 hover:shadow-md hover:border-emerald-200'
               }`}
             >
-              {isProcessing && !isStuck && (
-                <div className="absolute inset-0 bg-emerald-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
-                  <div className="flex flex-col items-center gap-2">
-                    <LoaderIcon size={24} className="text-emerald-500" />
-                    <span className="text-xs font-bold text-emerald-700 animate-pulse">AI обрабатывает...</span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <div className="font-bold text-gray-900 text-sm">{item.title}</div>
-                  <div className="text-xs text-gray-400 mt-1">{item.analysis_date || item.created_at?.split('T')[0]}</div>
-                </div>
-                {!isProcessing && (
-                  <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                    isFailed || isStuck ? "bg-red-100 text-red-600" :
-                    !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                  }`}>
-                    {isFailed ? "Ошибка" : isStuck ? "Таймаут" : !hasIssues ? "Норма" : "Отклонение"}
+              {/* Header (всегда видимый, кликабельный) */}
+              <button 
+                onClick={() => !isProcessing && !isStuck && toggleExpand(item)}
+                disabled={isProcessing && !isStuck}
+                className="w-full text-left p-4 transition-all"
+              >
+                {isProcessing && !isStuck && (
+                  <div className="absolute inset-0 bg-emerald-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                    <div className="flex flex-col items-center gap-2">
+                      <LoaderIcon size={24} className="text-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-700 animate-pulse">AI обрабатывает...</span>
+                    </div>
                   </div>
                 )}
-              </div>
-              
-              {!isProcessing && !isFailed && !isStuck && (
-                <div className="flex flex-wrap gap-2">
-                  {biomarkers.slice(0, 3).map((b: any, j: number) => (
-                    <span key={j} className={`text-xs px-2 py-1 rounded border ${
-                      b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                      b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                      'bg-rose-50 text-rose-600 border-rose-200'
-                    }`}>
-                      {b.name || b.biomarker_code || b.code} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
-                    </span>
-                  ))}
-                  {(biomarkers.length === 0) && (
-                    <span className="text-xs text-gray-400 italic">Нет данных о показателях</span>
-                  )}
+                
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm">{item.title}</div>
+                    <div className="text-xs text-gray-400 mt-1">{item.analysis_date || item.created_at?.split('T')[0]}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isProcessing && (
+                      <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                        isFailed || isStuck ? "bg-red-100 text-red-600" :
+                        !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                      }`}>
+                        {isFailed ? "Ошибка" : isStuck ? "Таймаут" : !hasIssues ? "Норма" : "Отклонение"}
+                      </div>
+                    )}
+                    {!isProcessing && !isFailed && !isStuck && (
+                      <ChevronRightIcon 
+                        size={16} 
+                        className={`text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} 
+                      />
+                    )}
+                  </div>
                 </div>
-              )}
-              
-              {(isFailed || isStuck) && (
-                <p className="text-xs text-red-500 mt-2">
-                  {isStuck ? "⏱️ Время ожидания истекло. Попробуйте загрузить снова." : (item.error_message || "Сбой обработки")}
-                </p>
-              )}
+                
+                {!isProcessing && !isFailed && !isStuck && !isExpanded && (
+                  <div className="flex flex-wrap gap-2">
+                    {biomarkers.slice(0, 3).map((b: any, j: number) => (
+                      <span key={j} className={`text-xs px-2 py-1 rounded border ${
+                        b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                        b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                        'bg-rose-50 text-rose-600 border-rose-200'
+                      }`}>
+                        {b.name || b.biomarker_code || b.code} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
+                      </span>
+                    ))}
+                    {(biomarkers.length === 0) && (
+                      <span className="text-xs text-gray-400 italic">Нет данных о показателях</span>
+                    )}
+                  </div>
+                )}
+                
+                {(isFailed || isStuck) && (
+                  <p className="text-xs text-red-500 mt-2">
+                    {isStuck ? "⏱️ Время ожидания истекло. Попробуйте загрузить снова." : (item.error_message || "Сбой обработки")}
+                  </p>
+                )}
 
-              {!isProcessing && !isFailed && !isStuck && (
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Нажмите для подробностей</span>
-                  <ChevronRightIcon size={16} className="text-gray-400" />
+                {!isProcessing && !isFailed && !isStuck && !isExpanded && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Нажмите для раскрытия</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Раскрытые детали (аккордеон) */}
+              {isExpanded && !isProcessing && !isFailed && !isStuck && (
+                <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {loadingDetails && (
+                    <div className="flex flex-col items-center justify-center py-6 gap-2">
+                      <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
+                      <span className="text-xs font-medium text-gray-500">Загружаем детали...</span>
+                    </div>
+                  )}
+
+                  {!loadingDetails && item.ai_summary && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-3 border border-indigo-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <SparklesIcon size={14} className="text-indigo-600" />
+                        <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
+                      </div>
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {typeof item.ai_summary === 'string' ? item.ai_summary : "Отчет сформирован"}
+                      </p>
+                    </div>
+                  )}
+
+                  {!loadingDetails && biomarkers.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 mb-2 uppercase">
+                        Все показатели ({biomarkers.length})
+                      </h3>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {biomarkers.map((b: any, j: number) => (
+                          <div key={b.id || j} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                            <div className="flex-1 pr-2">
+                              <div className="font-medium text-xs text-gray-900">{b.name || b.biomarker_name || b.biomarker_code || "Показатель"}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">
+                                Норма: {b.ref_min ?? "?"} - {b.ref_max ?? "?"} {b.unit || ""}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`font-bold text-xs ${
+                                b.status === 'normal' ? 'text-emerald-600' : 
+                                b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
+                              }`}>
+                                {b.value} {b.unit || ""}
+                              </div>
+                              <div className={`text-[10px] ${
+                                b.status === 'normal' ? 'text-emerald-500' : 
+                                b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
+                              }`}>
+                                {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!loadingDetails && item.ai_recommendations?.items?.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <SparklesIcon size={14} className="text-violet-600" />
+                        <h3 className="text-xs font-bold text-gray-900 uppercase">AI Рекомендации</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {item.ai_recommendations.items.map((rec: any, k: number) => (
+                          <div key={k} className="bg-gray-50 rounded-lg p-2.5">
+                            <div className="font-medium text-xs text-gray-900">{rec.product?.name}</div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">{rec.reason}</div>
+                            {rec.product?.price && (
+                              <button className="mt-1.5 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-600 transition">
+                                Купить за {rec.product.price} ₽
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <a 
+                    href="https://telegra.ph/Consultation-08-16" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block w-full bg-cyan-500 text-white rounded-lg py-2 text-xs font-semibold text-center hover:bg-cyan-600 transition-colors"
+                  >
+                    👨‍⚕️ Консультация врача
+                  </a>
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
