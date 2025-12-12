@@ -1319,16 +1319,55 @@ function BiomarkerTablePage() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']));
+
+  // Названия категорий на русском
+  const categoryNames: Record<string, string> = {
+    'HEMATOLOGY': '🩸 Гематология',
+    'BIOCHEMISTRY': '🧪 Биохимия',
+    'HORMONES': '⚡ Гормоны',
+    'VITAMINS': '💊 Витамины',
+    'MINERALS': '🔬 Минералы',
+    'LIPIDS': '🫀 Липиды',
+    'LIVER': '🫁 Печень',
+    'KIDNEY': '💧 Почки',
+    'THYROID': '🦋 Щитовидная железа',
+    'INFLAMMATION': '🔥 Воспаление',
+    'OTHER': '📋 Прочее',
+  };
 
   // Фильтрация по поиску
   const filteredBiomarkers = useMemo(() => {
     if (!searchQuery.trim()) return biomarkers;
     const query = searchQuery.toLowerCase();
     return biomarkers.filter(b => 
-      b.name.toLowerCase().includes(query) ||
-      b.code.toLowerCase().includes(query)
+      b.name?.toLowerCase().includes(query) ||
+      b.code?.toLowerCase().includes(query)
     );
   }, [biomarkers, searchQuery]);
+
+  // Группировка по категориям
+  const groupedBiomarkers = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    filteredBiomarkers.forEach(b => {
+      const cat = b.category || 'OTHER';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(b);
+    });
+    return groups;
+  }, [filteredBiomarkers]);
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) {
+        next.delete(cat);
+      } else {
+        next.add(cat);
+      }
+      return next;
+    });
+  };
 
   // Открыть детали биомаркера
   const openBiomarkerDetail = async (code: string) => {
@@ -1527,52 +1566,82 @@ function BiomarkerTablePage() {
           </div>
         )}
 
-        {/* Список показателей */}
+        {/* Список показателей по категориям (папкам) */}
         {!loading && filteredBiomarkers.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="divide-y divide-gray-100">
-              {filteredBiomarkers.map((bio: any) => (
+          <div className="space-y-3">
+            {Object.entries(groupedBiomarkers).map(([category, items]) => (
+              <div key={category} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                {/* Заголовок категории (папка) */}
                 <button
-                  key={bio.code}
-                  onClick={() => openBiomarkerDetail(bio.code)}
-                  className="w-full px-4 py-4 hover:bg-gray-50 transition-colors text-left flex items-center gap-4"
+                  onClick={() => toggleCategory(category)}
+                  className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-colors"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 truncate">{bio.name}</div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                      <span>{bio.unit}</span>
-                      <span>•</span>
-                      <span>{bio.total_measurements} {bio.total_measurements === 1 ? 'измерение' : 'измерений'}</span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{categoryNames[category]?.split(' ')[0] || '📋'}</span>
+                    <span className="font-bold text-gray-800">
+                      {categoryNames[category]?.split(' ').slice(1).join(' ') || category}
+                    </span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {items.length}
+                    </span>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    {bio.last_value !== null && bio.last_value !== undefined ? (
-                      <div>
-                        <div className={`text-xl font-bold ${
-                          bio.last_status === 'normal' ? 'text-green-600' :
-                          bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
-                          'text-red-600'
-                        }`}>
-                          {bio.last_value}
-                        </div>
-                        {bio.last_measured_at && (
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: '2-digit',
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-400">—</div>
-                    )}
-                  </div>
-                  <ChevronRightIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <ChevronRightIcon 
+                    className={`w-5 h-5 text-gray-400 transition-transform ${
+                      expandedCategories.has(category) || expandedCategories.has('all') ? 'rotate-90' : ''
+                    }`} 
+                  />
                 </button>
-              ))}
-            </div>
+                
+                {/* Биомаркеры внутри категории */}
+                {(expandedCategories.has(category) || expandedCategories.has('all')) && (
+                  <div className="divide-y divide-gray-100">
+                    {items.map((bio: any) => (
+                      <button
+                        key={bio.code}
+                        onClick={() => openBiomarkerDetail(bio.code)}
+                        className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left flex items-center gap-4 pl-12"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{bio.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {bio.unit} • {bio.total_measurements} изм.
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {bio.last_value !== null && bio.last_value !== undefined ? (
+                            <div>
+                              <div className={`text-lg font-bold ${
+                                bio.last_status === 'normal' ? 'text-green-600' :
+                                bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
+                                'text-red-600'
+                              }`}>
+                                {bio.last_value}
+                              </div>
+                              {bio.last_measured_at && (
+                                <div className="text-xs text-gray-400">
+                                  {new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); openBiomarkerDetail(bio.code); }}
+                              className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
+                            >
+                              + Добавить
+                            </button>
+                          )}
+                        </div>
+                        <ChevronRightIcon className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
@@ -1828,8 +1897,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
   const [value, setValue] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [refMin, setRefMin] = useState('');
-  const [refMax, setRefMax] = useState('');
+  const [lab, setLab] = useState(''); // Лаборатория (опционально)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -1860,8 +1928,6 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
         value: numValue,
         unit: biomarkerUnit || 'ед.',
         measured_at: date,
-        ref_min: refMin ? parseFloat(refMin) : undefined,
-        ref_max: refMax ? parseFloat(refMax) : undefined,
       });
       
       onSuccess();
@@ -1952,34 +2018,18 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
             </div>
           </div>
 
-          {/* Референсы */}
-          <div className="pt-2">
+          {/* Лаборатория (опционально) */}
+          <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
-              Референсные значения <span className="text-gray-400 font-normal">(опционально)</span>
+              Лаборатория <span className="text-gray-400 font-normal">(опционально)</span>
             </label>
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={refMin}
-                  onChange={(e) => setRefMin(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                  className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all text-center placeholder-gray-400"
-                  placeholder="Мин"
-                />
-              </div>
-              <span className="text-gray-300 font-bold">—</span>
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={refMax}
-                  onChange={(e) => setRefMax(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                  className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all text-center placeholder-gray-400"
-                  placeholder="Макс"
-                />
-              </div>
-            </div>
+            <input
+              type="text"
+              value={lab}
+              onChange={(e) => setLab(e.target.value)}
+              className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all placeholder-gray-400"
+              placeholder="Например: Инвитро, КДЛ, Гемотест"
+            />
           </div>
 
           {/* Кнопки */}
