@@ -9,7 +9,7 @@ import {
   SparklesIcon, LogOutIcon, HistoryIcon, LoaderIcon, PlusIcon,
   RulerIcon, GenderMaleIcon, MedicalHistoryIcon, AllergyIcon,
   StethoscopeIcon, DnaIcon, AppleIcon, InfoCircleIcon, HeartPulseIcon,
-  XIcon
+  XIcon, CheckCircleIcon
 } from "../components/Icons";
 import {
   analysesApi, medcardApi, calendarApi, profileApi,
