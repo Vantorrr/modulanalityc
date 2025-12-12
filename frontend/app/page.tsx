@@ -352,7 +352,7 @@ export default function Home() {
                    activeTab === "medcard" ? "Медкарта" :
                    activeTab === "calendar" ? "Календарь" :
                    activeTab === "profile" ? "Профиль" : ""}
-                </h1>
+          </h1>
                 <p className="text-xs text-emerald-600 font-semibold">Медицинский ассистент</p>
               </div>
             </div>
@@ -649,21 +649,22 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
 
   // Определяем временной диапазон данных
   const dataRange = useMemo(() => {
-    if (analyses.length === 0) return { months: 0, hasData: false };
+    if (analyses.length === 0) return { days: 0, months: 0, hasData: false };
     
     const dates = analyses
       .filter(a => a.created_at)
       .map(a => new Date(a.created_at).getTime())
       .sort((a, b) => a - b);
     
-    if (dates.length === 0) return { months: 0, hasData: false };
+    if (dates.length === 0) return { days: 0, months: 0, hasData: false };
     
     const oldest = dates[0];
     const newest = dates[dates.length - 1];
     const diffMs = newest - oldest;
-    const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30);
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30));
     
-    return { months: Math.ceil(diffMonths), hasData: true };
+    return { days: diffDays, months: diffMonths, hasData: true };
   }, [analyses]);
 
   // Собираем все уникальные биомаркеры
@@ -687,12 +688,10 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
   const availablePeriods = useMemo(() => {
     const periods: Array<{ value: '7d' | '14d' | '30d' | '3m' | '6m' | '1y' | 'all', label: string }> = [];
     
-    const days = dataRange.months * 30;
-    
     // Детальные периоды для недавних данных
-    if (days >= 7) periods.push({ value: '7d', label: '7 дн' });
-    if (days >= 14) periods.push({ value: '14d', label: '14 дн' });
-    if (days >= 30) periods.push({ value: '30d', label: '30 дн' });
+    if (dataRange.days >= 7) periods.push({ value: '7d', label: '7 дн' });
+    if (dataRange.days >= 14) periods.push({ value: '14d', label: '14 дн' });
+    if (dataRange.days >= 30) periods.push({ value: '30d', label: '30 дн' });
     
     // Месячные периоды
     if (dataRange.months >= 3) periods.push({ value: '3m', label: '3 мес' });
@@ -702,7 +701,7 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     periods.push({ value: 'all', label: 'Все' });
     
     return periods;
-  }, [dataRange.months]);
+  }, [dataRange.days, dataRange.months]);
 
   // Данные для графика
   const chartData = useMemo(() => {
@@ -1410,8 +1409,8 @@ function AnalysesPage() {
                             {rec.product?.name && (
                               <a 
                                 href={`https://shop.example.com/product/${rec.product.id || 'default'}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                                 className="inline-block mt-1.5 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-600 transition"
                               >
                                 💊 Купить {rec.product.price ? `за ${rec.product.price} ₽` : ''}
@@ -1425,13 +1424,13 @@ function AnalysesPage() {
 
                   <a 
                     href="https://telegra.ph/Consultation-08-16" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                     className="block w-full bg-cyan-500 text-white rounded-lg py-2 text-xs font-semibold text-center hover:bg-cyan-600 transition-colors"
-                  >
+          >
                     👨‍⚕️ Консультация врача
-                  </a>
-                </div>
+          </a>
+        </div>
               )}
             </div>
           );
