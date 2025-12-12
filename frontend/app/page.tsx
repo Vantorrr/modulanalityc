@@ -1112,7 +1112,13 @@ function AnalysesPage() {
 
   const displayAnalyses = analyses.length > 0 ? analyses : demoAnalyses;
 
-  const outOfRangeCount = displayAnalyses.reduce((acc, a: any) => 
+  // Считаем количество АНАЛИЗОВ с отклонениями (не показателей!)
+  const analysesWithIssues = displayAnalyses.filter((a: any) => 
+    Array.isArray(a.biomarkers) && a.biomarkers.some((b: any) => b.status !== 'normal')
+  ).length;
+  
+  // Общее количество показателей вне нормы (для информации)
+  const totalBiomarkersOutOfRange = displayAnalyses.reduce((acc, a: any) => 
     acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter((b: any) => b.status !== 'normal').length : 0), 0
   );
 
@@ -1141,15 +1147,17 @@ function AnalysesPage() {
         />
       </div>
 
-      {outOfRangeCount > 0 && (
+      {analysesWithIssues > 0 && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex gap-3">
           <div className="text-rose-500">
             <AlertCircleIcon size={24} />
           </div>
           <div>
-            <div className="font-bold text-rose-900 text-sm mb-1">Внимание: {outOfRangeCount} показателя вне нормы</div>
+            <div className="font-bold text-rose-900 text-sm mb-1">
+              Внимание: {analysesWithIssues} {analysesWithIssues === 1 ? 'анализ' : 'анализа'} с отклонениями
+            </div>
             <div className="text-xs text-rose-700">
-              Нажмите на анализ для просмотра рекомендаций.
+              {totalBiomarkersOutOfRange} {totalBiomarkersOutOfRange === 1 ? 'показатель' : 'показателей'} вне нормы. Нажмите на анализ для просмотра рекомендаций.
             </div>
           </div>
         </div>
