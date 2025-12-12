@@ -579,6 +579,200 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
 }
 
 // ===== UI Components =====
+
+// Компактный виджет аналитики для страницы Анализов
+function AnalyticsWidget({ analyses }: { analyses: any[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const [selectedBiomarker, setSelectedBiomarker] = useState<string>('');
+  const [period, setPeriod] = useState<'3m' | '6m' | '1y' | 'all'>('all');
+
+  // Собираем все уникальные биомаркеры
+  const allBiomarkers = useMemo(() => {
+    const biomarkerMap = new Map<string, string>();
+    analyses.forEach(a => {
+      if (Array.isArray(a.biomarkers)) {
+        a.biomarkers.forEach((b: any) => {
+          const code = b.biomarker_code || b.code || b.name;
+          const name = b.biomarker_name || b.name || code;
+          if (code && !biomarkerMap.has(code)) {
+            biomarkerMap.set(code, name);
+          }
+        });
+      }
+    });
+    return Array.from(biomarkerMap.entries()).map(([code, name]) => ({ code, name }));
+  }, [analyses]);
+
+  // Данные для графика
+  const chartData = useMemo(() => {
+    if (!selectedBiomarker) return [];
+    
+    const now = new Date();
+    const periodStart = period === '3m' ? new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()) :
+                        period === '6m' ? new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()) :
+                        period === '1y' ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()) :
+                        new Date(0);
+    
+    const data: { date: string; value: number; status: string }[] = [];
+    
+    analyses.forEach(a => {
+      const analysisDate = new Date(a.created_at);
+      if (analysisDate < periodStart) return;
+      
+      if (Array.isArray(a.biomarkers)) {
+        const biomarker = a.biomarkers.find((b: any) => 
+          (b.biomarker_code || b.code || b.name) === selectedBiomarker
+        );
+        if (biomarker) {
+          data.push({
+            date: a.created_at.split('T')[0],
+            value: biomarker.value,
+            status: biomarker.status
+          });
+        }
+      }
+    });
+    
+    return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [analyses, selectedBiomarker, period]);
+
+  const formatShortDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  };
+
+  // Если нет биомаркеров - не показываем виджет
+  if (allBiomarkers.length === 0) return null;
+
+  // Компактный график SVG
+  const renderMiniChart = () => {
+    if (chartData.length === 0) {
+      return <p className="text-xs text-gray-400 text-center py-4">Выберите показатель</p>;
+    }
+    if (chartData.length === 1) {
+      return (
+        <div className="text-center py-4">
+          <span className="text-2xl font-bold text-emerald-600">{chartData[0].value}</span>
+          <span className="text-xs text-gray-400 ml-1">{formatShortDate(chartData[0].date)}</span>
+        </div>
+      );
+    }
+
+    const values = chartData.map(d => d.value);
+    const minVal = Math.min(...values) * 0.9;
+    const maxVal = Math.max(...values) * 1.1;
+    const range = maxVal - minVal || 1;
+    
+    const width = 260;
+    const height = 60;
+    const padding = 10;
+    
+    const points = chartData.map((d, i) => {
+      const x = padding + (i / (chartData.length - 1)) * (width - padding * 2);
+      const y = height - padding - ((d.value - minVal) / range) * (height - padding * 2);
+      return { x, y, ...d };
+    });
+    
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+    return (
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+        <defs>
+          <linearGradient id="miniGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={`${linePath} L ${points[points.length-1].x} ${height} L ${points[0].x} ${height} Z`} fill="url(#miniGradient)" />
+        <path d={linePath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="white" stroke={p.status === 'normal' ? '#10b981' : '#ef4444'} strokeWidth="2" />
+        ))}
+      </svg>
+    );
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      {/* Header - кликабельный для раскрытия */}
+      <button 
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <BarChartIcon size={18} className="text-emerald-500" />
+          <span className="font-bold text-gray-900 text-sm">📊 Динамика показателей</span>
+        </div>
+        <ChevronRightIcon size={18} className={`text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+      </button>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-gray-100">
+          {/* Выбор показателя */}
+          <div className="mt-3 flex gap-2">
+            <select
+              value={selectedBiomarker}
+              onChange={(e) => setSelectedBiomarker(e.target.value)}
+              className="flex-1 p-2 border border-gray-200 rounded-lg text-xs bg-white"
+            >
+              <option value="">Выберите показатель...</option>
+              {allBiomarkers.map(b => (
+                <option key={b.code} value={b.code}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Период */}
+          <div className="flex gap-1 mt-2">
+            {[
+              { value: '3m', label: '3м' },
+              { value: '6m', label: '6м' },
+              { value: '1y', label: 'Год' },
+              { value: 'all', label: 'Всё' },
+            ].map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value as any)}
+                className={`flex-1 py-1 text-[10px] font-medium rounded transition-colors ${
+                  period === p.value 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Мини-график */}
+          <div className="mt-3">
+            {renderMiniChart()}
+          </div>
+
+          {/* Статистика */}
+          {chartData.length > 1 && (
+            <div className="mt-2 flex justify-around text-center border-t border-gray-100 pt-2">
+              <div>
+                <div className="text-sm font-bold text-gray-900">{Math.min(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-[9px] text-gray-400">Мин</div>
+              </div>
+              <div>
+                <div className="text-sm font-bold text-emerald-600">{(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}</div>
+                <div className="text-[9px] text-gray-400">Сред</div>
+              </div>
+              <div>
+                <div className="text-sm font-bold text-gray-900">{Math.max(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-[9px] text-gray-400">Макс</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Toast({ message, type = 'success', onClose }: { message: string, type?: 'success' | 'error', onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
@@ -927,6 +1121,9 @@ function AnalysesPage() {
           </div>
         </div>
       )}
+
+      {/* Компактная аналитика показателей */}
+      <AnalyticsWidget analyses={displayAnalyses} />
 
       <div className="space-y-3">
         {loading ? (
