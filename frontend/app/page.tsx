@@ -1644,19 +1644,6 @@ function CalendarPage() {
   const [repeatOption, setRepeatOption] = useState("once");
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  const openDatePicker = () => {
-    const input = dateInputRef.current;
-    if (input) {
-      if ('showPicker' in input) {
-        (input as any).showPicker();
-      } else {
-        input.focus();
-        input.click();
-      }
-    }
-  };
 
   useEffect(() => {
     calendarApi.getAll()
@@ -1869,24 +1856,19 @@ function CalendarPage() {
               
               {/* Дата и Время в одной строке */}
               <div className="flex items-center justify-between gap-4">
-                {/* Дата */}
-                <div className="flex-1">
+                {/* Дата - input поверх красивой кнопки */}
+                <div className="flex-1 relative">
                   <input
-                    ref={dateInputRef}
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="sr-only"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <button
-                    type="button"
-                    onClick={openDatePicker}
-                    className="w-full bg-white rounded-xl px-4 py-3 text-center border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all cursor-pointer"
-                  >
+                  <div className="bg-white rounded-xl px-4 py-3 text-center border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
                     <span className="font-medium text-gray-900">
                       {selectedDate ? formatDateRussian(selectedDate) : "📅 Выбрать дату"}
                     </span>
-                  </button>
+                  </div>
                 </div>
                 
                 <span className="text-gray-400 font-medium">в</span>
