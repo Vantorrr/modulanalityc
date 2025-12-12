@@ -37,6 +37,9 @@ async def lifespan(app: FastAPI):
     # Create demo user if not exists
     await create_demo_user()
     
+    # HOTFIX: Ensure DB schema is correct (Railway workaround)
+    await ensure_db_schema()
+    
     yield
     
     # Shutdown
@@ -78,6 +81,23 @@ async def create_demo_user():
                 logger.info("Demo user already exists")
     except Exception as e:
         logger.warning(f"Could not create demo user: {e}")
+
+
+async def ensure_db_schema():
+    """Ensure database schema is up to date (HOTFIX for Railway)."""
+    from app.core.database import engine
+    from sqlalchemy import text
+    
+    try:
+        async with engine.begin() as conn:
+            logger.info("🔧 Checking DB schema...")
+            # Try to make analysis_id nullable. This is idempotent in Postgres (mostly) 
+            # or harmless if it fails due to other reasons.
+            await conn.execute(text("ALTER TABLE user_biomarkers ALTER COLUMN analysis_id DROP NOT NULL"))
+            logger.info("✅ HOTFIX APPLIED: user_biomarkers.analysis_id is now nullable")
+    except Exception as e:
+        # It's okay if it fails (e.g. table doesn't exist yet, handled by migrations)
+        logger.warning(f"Schema hotfix note: {e}")
 
 
 # Create FastAPI app
