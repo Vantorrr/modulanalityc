@@ -748,7 +748,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
 
   return (
     <>
-      {uploading && <ProcessingScreen />}
       <button
         onClick={handleClick}
         disabled={uploading}
@@ -1229,9 +1228,6 @@ function BiomarkerTablePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-24">
-      {/* Processing Screen Overlay */}
-      {uploading && <ProcessingScreen />}
-
       {/* Toast */}
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
