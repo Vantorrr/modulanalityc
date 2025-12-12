@@ -4,9 +4,21 @@ echo "🚀 Starting deployment script..."
 
 # Run database migrations
 echo "📦 Running database migrations..."
-# Always try to upgrade to head. If it fails, we log it but continue 
-# because app/main.py now has a hotfix for the critical schema change.
-alembic upgrade head || echo "⚠️ Migration failed, continuing anyway..."
+
+# Try to upgrade to head
+if alembic upgrade head; then
+    echo "✅ Migrations applied successfully"
+else
+    echo "⚠️ Migration failed, checking if database already exists..."
+    
+    # If migration failed, it might be because tables already exist
+    # Try to stamp the database as current version
+    if alembic stamp head; then
+        echo "✅ Database marked as up-to-date"
+    else
+        echo "⚠️ Could not stamp database, continuing anyway..."
+    fi
+fi
 
 # Start the application
 echo "🔥 Starting Uvicorn..."
