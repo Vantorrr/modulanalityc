@@ -552,6 +552,83 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
         </a>
       </div>
       
+      {/* Последние анализы */}
+      {analyses.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Последние анализы</h2>
+            <button 
+              onClick={() => onNavigate('analyses')}
+              className="text-sm text-blue-600 font-semibold hover:text-blue-700"
+            >
+              Все →
+            </button>
+          </div>
+          
+          {analyses.slice(0, 2).map((analysis: any) => {
+            const outOfRangeCount = Array.isArray(analysis.biomarkers) 
+              ? analysis.biomarkers.filter((b: any) => b.status !== 'normal').length 
+              : 0;
+            const totalCount = Array.isArray(analysis.biomarkers) ? analysis.biomarkers.length : 0;
+            
+            return (
+              <button
+                key={analysis.id}
+                onClick={() => onNavigate('analyses')}
+                className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left hover:bg-gray-50 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{analysis.title}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {analysis.analysis_date ? new Date(analysis.analysis_date).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      }) : new Date(analysis.created_at).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long'
+                      })}
+                    </div>
+                  </div>
+                  {outOfRangeCount > 0 ? (
+                    <div className="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      {outOfRangeCount} откл.
+                    </div>
+                  ) : totalCount > 0 ? (
+                    <div className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      ✓ В норме
+                    </div>
+                  ) : null}
+                </div>
+                
+                {Array.isArray(analysis.biomarkers) && analysis.biomarkers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {analysis.biomarkers.slice(0, 3).map((b: any, idx: number) => (
+                      <div 
+                        key={idx}
+                        className={`text-xs px-2 py-1 rounded ${
+                          b.status === 'normal' ? 'bg-green-50 text-green-700' :
+                          b.status === 'low' || b.status === 'high' ? 'bg-orange-50 text-orange-700' :
+                          'bg-red-50 text-red-700'
+                        }`}
+                      >
+                        {b.biomarker_name}: <span className="font-bold">{b.value}</span> {b.unit}
+                      </div>
+                    ))}
+                    {analysis.biomarkers.length > 3 && (
+                      <div className="text-xs text-gray-500 px-2 py-1">
+                        +{analysis.biomarkers.length - 3} ещё
+                      </div>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {latestRec ? (
         <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-5 text-white shadow-lg shadow-indigo-200">
             <div className="flex items-center gap-2 mb-2">
@@ -566,7 +643,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
             Купить за {latestRec.product?.price} ₽
             </button>
         </div>
-      ) : (
+      ) : analyses.length === 0 ? (
         <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-5 text-gray-500">
             <div className="flex items-center gap-2 mb-2">
             <SparklesIcon size={16} />
@@ -574,7 +651,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
             </div>
             <p className="text-sm">Загрузите анализы, чтобы получить персональные рекомендации товаров.</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
