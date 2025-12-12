@@ -918,7 +918,8 @@ function AnalysesPage() {
         ) : displayAnalyses.map((item: any, i) => {
           const isProcessing = item.status === 'pending' || item.status === 'processing';
           const isFailed = item.status === 'failed';
-          const hasIssues = item.biomarkers?.some((b: any) => b.status !== 'normal');
+          const biomarkers = Array.isArray(item.biomarkers) ? item.biomarkers : [];
+          const hasIssues = biomarkers.some((b: any) => b.status !== 'normal');
           
           return (
             <button 
@@ -957,7 +958,7 @@ function AnalysesPage() {
               
               {!isProcessing && !isFailed && (
                 <div className="flex flex-wrap gap-2">
-                  {item.biomarkers?.slice(0, 3).map((b: any, j: number) => (
+                  {biomarkers.slice(0, 3).map((b: any, j: number) => (
                     <span key={j} className={`text-xs px-2 py-1 rounded border ${
                       b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                       b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
@@ -966,7 +967,7 @@ function AnalysesPage() {
                       {b.name || b.biomarker_code || b.code} {b.status === 'low' ? '↓' : b.status === 'high' ? '↑' : ''}
                     </span>
                   ))}
-                  {(!item.biomarkers || item.biomarkers.length === 0) && (
+                  {(biomarkers.length === 0) && (
                     <span className="text-xs text-gray-400 italic">Нет данных о показателях</span>
                   )}
                 </div>
