@@ -413,6 +413,28 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
     acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status !== 'normal').length : 0), 0
   );
 
+  // Рассчитываем реальный индекс здоровья на основе показателей
+  const totalBiomarkers = analyses.reduce((acc, a) => 
+    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.length : 0), 0
+  );
+  const normalBiomarkers = analyses.reduce((acc, a) => 
+    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status === 'normal').length : 0), 0
+  );
+  
+  // Индекс здоровья: процент показателей в норме (если нет данных - 0)
+  const healthIndex = totalBiomarkers > 0 ? Math.round((normalBiomarkers / totalBiomarkers) * 100) : 0;
+  
+  // Текст статуса на основе индекса
+  const healthStatus = healthIndex >= 90 ? 'Отлично' : 
+                       healthIndex >= 75 ? 'Хорошо' : 
+                       healthIndex >= 50 ? 'Средне' : 
+                       healthIndex > 0 ? 'Требует внимания' : 'Нет данных';
+  
+  // Цвет карточки в зависимости от индекса
+  const healthColor = healthIndex >= 75 ? 'bg-emerald-500 shadow-emerald-200' : 
+                      healthIndex >= 50 ? 'bg-amber-500 shadow-amber-200' : 
+                      healthIndex > 0 ? 'bg-rose-500 shadow-rose-200' : 'bg-gray-400 shadow-gray-200';
+
   return (
     <div className="px-4 py-5 space-y-5">
       {/* Banner for unfilled medcard */}
@@ -424,18 +446,20 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
         <p className="text-sm text-gray-500 mb-1">Добрый день,</p>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Александр 👋</h1>
         
-        <div className="bg-emerald-500 rounded-2xl p-5 text-white shadow-lg shadow-emerald-200">
-          <p className="text-emerald-100 text-sm mb-1">Индекс здоровья</p>
+        <div className={`${healthColor} rounded-2xl p-5 text-white shadow-lg transition-all`}>
+          <p className="text-white/80 text-sm mb-1">Индекс здоровья</p>
           <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-3xl font-bold">87</span>
-            <span className="text-emerald-100 text-sm">/ 100</span>
+            <span className="text-3xl font-bold">{healthIndex}</span>
+            <span className="text-white/80 text-sm">/ 100</span>
           </div>
-          <div className="flex justify-between text-xs text-emerald-100 mb-2">
-            <span>Отлично</span>
-            <span>+2.4% за неделю</span>
+          <div className="flex justify-between text-xs text-white/80 mb-2">
+            <span>{healthStatus}</span>
+            {totalBiomarkers > 0 && (
+              <span>{normalBiomarkers} из {totalBiomarkers} в норме</span>
+            )}
           </div>
           <div className="h-2 bg-white/20 rounded-full">
-            <div className="h-full w-[87%] bg-white rounded-full"></div>
+            <div className="h-full bg-white rounded-full transition-all" style={{ width: `${healthIndex}%` }}></div>
           </div>
         </div>
       </div>
