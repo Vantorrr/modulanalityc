@@ -399,7 +399,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
   const totalAnalyses = analyses.length;
   const outOfRangeCount = analyses.reduce((acc, a) => 
-    acc + (a.biomarkers?.filter(b => b.status !== 'normal').length || 0), 0
+    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status !== 'normal').length : 0), 0
   );
 
   return (
@@ -761,7 +761,7 @@ function AnalysesPage() {
   const displayAnalyses = analyses.length > 0 ? analyses : demoAnalyses;
 
   const outOfRangeCount = displayAnalyses.reduce((acc, a: any) => 
-    acc + (a.biomarkers?.filter((b: any) => b.status !== 'normal').length || 0), 0
+    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter((b: any) => b.status !== 'normal').length : 0), 0
   );
 
   // Детальный просмотр анализа
@@ -2118,9 +2118,9 @@ function ProfilePage() {
   // Вычисляем статистику
   const totalAnalyses = analyses.length;
   const normalCount = analyses.reduce((acc, a) => 
-    acc + (a.biomarkers?.filter((b: any) => b.status === 'normal').length || 0), 0
+    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter((b: any) => b.status === 'normal').length : 0), 0
   );
-  const totalBiomarkers = analyses.reduce((acc, a) => acc + (a.biomarkers?.length || 0), 0);
+  const totalBiomarkers = analyses.reduce((acc, a) => acc + (Array.isArray(a.biomarkers) ? a.biomarkers.length : 0), 0);
   const normalPercent = totalBiomarkers > 0 ? Math.round((normalCount / totalBiomarkers) * 100) : 0;
   
   // Вычисляем срок использования раздела
