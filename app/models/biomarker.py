@@ -203,9 +203,11 @@ class UserBiomarker(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,
     )
-    analysis_id: Mapped[int] = mapped_column(
+    analysis_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("analyses.id", ondelete="CASCADE"),
         index=True,
+        nullable=True,
+        comment="NULL for manually added values",
     )
     biomarker_id: Mapped[int] = mapped_column(
         ForeignKey("biomarkers.id", ondelete="RESTRICT"),

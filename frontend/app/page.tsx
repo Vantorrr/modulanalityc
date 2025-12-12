@@ -365,7 +365,7 @@ export default function Home() {
           {/* Content */}
           <main className="flex-1 overflow-y-auto">
             {activeTab === "home" && <HomePage onNavigate={setActiveTab} />}
-            {activeTab === "analyses" && <AnalysesPage />}
+            {activeTab === "analyses" && <BiomarkerTablePage />}
             {activeTab === "medcard" && <MedcardPage />}
             {activeTab === "calendar" && <CalendarPage />}
             {activeTab === "profile" && <ProfilePage />}
@@ -988,6 +988,546 @@ function formatMarkdownText(text: string) {
   }
   
   return <>{elements}</>;
+}
+
+// === BIOMARKER TABLE PAGE ===
+// Таблица анализов (как в health-tracker.ru)
+function BiomarkerTablePage() {
+  const [biomarkers, setBiomarkers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+
+  useEffect(() => {
+    loadBiomarkers();
+  }, [selectedCategory]);
+
+  const loadBiomarkers = async () => {
+    try {
+      setLoading(true);
+      const data = await biomarkersApi.getAll(selectedCategory);
+      setBiomarkers(data.items);
+    } catch (err) {
+      console.error("Failed to load biomarkers", err);
+      setToast({msg: 'Ошибка загрузки данных', type: 'error'});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Группировка по категориям
+  const groupedBiomarkers = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    biomarkers.forEach(b => {
+      const cat = b.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(b);
+    });
+    return groups;
+  }, [biomarkers]);
+
+  const categoryNames: Record<string, string> = {
+    hematology: 'Гематология',
+    biochemistry: 'Биохимия крови',
+    hormones: 'Гормональные исследования',
+    vitamins: 'Витамины и микроэлементы',
+    minerals: 'Минералы',
+    lipids: 'Липидный профиль',
+    liver: 'Печеночные показатели',
+    kidney: 'Почечные показатели',
+    thyroid: 'Щитовидная железа',
+    inflammation: 'Инфекционные маркеры',
+    other: 'Другое',
+  };
+
+  // Открыть детали биомаркера
+  const openBiomarkerDetail = async (code: string) => {
+    try {
+      const data = await biomarkersApi.getDetail(code);
+      setSelectedBiomarker(data);
+    } catch (err) {
+      console.error("Failed to load biomarker details", err);
+      setToast({msg: 'Ошибка загрузки деталей', type: 'error'});
+    }
+  };
+
+  if (selectedBiomarker) {
+    return <BiomarkerDetailPage biomarker={selectedBiomarker} onBack={() => setSelectedBiomarker(null)} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-24">
+      {/* Toast */}
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+      <div className="p-4 space-y-4 max-w-2xl mx-auto">
+        {/* Заголовок */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Таблица анализов</h1>
+            <p className="text-sm text-gray-500">История ваших медицинских показателей</p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"
+          >
+            <span className="text-lg">+</span>
+            Добавить показатель
+          </button>
+        </div>
+
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          </div>
+        )}
+
+        {!loading && biomarkers.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+            <div className="text-5xl mb-4">📊</div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Нет данных</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Загрузите анализ или добавьте показатель вручную
+            </p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
+            >
+              Добавить показатель
+            </button>
+          </div>
+        )}
+
+        {/* Список по категориям */}
+        {!loading && Object.keys(groupedBiomarkers).map(category => (
+          <div key={category} className="bg-white rounded-xl shadow-sm overflow-hidden">
+            {/* Заголовок категории */}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
+              <h2 className="text-white font-semibold">{categoryNames[category] || category}</h2>
+              <span className="text-white text-sm opacity-80">{groupedBiomarkers[category].length} показ.</span>
+            </div>
+
+            {/* Список биомаркеров */}
+            <div className="divide-y divide-gray-100">
+              {groupedBiomarkers[category].map((bio: any) => (
+                <button
+                  key={bio.code}
+                  onClick={() => openBiomarkerDetail(bio.code)}
+                  className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800">{bio.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {bio.unit} • {bio.total_measurements} измерений
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      {bio.last_value !== null && bio.last_value !== undefined ? (
+                        <>
+                          <div className={`text-lg font-bold ${
+                            bio.last_status === 'normal' ? 'text-green-600' :
+                            bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {bio.last_value}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {bio.last_measured_at ? new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                            }) : '—'}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-400">—</div>
+                      )}
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Модалка добавления показателя */}
+      {showAddModal && <AddBiomarkerModal onClose={() => setShowAddModal(false)} onSuccess={() => {
+        setShowAddModal(false);
+        loadBiomarkers();
+      }} />}
+    </div>
+  );
+}
+
+// Детальная страница биомаркера
+function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: () => void }) {
+  const [showAddDateModal, setShowAddDateModal] = useState(false);
+  const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+
+  const deleteValue = async (valueId: number) => {
+    if (!confirm('Удалить это значение?')) return;
+    
+    try {
+      await biomarkersApi.deleteValue(valueId);
+      setToast({msg: 'Значение удалено', type: 'success'});
+      // Перезагрузка данных
+      const updated = await biomarkersApi.getDetail(biomarker.code);
+      biomarker.history = updated.history;
+      biomarker.total_measurements = updated.total_measurements;
+      biomarker.min_value = updated.min_value;
+      biomarker.max_value = updated.max_value;
+      biomarker.avg_value = updated.avg_value;
+    } catch (err) {
+      console.error("Failed to delete value", err);
+      setToast({msg: 'Ошибка удаления', type: 'error'});
+    }
+  };
+
+  // График
+  const chartData = useMemo(() => {
+    const sorted = [...biomarker.history]
+      .filter((h: any) => h.measured_at)
+      .sort((a: any, b: any) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+    return sorted;
+  }, [biomarker.history]);
+
+  const renderChart = () => {
+    if (chartData.length < 2) return null;
+
+    const values = chartData.map((d: any) => d.value);
+    const minVal = Math.min(...values, biomarker.min_value || 0);
+    const maxVal = Math.max(...values, biomarker.max_value || 100);
+    const range = maxVal - minVal || 1;
+    
+    const width = 300;
+    const height = 150;
+    const padding = 30;
+    const chartWidth = width - 2 * padding;
+    const chartHeight = height - 2 * padding;
+
+    const points = chartData.map((d: any, i: number) => {
+      const x = padding + (i / (chartData.length - 1)) * chartWidth;
+      const y = height - padding - ((d.value - minVal) / range) * chartHeight;
+      return `${x},${y}`;
+    }).join(' ');
+
+    return (
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="mx-auto">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => {
+          const y = height - padding - frac * chartHeight;
+          const val = (minVal + frac * range).toFixed(1);
+          return (
+            <g key={i}>
+              <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e0e0e0" strokeWidth="1" />
+              <text x={padding - 5} y={y + 3} textAnchor="end" fontSize="10" fill="#999">{val}</text>
+            </g>
+          );
+        })}
+        {/* Line */}
+        <polyline
+          points={points}
+          fill="none"
+          stroke="#10b981"
+          strokeWidth="2"
+        />
+        {/* Points */}
+        {chartData.map((d: any, i: number) => {
+          const x = padding + (i / (chartData.length - 1)) * chartWidth;
+          const y = height - padding - ((d.value - minVal) / range) * chartHeight;
+          return (
+            <circle key={i} cx={x} cy={y} r="4" fill="#10b981" />
+          );
+        })}
+      </svg>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-24">
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+      <div className="p-4 space-y-4 max-w-2xl mx-auto">
+        {/* Кнопка назад */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-blue-600 font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Назад
+        </button>
+
+        {/* Заголовок */}
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <h1 className="text-xl font-bold text-gray-800">{biomarker.name}</h1>
+          <p className="text-sm text-gray-500 mt-1">{biomarker.unit} • {categoryNames[biomarker.category] || biomarker.category}</p>
+          
+          {/* Статистика */}
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="text-center">
+              <div className="text-xs text-gray-500">Минимум</div>
+              <div className="text-lg font-bold text-blue-600">{biomarker.min_value?.toFixed(1) ?? '—'}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-500">Среднее</div>
+              <div className="text-lg font-bold text-gray-700">{biomarker.avg_value?.toFixed(1) ?? '—'}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-500">Максимум</div>
+              <div className="text-lg font-bold text-red-600">{biomarker.max_value?.toFixed(1) ?? '—'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* График */}
+        {chartData.length >= 2 && (
+          <div className="bg-white rounded-xl shadow-md p-4">
+            <h2 className="text-md font-semibold text-gray-700 mb-3">Динамика</h2>
+            {renderChart()}
+          </div>
+        )}
+
+        {/* История */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 flex items-center justify-between border-b border-gray-200">
+            <h2 className="text-md font-semibold text-gray-700">История значений:</h2>
+            <button
+              onClick={() => setShowAddDateModal(true)}
+              className="text-blue-600 text-sm font-medium flex items-center gap-1"
+            >
+              <span className="text-lg">+</span>
+              Добавить значение
+            </button>
+          </div>
+
+          <div className="divide-y divide-gray-100">
+            {biomarker.history.map((item: any) => (
+              <div key={item.id} className="px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-lg font-bold ${
+                        item.status === 'normal' ? 'text-green-600' :
+                        item.status === 'low' || item.status === 'high' ? 'text-orange-600' :
+                        'text-red-600'
+                      }`}>
+                        {item.value}
+                      </span>
+                      <span className="text-sm text-gray-500">{item.unit}</span>
+                      {item.ref_min && item.ref_max && (
+                        <span className="text-xs text-gray-400">({item.ref_min}–{item.ref_max})</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {item.measured_at ? new Date(item.measured_at).toLocaleDateString('ru-RU', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }) : '—'}
+                      {item.analysis_title && (
+                        <span className="ml-2">• {item.analysis_title}</span>
+                      )}
+                    </div>
+                  </div>
+                  {!item.analysis_id && (
+                    <button
+                      onClick={() => deleteValue(item.id)}
+                      className="text-red-500 hover:text-red-700 ml-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Модалка добавления даты */}
+      {showAddDateModal && (
+        <AddDateModal
+          biomarkerCode={biomarker.code}
+          biomarkerName={biomarker.name}
+          biomarkerUnit={biomarker.unit}
+          onClose={() => setShowAddDateModal(false)}
+          onSuccess={async () => {
+            setShowAddDateModal(false);
+            setToast({msg: 'Значение добавлено', type: 'success'});
+            // Перезагрузка данных
+            const updated = await biomarkersApi.getDetail(biomarker.code);
+            biomarker.history = updated.history;
+            biomarker.total_measurements = updated.total_measurements;
+            biomarker.min_value = updated.min_value;
+            biomarker.max_value = updated.max_value;
+            biomarker.avg_value = updated.avg_value;
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const categoryNames: Record<string, string> = {
+  hematology: 'Гематология',
+  biochemistry: 'Биохимия крови',
+  hormones: 'Гормональные исследования',
+  vitamins: 'Витамины и микроэлементы',
+  minerals: 'Минералы',
+  lipids: 'Липидный профиль',
+  liver: 'Печеночные показатели',
+  kidney: 'Почечные показатели',
+  thyroid: 'Щитовидная железа',
+  inflammation: 'Инфекционные маркеры',
+  other: 'Другое',
+};
+
+// Модалка "Добавить показатель"
+function AddBiomarkerModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
+  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('other');
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <h2 className="text-xl font-bold mb-4">Добавление нового показателя</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Пока эта функция в разработке. Вы можете добавлять значения к существующим показателям.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700"
+        >
+          Закрыть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Модалка "Добавить дату"
+function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
+  const [value, setValue] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [refMin, setRefMin] = useState('');
+  const [refMax, setRefMax] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!value || !date) {
+      alert('Заполните все обязательные поля');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await biomarkersApi.addValue(biomarkerCode, {
+        value: parseFloat(value),
+        unit: biomarkerUnit,
+        measured_at: date,
+        ref_min: refMin ? parseFloat(refMin) : undefined,
+        ref_max: refMax ? parseFloat(refMax) : undefined,
+      });
+      onSuccess();
+    } catch (err) {
+      console.error("Failed to add value", err);
+      alert('Ошибка при добавлении значения');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <h2 className="text-xl font-bold mb-2">Добавить значение</h2>
+        <p className="text-sm text-gray-600 mb-4">{biomarkerName}</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Значение *</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="any"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="0.0"
+                required
+              />
+              <span className="text-gray-600 py-2">{biomarkerUnit}</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Дата измерения *</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Референсные значения (необязательно)</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="any"
+                value={refMin}
+                onChange={(e) => setRefMin(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="Минимум"
+              />
+              <span className="text-gray-600 py-2">—</span>
+              <input
+                type="number"
+                step="any"
+                value={refMax}
+                onChange={(e) => setRefMax(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="Максимум"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50"
+              disabled={loading}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300"
+              disabled={loading}
+            >
+              {loading ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // Страница анализов

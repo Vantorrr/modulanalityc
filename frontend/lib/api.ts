@@ -395,3 +395,86 @@ export const profileApi = {
     });
   },
 };
+
+// Типы для таблицы анализов
+export interface BiomarkerListItem {
+  code: string;
+  name: string;
+  category: string;
+  unit: string;
+  last_value?: number;
+  last_status?: string;
+  last_measured_at?: string;
+  last_ref_min?: number;
+  last_ref_max?: number;
+  total_measurements: number;
+  first_measured_at?: string;
+}
+
+export interface BiomarkerHistoryItem {
+  id: number;
+  value: number;
+  unit: string;
+  status: string;
+  ref_min?: number;
+  ref_max?: number;
+  measured_at?: string;
+  analysis_id?: number;
+  analysis_title?: string;
+  created_at: string;
+}
+
+export interface BiomarkerDetail {
+  code: string;
+  name: string;
+  category: string;
+  description?: string;
+  unit: string;
+  history: BiomarkerHistoryItem[];
+  total_measurements: number;
+  min_value?: number;
+  max_value?: number;
+  avg_value?: number;
+  first_measured_at?: string;
+  last_measured_at?: string;
+}
+
+export interface BiomarkerValueCreate {
+  value: number;
+  unit: string;
+  measured_at: string; // YYYY-MM-DD
+  ref_min?: number;
+  ref_max?: number;
+}
+
+// API для таблицы анализов (биомаркеры)
+export const biomarkersApi = {
+  async getAll(category?: string): Promise<{ items: BiomarkerListItem[], total: number }> {
+    const query = category ? `?category=${category}` : '';
+    return apiFetch(`/biomarkers${query}`);
+  },
+  
+  async getDetail(code: string): Promise<BiomarkerDetail> {
+    return apiFetch(`/biomarkers/${code}`);
+  },
+  
+  async addValue(code: string, data: BiomarkerValueCreate): Promise<any> {
+    return apiFetch(`/biomarkers/${code}/values`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  async updateValue(valueId: number, data: Partial<BiomarkerValueCreate>): Promise<any> {
+    return apiFetch(`/biomarkers/values/${valueId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  
+  async deleteValue(valueId: number): Promise<void> {
+    return apiFetch(`/biomarkers/values/${valueId}`, {
+      method: 'DELETE',
+    });
+  },
+};

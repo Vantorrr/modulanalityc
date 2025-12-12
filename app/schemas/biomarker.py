@@ -1,112 +1,111 @@
 """
-Biomarker schemas for health indicators.
+Biomarker schemas for biomarker table view.
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, PaginatedResponse
 from app.models.biomarker import BiomarkerCategory, BiomarkerStatus
 
 
-class BiomarkerResponse(BaseSchema):
-    """Biomarker dictionary entry."""
+class BiomarkerValueCreate(BaseModel):
+    """Ручное добавление значения биомаркера."""
     
-    id: int
-    code: str
-    name_ru: str
-    name_en: Optional[str] = None
-    category: BiomarkerCategory
-    default_unit: str
-    description: Optional[str] = None
+    value: float = Field(..., description="Значение показателя")
+    unit: str = Field(..., max_length=50, description="Единица измерения")
+    measured_at: date = Field(..., description="Дата измерения")
+    ref_min: Optional[float] = Field(None, description="Минимум референса")
+    ref_max: Optional[float] = Field(None, description="Максимум референса")
 
 
-class BiomarkerReferenceResponse(BaseSchema):
-    """Reference range for a biomarker."""
+class BiomarkerValueUpdate(BaseModel):
+    """Обновление значения биомаркера."""
     
-    id: int
-    gender: Optional[str] = None
-    age_min: Optional[int] = None
-    age_max: Optional[int] = None
+    value: Optional[float] = None
+    unit: Optional[str] = Field(None, max_length=50)
+    measured_at: Optional[date] = None
     ref_min: Optional[float] = None
     ref_max: Optional[float] = None
-    optimal_min: Optional[float] = None
-    optimal_max: Optional[float] = None
-    unit: str
 
 
-class UserBiomarkerResponse(BaseSchema):
-    """User's biomarker value."""
+class BiomarkerHistoryItem(BaseSchema):
+    """История значений биомаркера."""
     
     id: int
-    user_id: int
-    analysis_id: int
-    biomarker_id: int
-    
-    # Biomarker info
-    biomarker_code: str
-    biomarker_name: str
-    biomarker_category: BiomarkerCategory
-    
-    # Value
     value: float
     unit: str
-    status: BiomarkerStatus
+    status: str
     ref_min: Optional[float] = None
     ref_max: Optional[float] = None
-    
-    # Metadata
-    raw_name: Optional[str] = None
     measured_at: Optional[datetime] = None
+    analysis_id: Optional[int] = None  # None if manually added
+    analysis_title: Optional[str] = None
     created_at: datetime
 
 
-class BiomarkerHistoryPoint(BaseModel):
-    """Single point in biomarker history."""
+class BiomarkerListItem(BaseSchema):
+    """Биомаркер в таблице анализов."""
     
-    date: datetime
-    value: float
-    status: BiomarkerStatus
-    analysis_id: int
+    code: str
+    name: str
+    category: BiomarkerCategory
+    unit: str
+    
+    # Последнее значение
+    last_value: Optional[float] = None
+    last_status: Optional[str] = None
+    last_measured_at: Optional[datetime] = None
+    last_ref_min: Optional[float] = None
+    last_ref_max: Optional[float] = None
+    
+    # Статистика
+    total_measurements: int = 0
+    first_measured_at: Optional[datetime] = None
 
 
-class BiomarkerHistoryResponse(BaseSchema):
-    """Biomarker history with trend."""
+class BiomarkerListResponse(BaseSchema):
+    """Список биомаркеров, сгруппированных по категориям."""
     
+    items: List[BiomarkerListItem]
+    total: int
+
+
+class BiomarkerDetailResponse(BaseSchema):
+    """Детальная информация о биомаркере."""
+    
+    code: str
+    name: str
+    category: BiomarkerCategory
+    description: Optional[str] = None
+    unit: str
+    
+    # История значений
+    history: List[BiomarkerHistoryItem]
+    
+    # Статистика
+    total_measurements: int = 0
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    avg_value: Optional[float] = None
+    first_measured_at: Optional[datetime] = None
+    last_measured_at: Optional[datetime] = None
+
+
+class BiomarkerValueResponse(BaseSchema):
+    """Ответ после добавления/обновления значения."""
+    
+    id: int
     biomarker_code: str
     biomarker_name: str
+    value: float
     unit: str
+    status: str
     ref_min: Optional[float] = None
     ref_max: Optional[float] = None
-    
-    # Current value
-    current_value: Optional[float] = None
-    current_status: Optional[BiomarkerStatus] = None
-    current_date: Optional[datetime] = None
-    
-    # Trend
-    trend: str = "stable"  # "improving", "worsening", "stable"
-    change_percent: Optional[float] = None
-    
-    # History
-    history: List[BiomarkerHistoryPoint] = []
-
-
-class BiomarkerSummary(BaseModel):
-    """Summary of all user's biomarkers."""
-    
-    total_biomarkers: int = 0
-    normal_count: int = 0
-    low_count: int = 0
-    high_count: int = 0
-    critical_count: int = 0
-    
-    # Lists of biomarker codes
-    low_biomarkers: List[str] = []
-    high_biomarkers: List[str] = []
-    critical_biomarkers: List[str] = []
-
+    measured_at: Optional[datetime] = None
+    created_at: datetime
 
 

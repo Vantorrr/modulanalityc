@@ -20,9 +20,9 @@ from app.schemas.analysis import (
     AnalysisFileResponse,
 )
 from app.schemas.biomarker import (
-    BiomarkerResponse,
-    UserBiomarkerResponse,
-    BiomarkerHistoryResponse,
+    BiomarkerListItem,
+    BiomarkerDetailResponse,
+    BiomarkerValueCreate,
 )
 from app.schemas.product import (
     ProductResponse,
@@ -50,9 +50,9 @@ __all__ = [
     "AnalysisListResponse",
     "AnalysisFileResponse",
     # Biomarker
-    "BiomarkerResponse",
-    "UserBiomarkerResponse",
-    "BiomarkerHistoryResponse",
+    "BiomarkerListItem",
+    "BiomarkerDetailResponse",
+    "BiomarkerValueCreate",
     # Product
     "ProductResponse",
     "RecommendationResponse",
