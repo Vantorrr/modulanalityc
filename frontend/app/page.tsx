@@ -1627,7 +1627,10 @@ function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [newDate, setNewDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedHour, setSelectedHour] = useState("12");
+  const [selectedMinute, setSelectedMinute] = useState("00");
+  const [repeatOption, setRepeatOption] = useState("once");
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
 
@@ -1639,30 +1642,41 @@ function CalendarPage() {
   }, []);
 
   const handleAddReminder = async () => {
-    if (!newTitle || !newDate) {
+    if (!newTitle || !selectedDate) {
       alert("Заполните название и дату");
       return;
     }
     try {
-      // Parse datetime-local value "2025-12-20T14:30" into date and time
-      const [datePart, timePart] = newDate.split('T');
+      const timeStr = `${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
       
       const reminder = await calendarApi.create({
         title: newTitle,
-        scheduled_date: datePart, // "2025-12-20"
-        scheduled_time: timePart ? `${timePart}:00` : null, // "14:30:00" or null
+        scheduled_date: selectedDate,
+        scheduled_time: timeStr,
         reminder_type: "custom",
         description: "",
-        frequency: "once"
+        frequency: repeatOption
       } as any);
       setReminders(prev => [...prev, reminder]);
       setShowAddForm(false);
       setNewTitle("");
-      setNewDate("");
+      setSelectedDate("");
+      setSelectedHour("12");
+      setSelectedMinute("00");
+      setRepeatOption("once");
     } catch (err) {
       console.error(err);
       alert("Ошибка при создании напоминания");
     }
+  };
+
+  // Форматирование даты как "12 декабря"
+  const formatDateRussian = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr + "T00:00:00");
+    const months = ["января", "февраля", "марта", "апреля", "мая", "июня", 
+                    "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+    return `${date.getDate()} ${months[date.getMonth()]}`;
   };
 
   // Демо данные
@@ -1806,51 +1820,107 @@ function CalendarPage() {
       </div>
 
       {showAddForm ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-          <h3 className="font-bold text-gray-900">Новое напоминание</h3>
-          
-          {/* Название */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Название</label>
-            <input
-              type="text"
-              placeholder="Например: Сдать анализ крови"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-lg">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h3 className="font-bold text-gray-900 text-center">Новое напоминание</h3>
           </div>
           
-          {/* Дата и время */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Дата и время</label>
-            <div className="relative">
+          <div className="p-4 space-y-4">
+            {/* Название */}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Название</label>
               <input
-                type="datetime-local"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                type="text"
+                placeholder="Например: Сдать анализ крови"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
               />
-              {!newDate && (
-                <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-gray-400 text-sm">
-                  📅 Выберите дату и время
+            </div>
+            
+            {/* Время отправки - как в Telegram */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs font-bold text-gray-400 uppercase mb-3">Время отправки</p>
+              
+              {/* Дата и Время в одной строке */}
+              <div className="flex items-center justify-between gap-4">
+                {/* Дата */}
+                <div className="flex-1 relative">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="bg-white rounded-xl px-4 py-3 text-center border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer">
+                    <span className="font-medium text-gray-900">
+                      {selectedDate ? formatDateRussian(selectedDate) : "Выбрать дату"}
+                    </span>
+                  </div>
                 </div>
-              )}
+                
+                <span className="text-gray-400 font-medium">в</span>
+                
+                {/* Время */}
+                <div className="flex items-center gap-1 bg-white rounded-xl px-3 py-2 border border-gray-200">
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={selectedHour}
+                    onChange={(e) => setSelectedHour(e.target.value.slice(0, 2))}
+                    className="w-10 text-center font-bold text-lg text-gray-900 bg-transparent outline-none"
+                    placeholder="12"
+                  />
+                  <span className="text-gray-400 font-bold text-lg">:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={selectedMinute}
+                    onChange={(e) => setSelectedMinute(e.target.value.slice(0, 2).padStart(2, '0'))}
+                    className="w-10 text-center font-bold text-lg text-gray-900 bg-transparent outline-none"
+                    placeholder="00"
+                  />
+                </div>
+              </div>
+              
+              {/* Повторять */}
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-sm text-gray-600">Повторять:</span>
+                <select
+                  value={repeatOption}
+                  onChange={(e) => setRepeatOption(e.target.value)}
+                  className="bg-transparent text-emerald-600 font-medium text-sm border-0 outline-none cursor-pointer"
+                >
+                  <option value="once">Никогда</option>
+                  <option value="daily">Каждый день</option>
+                  <option value="weekly">Каждую неделю</option>
+                  <option value="monthly">Каждый месяц</option>
+                </select>
+              </div>
             </div>
           </div>
           
-          <div className="flex gap-2">
+          {/* Кнопки как в Telegram */}
+          <div className="flex border-t border-gray-200">
             <button 
-              onClick={() => setShowAddForm(false)}
-              className="flex-1 py-2.5 border border-gray-200 rounded-lg font-medium text-gray-600 hover:bg-gray-50"
+              onClick={() => {
+                setShowAddForm(false);
+                setNewTitle("");
+                setSelectedDate("");
+              }}
+              className="flex-1 py-3.5 text-gray-500 font-medium hover:bg-gray-50 transition-colors border-r border-gray-200"
             >
               Отмена
             </button>
             <button 
               onClick={handleAddReminder}
-              className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600"
+              disabled={!newTitle || !selectedDate}
+              className="flex-1 py-3.5 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Сохранить
+              Запланировать
             </button>
           </div>
         </div>
