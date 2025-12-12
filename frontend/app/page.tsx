@@ -1278,9 +1278,22 @@ function BiomarkerTablePage() {
       
       setToast({msg: '✅ Анализ загружен! Идет распознавание...', type: 'success'});
       
-      // Reload data
+      // Reload data сразу
       loadBiomarkers();
       loadAnalyses();
+      
+      // Polling - проверяем статус каждые 5 секунд, пока AI не закончит
+      let pollCount = 0;
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        console.log('[BiomarkerTable] Polling for AI data, attempt:', pollCount);
+        await loadAnalyses();
+        
+        // Останавливаем после 12 попыток (60 секунд)
+        if (pollCount >= 12) {
+          clearInterval(pollInterval);
+        }
+      }, 5000);
       
       // Reset input
       if (fileInputRef.current) {
