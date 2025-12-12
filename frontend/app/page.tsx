@@ -1850,6 +1850,7 @@ function MedcardEvents() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<MedicalDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1989,7 +1990,7 @@ function MedcardEvents() {
             documents.map((doc: any) => (
               <div 
                 key={doc.id} 
-                onClick={() => window.open(medcardApi.getDownloadUrl(doc.id), '_blank')}
+                onClick={() => setSelectedDoc(doc)}
                 className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
               >
                 <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-200 text-gray-500">
@@ -2008,6 +2009,102 @@ function MedcardEvents() {
         </div>
       </div>
       
+      {/* Document viewer modal (Telegram-style) */}
+      {selectedDoc && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => setSelectedDoc(null)}>
+          <div 
+            className="bg-white rounded-t-2xl w-full max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-5 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 text-base">{selectedDoc.title}</h3>
+              <button 
+                onClick={() => setSelectedDoc(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <XIcon size={18} />
+              </button>
+            </div>
+
+            {/* Document info */}
+            <div className="p-4 space-y-4">
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-500">
+                  {getFileIcon(selectedDoc.file_type)}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 text-sm mb-1">{selectedDoc.title}</div>
+                  <div className="text-xs text-gray-400">
+                    {formatSize(selectedDoc.file_size)} • {selectedDoc.file_type.split('/')[1].toUpperCase()}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Загружен: {selectedDoc.created_at ? formatDate(selectedDoc.created_at) : 'неизвестно'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    window.open(medcardApi.getDownloadUrl(selectedDoc.id), '_blank');
+                    setSelectedDoc(null);
+                  }}
+                  className="w-full py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FileTextIcon size={18} />
+                  Открыть документ
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const url = medcardApi.getDownloadUrl(selectedDoc.id);
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: selectedDoc.title,
+                          text: `Документ: ${selectedDoc.title}`,
+                          url: url
+                        });
+                      } catch (err) {
+                        console.log('Share cancelled');
+                      }
+                    } else {
+                      // Fallback: copy link
+                      navigator.clipboard.writeText(url);
+                      alert('✅ Ссылка скопирована в буфер обмена');
+                    }
+                    setSelectedDoc(null);
+                  }}
+                  className="w-full py-3.5 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <UploadIcon size={18} />
+                  Поделиться
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (confirm(`Удалить документ "${selectedDoc.title}"?`)) {
+                      try {
+                        await medcardApi.delete(selectedDoc.id);
+                        setDocuments(prev => prev.filter(d => d.id !== selectedDoc.id));
+                        setSelectedDoc(null);
+                      } catch (err: any) {
+                        alert(`❌ Ошибка удаления: ${err.message || 'Попробуйте позже'}`);
+                      }
+                    }
+                  }}
+                  className="w-full py-3 text-red-600 font-medium hover:bg-red-50 rounded-xl transition-colors"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Success notification */}
       {uploadSuccess && (
         <div className="fixed bottom-20 left-4 right-4 z-50 p-4 bg-emerald-500 text-white rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300">
