@@ -460,7 +460,10 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       <div className="space-y-3">
         <h2 className="text-lg font-bold text-gray-900">Быстрые действия</h2>
         
-        <UploadAnalysisButton onBeforeUpload={checkAndPromptMedcard} />
+        <UploadAnalysisButton 
+          onBeforeUpload={checkAndPromptMedcard} 
+          onSuccess={() => onNavigate("analyses")}
+        />
 
         <button 
           onClick={() => onNavigate("medcard")}
@@ -516,7 +519,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 }
 
 // Кнопка загрузки анализа
-function UploadAnalysisButton({ onBeforeUpload }: { onBeforeUpload?: () => boolean }) {
+function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: () => boolean; onSuccess?: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -535,12 +538,16 @@ function UploadAnalysisButton({ onBeforeUpload }: { onBeforeUpload?: () => boole
     setUploading(true);
     try {
       await analysesApi.upload(file);
-      alert('Анализ загружен! Распознавание запущено.');
+      // Переходим на вкладку Анализы
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error(err);
       alert('Ошибка загрузки');
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
