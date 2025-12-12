@@ -12,7 +12,7 @@ import {
   XIcon, CheckCircleIcon
 } from "../components/Icons";
 import {
-  analysesApi, medcardApi, calendarApi, profileApi,
+  analysesApi, medcardApi, calendarApi, profileApi, biomarkersApi,
   type Analysis, type MedicalDocument, type Reminder, type PatientProfile,
   API_VERSION
 } from "../lib/api";
