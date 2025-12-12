@@ -635,8 +635,8 @@ function AnalysesPage() {
             // Success!
             setProcessingIds(prev => prev.filter(pid => pid !== id));
             
-            // Update item in list with full details (including biomarkers)
-            setAnalyses(prev => prev.map(a => a.id === id ? detail : a));
+            // Reload list silently to ensure data consistency
+            loadAnalyses(true);
             
             setToast({ 
               msg: `✅ Анализ "${detail.title}" готов! Найдено показателей: ${detail.biomarkers?.length || 0}`, 
@@ -645,7 +645,7 @@ function AnalysesPage() {
           } else if (detail.status === 'failed') {
             // Failed
             setProcessingIds(prev => prev.filter(pid => pid !== id));
-            setAnalyses(prev => prev.map(a => a.id === id ? detail : a));
+            loadAnalyses(true); // Also reload on error to show correct status
             setToast({ 
               msg: `❌ Ошибка обработки: ${detail.error_message || 'Не удалось распознать'}`, 
               type: 'error' 
@@ -661,8 +661,8 @@ function AnalysesPage() {
     return () => clearInterval(interval);
   }, [processingIds]);
 
-  const loadAnalyses = () => {
-    setLoading(true);
+  const loadAnalyses = (silent = false) => {
+    if (!silent) setLoading(true);
     analysesApi.getAll()
       .then(data => {
         setAnalyses(data);
@@ -671,7 +671,9 @@ function AnalysesPage() {
         if (pending.length > 0) setProcessingIds(prev => [...new Set([...prev, ...pending])]);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   };
 
   const handleUploadClick = () => {
