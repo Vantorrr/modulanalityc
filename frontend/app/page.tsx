@@ -1209,17 +1209,28 @@ function BiomarkerTablePage() {
   const [biomarkers, setBiomarkers] = useState<any[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [latestAiAnalysis, setLatestAiAnalysis] = useState<any | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
-  const [showAiBlock, setShowAiBlock] = useState(true);
+  const [aiBlockExpanded, setAiBlockExpanded] = useState(true);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadBiomarkers();
     loadAnalyses();
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    try {
+      const data = await productsApi.getAll();
+      setProducts(data || []);
+    } catch (err) {
+      console.error("Failed to load products", err);
+    }
+  };
 
   const loadBiomarkers = async () => {
     try {
@@ -1387,88 +1398,104 @@ function BiomarkerTablePage() {
         {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
 
         {/* AI Комментарии и Рекомендации */}
-        {showAiBlock && (
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🤖</span>
-                <h3 className="font-bold text-gray-800">Заключение ИИ</h3>
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-100 shadow-sm overflow-hidden">
+          {/* Header - всегда видно */}
+          <button 
+            onClick={() => setAiBlockExpanded(!aiBlockExpanded)}
+            className="w-full p-4 flex items-center justify-between hover:bg-purple-100/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🤖</span>
+              <h3 className="font-bold text-gray-800">Заключение ИИ</h3>
+              {!aiBlockExpanded && latestAiAnalysis?.ai_summary && (
+                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">Есть рекомендации</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 text-sm">{aiBlockExpanded ? 'Свернуть' : 'Развернуть'}</span>
+              <ChevronDownIcon className={`w-5 h-5 text-gray-400 transition-transform ${aiBlockExpanded ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+          
+          {/* Content - сворачивается */}
+          {aiBlockExpanded && (
+            <div className="px-4 pb-4 space-y-4">
+              {/* AI Summary */}
+              <div className="bg-white/70 rounded-xl p-4 border border-purple-100">
+                <div className="text-sm text-gray-700 leading-relaxed">
+                  {latestAiAnalysis?.ai_summary ? (
+                    formatMarkdownText(latestAiAnalysis.ai_summary)
+                  ) : biomarkers.length > 0 ? (
+                    <>
+                      <p className="mb-2">📊 <strong>Анализ ваших показателей:</strong></p>
+                      <p className="mb-2">
+                        Обнаружено {biomarkers.filter((b: any) => b.last_status !== 'normal').length} показателей, 
+                        требующих внимания. Рекомендуется консультация с врачом.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-gray-500">Загрузите анализы для получения AI-рекомендаций</p>
+                  )}
+                </div>
               </div>
-              <button 
-                onClick={() => setShowAiBlock(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+              
+              {/* Рекомендуемые продукты из нашей базы */}
+              {products.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">💊</span>
+                    <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
+                    <span className="text-xs text-gray-400">из нашего каталога</span>
+                  </div>
+                  <div className="grid gap-2">
+                    {products.slice(0, 4).map((product: any, i: number) => (
+                      <div key={product.id || i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
+                          i === 0 ? 'bg-gradient-to-br from-orange-400 to-pink-500' :
+                          i === 1 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' :
+                          i === 2 ? 'bg-gradient-to-br from-green-400 to-emerald-500' :
+                          'bg-gradient-to-br from-purple-400 to-indigo-500'
+                        }`}>
+                          {product.name?.charAt(0) || 'V'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 text-sm">{product.name}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">{product.description || 'Витаминный комплекс'}</div>
+                          {product.price && (
+                            <div className="text-xs font-bold text-emerald-600 mt-0.5">{product.price} ₽</div>
+                          )}
+                        </div>
+                        <a 
+                          href={product.purchase_url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm"
+                        >
+                          Купить
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Кнопка обновить */}
+              <button
+                onClick={() => {
+                  loadAnalyses();
+                  loadBiomarkers();
+                  setToast({msg: '🔄 Данные обновлены', type: 'success'});
+                }}
+                className="w-full py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
-                ×
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Обновить анализ
               </button>
             </div>
-            
-            {/* AI Summary - показываем реальные данные или демо */}
-            <div className="bg-white/70 rounded-xl p-4 mb-3 border border-purple-100">
-              <div className="text-sm text-gray-700 leading-relaxed">
-                {latestAiAnalysis?.ai_summary ? (
-                  formatMarkdownText(latestAiAnalysis.ai_summary)
-                ) : biomarkers.length > 0 ? (
-                  <>
-                    <p className="mb-2">📊 <strong>Анализ ваших показателей:</strong></p>
-                    <p className="mb-2">
-                      Обнаружено {biomarkers.filter((b: any) => b.last_status !== 'normal').length} показателей, 
-                      требующих внимания. Рекомендуется консультация с врачом для детальной интерпретации результатов.
-                    </p>
-                    <p className="text-gray-500 text-xs mt-3">
-                      💡 Загрузите новый анализ для получения персональных AI-рекомендаций
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-gray-500">Загрузите анализы для получения AI-рекомендаций</p>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* AI Recommendations - показываем реальные или демо */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">💊</span>
-                <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
-              </div>
-              <div className="grid gap-2">
-                {(latestAiAnalysis?.ai_recommendations?.items?.length > 0 
-                  ? latestAiAnalysis.ai_recommendations.items.slice(0, 3) 
-                  : [
-                      { product: { name: 'Витамин D3' }, reason: 'Для поддержания иммунитета и костей' },
-                      { product: { name: 'Омега-3' }, reason: 'Для сердца и сосудов' },
-                      { product: { name: 'Магний B6' }, reason: 'Для нервной системы и сна' },
-                    ]
-                ).map((rec: any, i: number) => (
-                  <div key={i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm ${
-                      i === 0 ? 'bg-gradient-to-br from-orange-400 to-pink-500' :
-                      i === 1 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' :
-                      'bg-gradient-to-br from-green-400 to-emerald-500'
-                    }`}>
-                      {rec.product?.name?.charAt(0) || 'V'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm truncate">
-                        {rec.product?.name || rec.title || 'Витамин'}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {rec.reason || rec.description || 'Для поддержания здоровья'}
-                      </div>
-                    </div>
-                    <a 
-                      href="#"
-                      className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
-                    >
-                      Купить
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Поиск */}
         {biomarkers.length > 0 && (
