@@ -1891,27 +1891,29 @@ function CalendarPage() {
                 
                 <span className="text-gray-400 font-medium">в</span>
                 
-                {/* Время */}
+                {/* Время - выпадающие списки */}
                 <div className="flex items-center gap-1 bg-white rounded-xl px-3 py-2 border border-gray-200">
-                  <input
-                    type="number"
-                    min="0"
-                    max="23"
+                  <select
                     value={selectedHour}
-                    onChange={(e) => setSelectedHour(e.target.value.slice(0, 2))}
-                    className="w-10 text-center font-bold text-lg text-gray-900 bg-transparent outline-none"
-                    placeholder="12"
-                  />
+                    onChange={(e) => setSelectedHour(e.target.value)}
+                    className="text-center font-bold text-lg text-gray-900 bg-transparent outline-none cursor-pointer appearance-none"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i.toString().padStart(2, '0')}>
+                        {i.toString().padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
                   <span className="text-gray-400 font-bold text-lg">:</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
+                  <select
                     value={selectedMinute}
-                    onChange={(e) => setSelectedMinute(e.target.value.slice(0, 2).padStart(2, '0'))}
-                    className="w-10 text-center font-bold text-lg text-gray-900 bg-transparent outline-none"
-                    placeholder="00"
-                  />
+                    onChange={(e) => setSelectedMinute(e.target.value)}
+                    className="text-center font-bold text-lg text-gray-900 bg-transparent outline-none cursor-pointer appearance-none"
+                  >
+                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               
