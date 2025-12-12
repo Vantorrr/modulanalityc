@@ -645,7 +645,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
 function AnalyticsWidget({ analyses }: { analyses: any[] }) {
   const [expanded, setExpanded] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<string>('');
-  const [period, setPeriod] = useState<'3m' | '6m' | '1y' | 'all'>('all');
+  const [period, setPeriod] = useState<'7d' | '14d' | '30d' | '3m' | '6m' | '1y' | 'all'>('all');
 
   // Определяем временной диапазон данных
   const dataRange = useMemo(() => {
@@ -685,12 +685,21 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
 
   // Умные периоды - показываем только доступные
   const availablePeriods = useMemo(() => {
-    const periods: Array<{ value: '3m' | '6m' | '1y' | 'all', label: string }> = [];
+    const periods: Array<{ value: '7d' | '14d' | '30d' | '3m' | '6m' | '1y' | 'all', label: string }> = [];
     
+    const days = dataRange.months * 30;
+    
+    // Детальные периоды для недавних данных
+    if (days >= 7) periods.push({ value: '7d', label: '7 дн' });
+    if (days >= 14) periods.push({ value: '14d', label: '14 дн' });
+    if (days >= 30) periods.push({ value: '30d', label: '30 дн' });
+    
+    // Месячные периоды
     if (dataRange.months >= 3) periods.push({ value: '3m', label: '3 мес' });
     if (dataRange.months >= 6) periods.push({ value: '6m', label: '6 мес' });
     if (dataRange.months >= 12) periods.push({ value: '1y', label: 'Год' });
-    periods.push({ value: 'all', label: dataRange.months < 3 ? 'Все' : 'Всё время' });
+    
+    periods.push({ value: 'all', label: 'Все' });
     
     return periods;
   }, [dataRange.months]);
@@ -700,10 +709,30 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     if (!selectedBiomarker) return [];
     
     const now = new Date();
-    const periodStart = period === '3m' ? new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()) :
-                        period === '6m' ? new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()) :
-                        period === '1y' ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()) :
-                        new Date(0);
+    let periodStart: Date;
+    
+    switch (period) {
+      case '7d':
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '14d':
+        periodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '3m':
+        periodStart = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        break;
+      case '6m':
+        periodStart = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+        break;
+      case '1y':
+        periodStart = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      default:
+        periodStart = new Date(0);
+    }
     
     const data: { date: string; value: number; status: string }[] = [];
     
@@ -824,12 +853,12 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
 
           {/* Период - только доступные */}
           {availablePeriods.length > 1 && (
-            <div className="flex gap-1 mt-2">
+            <div className="flex flex-wrap gap-1 mt-2">
               {availablePeriods.map(p => (
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`flex-1 py-1 text-[10px] font-medium rounded transition-colors ${
+                  className={`px-3 py-1.5 text-[10px] font-medium rounded transition-colors ${
                     period === p.value 
                       ? 'bg-emerald-500 text-white' 
                       : 'bg-gray-100 text-gray-600'
