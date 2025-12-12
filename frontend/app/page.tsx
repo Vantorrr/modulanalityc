@@ -589,11 +589,31 @@ function AnalysesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<any | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Track IDs that are currently processing
   const [processingIds, setProcessingIds] = useState<number[]>([]);
+
+  const openAnalysisDetails = async (summaryItem: any) => {
+    // Show what we have immediately
+    setSelectedAnalysis(summaryItem);
+    
+    // If it's a completed analysis, fetch full details to get ai_summary and all biomarkers
+    if (summaryItem.status === 'completed' && (!summaryItem.ai_summary || summaryItem.biomarkers?.length <= 5)) {
+      setLoadingDetails(true);
+      try {
+        const fullData = await analysesApi.getById(summaryItem.id);
+        setSelectedAnalysis(fullData);
+      } catch (err) {
+        console.error("Failed to load details", err);
+        setToast({ msg: "Не удалось загрузить полные детали", type: 'error' });
+      } finally {
+        setLoadingDetails(false);
+      }
+    }
+  };
 
   useEffect(() => {
     loadAnalyses();
@@ -759,18 +779,27 @@ function AnalysesPage() {
           <p className="text-sm text-gray-400">{selectedAnalysis.analysis_date || selectedAnalysis.created_at?.split('T')[0]}</p>
         </div>
 
-        {selectedAnalysis.ai_summary && (
+        {loadingDetails && (
+           <div className="flex flex-col items-center justify-center py-8 gap-3">
+             <LoaderIcon size={32} className="text-emerald-500 animate-spin" />
+             <span className="text-sm font-medium text-gray-500">AI формирует полный отчет...</span>
+           </div>
+        )}
+
+        {!loadingDetails && selectedAnalysis.ai_summary && (
           <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100">
             <div className="flex items-center gap-2 mb-2">
               <SparklesIcon size={16} className="text-indigo-600" />
               <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
             </div>
-            <p className="text-sm text-gray-700">{selectedAnalysis.ai_summary}</p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedAnalysis.ai_summary}</p>
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="font-bold text-gray-900 mb-3">Показатели</h2>
+        <div className={`bg-white rounded-xl border border-gray-200 p-4 transition-opacity ${loadingDetails ? 'opacity-50' : 'opacity-100'}`}>
+          <h2 className="font-bold text-gray-900 mb-3">
+            Показатели {loadingDetails ? '(загрузка...)' : `(${selectedAnalysis.biomarkers?.length || 0})`}
+          </h2>
           <div className="space-y-3">
             {selectedAnalysis.biomarkers?.map((b: any, i: number) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
@@ -885,7 +914,7 @@ function AnalysesPage() {
           return (
             <button 
               key={item.id || i} 
-              onClick={() => !isProcessing && setSelectedAnalysis(item)}
+              onClick={() => !isProcessing && openAnalysisDetails(item)}
               disabled={isProcessing}
               className={`w-full text-left bg-white rounded-xl border p-4 transition-all relative overflow-hidden ${
                 isProcessing ? 'border-emerald-200 shadow-sm' : 
