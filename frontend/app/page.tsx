@@ -840,7 +840,6 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
               ))}
             </div>
           )}
-          </div>
 
           {/* Мини-график */}
           <div className="mt-3">
