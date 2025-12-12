@@ -657,6 +657,63 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 }
 
 // Кнопка загрузки анализа
+function ProcessingScreen() {
+  const [messageIndex, setMessageIndex] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % 3);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const messages = [
+    "Загружаем ваш анализ...",
+    "ИИ считывает показатели...",
+    "Формируем отчет..."
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-white/95 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="relative mb-10">
+        {/* Animated glow */}
+        <div className="absolute -inset-4 bg-emerald-100/50 rounded-full animate-ping opacity-75 duration-1000"></div>
+        <div className="absolute -inset-8 bg-emerald-50/30 rounded-full animate-pulse opacity-50 duration-2000"></div>
+        
+        {/* Icon container */}
+        <div className="relative w-28 h-28 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl shadow-2xl shadow-emerald-200 flex items-center justify-center text-white">
+          <svg className="animate-[pulse_3s_ease-in-out_infinite]" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M12 18v-6" />
+            <path d="M8 15l4 4 4-4" />
+          </svg>
+        </div>
+      </div>
+      
+      <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center min-h-[1.5em] transition-all duration-300">
+        {messages[messageIndex]}
+      </h3>
+      
+      <p className="text-gray-500 text-center text-sm font-medium max-w-xs leading-relaxed">
+        Пожалуйста, не закрывайте приложение.<br/>Это может занять до 30 секунд.
+      </p>
+
+      {/* Progress indicators */}
+      <div className="flex gap-2 mt-8">
+        {[0, 1, 2].map(i => (
+          <div 
+            key={i} 
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+              i === messageIndex ? 'bg-emerald-500 scale-125' : 'bg-gray-200'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: () => boolean; onSuccess?: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -691,6 +748,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
 
   return (
     <>
+      {uploading && <ProcessingScreen />}
       <button
         onClick={handleClick}
         disabled={uploading}
