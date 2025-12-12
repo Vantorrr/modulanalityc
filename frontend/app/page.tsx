@@ -1641,7 +1641,6 @@ function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedHour, setSelectedHour] = useState("12");
   const [selectedMinute, setSelectedMinute] = useState("00");
-  const [repeatOption, setRepeatOption] = useState("once");
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
 
@@ -1666,7 +1665,7 @@ function CalendarPage() {
         scheduled_time: timeStr,
         reminder_type: "custom",
         description: "",
-        frequency: repeatOption
+        frequency: "once"
       } as any);
       setReminders(prev => [...prev, reminder]);
       setShowAddForm(false);
@@ -1674,7 +1673,6 @@ function CalendarPage() {
       setSelectedDate("");
       setSelectedHour("12");
       setSelectedMinute("00");
-      setRepeatOption("once");
     } catch (err) {
       console.error(err);
       alert("Ошибка при создании напоминания");
@@ -1897,21 +1895,6 @@ function CalendarPage() {
                     ))}
                   </select>
                 </div>
-              </div>
-              
-              {/* Повторять */}
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm text-gray-600">Повторять:</span>
-                <select
-                  value={repeatOption}
-                  onChange={(e) => setRepeatOption(e.target.value)}
-                  className="bg-transparent text-emerald-600 font-medium text-sm border-0 outline-none cursor-pointer"
-                >
-                  <option value="once">Никогда</option>
-                  <option value="daily">Каждый день</option>
-                  <option value="weekly">Каждую неделю</option>
-                  <option value="monthly">Каждый месяц</option>
-                </select>
               </div>
             </div>
           </div>
