@@ -659,19 +659,33 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 // Кнопка загрузки анализа
 function ProcessingScreen() {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  
+  const messages = [
+    { text: "Загружаем файл...", icon: "📤" },
+    { text: "Анализируем изображение...", icon: "🔍" },
+    { text: "ИИ распознаёт текст...", icon: "🤖" },
+    { text: "Извлекаем показатели...", icon: "📊" },
+    { text: "Проверяем референсы...", icon: "✅" },
+    { text: "Формируем отчёт...", icon: "📝" },
+  ];
   
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % 3);
-    }, 2500);
-    return () => clearInterval(interval);
+    // Меняем сообщение каждые 1.5 секунды
+    const messageInterval = setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % messages.length);
+    }, 1500);
+    
+    // Плавно увеличиваем прогресс
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 2, 95));
+    }, 100);
+    
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(progressInterval);
+    };
   }, []);
-
-  const messages = [
-    "Загружаем ваш анализ...",
-    "ИИ считывает показатели...",
-    "Формируем отчет..."
-  ];
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-white to-teal-50 z-[9999] flex flex-col items-center justify-center p-6">
@@ -679,54 +693,59 @@ function ProcessingScreen() {
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-200 rounded-full opacity-20 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-200 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-cyan-200 rounded-full opacity-15 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-sm">
         {/* Icon with glow */}
-        <div className="relative mb-10">
+        <div className="relative mb-8">
           {/* Glow effect */}
           <div className="absolute inset-0 bg-emerald-400 rounded-3xl blur-2xl opacity-40 animate-pulse"></div>
           
           {/* Icon container */}
-          <div className="relative w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl flex items-center justify-center">
-            <svg className="w-16 h-16 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
+          <div className="relative w-28 h-28 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl flex items-center justify-center">
+            <span className="text-5xl">{messages[messageIndex].icon}</span>
           </div>
         </div>
         
-        {/* Text */}
-        <h3 className="text-3xl font-bold text-gray-800 mb-3 text-center transition-opacity duration-500">
-          {messages[messageIndex]}
-        </h3>
+        {/* Current step */}
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">
+            {messages[messageIndex].text}
+          </h3>
+          <p className="text-gray-500 text-sm">
+            Шаг {messageIndex + 1} из {messages.length}
+          </p>
+        </div>
         
-        <p className="text-gray-600 text-center text-sm max-w-xs leading-relaxed mb-8">
-          Пожалуйста, не закрывайте приложение.<br/>Это может занять до 30 секунд.
-        </p>
-
-        {/* Progress dots */}
-        <div className="flex gap-2">
-          {[0, 1, 2].map(i => (
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        
+        <p className="text-emerald-600 font-bold text-lg mb-6">{progress}%</p>
+        
+        {/* Steps indicators */}
+        <div className="flex gap-2 mb-8">
+          {messages.map((_, i) => (
             <div 
               key={i} 
-              className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                i === messageIndex 
-                  ? 'bg-emerald-500 scale-150' 
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                i <= messageIndex 
+                  ? 'bg-emerald-500' 
                   : 'bg-gray-300'
               }`}
             />
           ))}
         </div>
-
-        {/* Spinning loader */}
-        <div className="mt-8">
-          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-        </div>
+        
+        <p className="text-gray-500 text-center text-xs">
+          ИИ анализирует ваш документ.<br/>Пожалуйста, не закрывайте приложение.
+        </p>
       </div>
     </div>
   );
@@ -754,10 +773,10 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
     try {
       await analysesApi.upload(file);
       
-      // Показываем заставку минимум 3 секунды
+      // Показываем заставку минимум 6 секунд (чтобы пользователь видел все этапы)
       const elapsed = Date.now() - startTime;
-      if (elapsed < 3000) {
-        await new Promise(resolve => setTimeout(resolve, 3000 - elapsed));
+      if (elapsed < 6000) {
+        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
       }
       
       // Переходим на вкладку Анализы
@@ -1203,10 +1222,10 @@ function BiomarkerTablePage() {
       setUploading(true);
       await analysesApi.upload(file);
       
-      // Показываем заставку минимум 3 секунды
+      // Показываем заставку минимум 6 секунд (чтобы пользователь видел все этапы)
       const elapsed = Date.now() - startTime;
-      if (elapsed < 3000) {
-        await new Promise(resolve => setTimeout(resolve, 3000 - elapsed));
+      if (elapsed < 6000) {
+        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
       }
       
       setToast({msg: '✅ Анализ загружен! Идет распознавание...', type: 'success'});
