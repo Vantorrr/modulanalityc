@@ -12,7 +12,7 @@ import {
   XIcon, CheckCircleIcon
 } from "../components/Icons";
 import {
-  analysesApi, medcardApi, calendarApi, profileApi, biomarkersApi,
+  analysesApi, medcardApi, calendarApi, profileApi, biomarkersApi, productsApi,
   type Analysis, type MedicalDocument, type Reminder, type PatientProfile,
   API_VERSION
 } from "../lib/api";
@@ -1413,7 +1413,7 @@ function BiomarkerTablePage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-400 text-sm">{aiBlockExpanded ? 'Свернуть' : 'Развернуть'}</span>
-              <ChevronDownIcon className={`w-5 h-5 text-gray-400 transition-transform ${aiBlockExpanded ? 'rotate-180' : ''}`} />
+              <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${aiBlockExpanded ? 'rotate-90' : ''}`} />
             </div>
           </button>
           
