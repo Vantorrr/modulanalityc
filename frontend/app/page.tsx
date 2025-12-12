@@ -1236,15 +1236,21 @@ function BiomarkerTablePage() {
 
   const loadAnalyses = async () => {
     try {
-      const data = await analysesApi.getAll();
-      const items = data.items || [];
+      const items = await analysesApi.getAll();
+      console.log('[BiomarkerTable] Loaded analyses:', items.length, items);
       setAnalyses(items);
       
       // Загружаем полные данные последнего завершенного анализа для AI-комментариев
       const completed = items.filter((a: any) => a.status === 'completed');
+      console.log('[BiomarkerTable] Completed analyses:', completed.length);
+      
       if (completed.length > 0) {
         const latestId = completed[0].id;
+        console.log('[BiomarkerTable] Loading full data for analysis:', latestId);
         const fullData = await analysesApi.getById(latestId);
+        console.log('[BiomarkerTable] Full data:', fullData);
+        console.log('[BiomarkerTable] AI Summary:', fullData.ai_summary);
+        console.log('[BiomarkerTable] AI Recommendations:', fullData.ai_recommendations);
         setLatestAiAnalysis(fullData);
       }
     } catch (err) {
@@ -1368,7 +1374,7 @@ function BiomarkerTablePage() {
         {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
 
         {/* AI Комментарии и Рекомендации */}
-        {latestAiAnalysis && showAiBlock && (
+        {showAiBlock && (latestAiAnalysis || analyses.length > 0) && (
           <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -1384,7 +1390,7 @@ function BiomarkerTablePage() {
             </div>
             
             {/* AI Summary */}
-            {latestAiAnalysis.ai_summary && (
+            {latestAiAnalysis?.ai_summary && (
               <div className="bg-white/70 rounded-xl p-4 mb-3 border border-purple-100">
                 <div className="text-sm text-gray-700 leading-relaxed">
                   {formatMarkdownText(latestAiAnalysis.ai_summary)}
@@ -1393,7 +1399,7 @@ function BiomarkerTablePage() {
             )}
             
             {/* AI Recommendations */}
-            {latestAiAnalysis.ai_recommendations?.items?.length > 0 && (
+            {latestAiAnalysis?.ai_recommendations?.items?.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">💊</span>
@@ -1430,9 +1436,11 @@ function BiomarkerTablePage() {
             )}
             
             {/* Если нет AI данных */}
-            {!latestAiAnalysis.ai_summary && !latestAiAnalysis.ai_recommendations?.items?.length && (
-              <div className="text-center py-4 text-gray-500 text-sm">
-                ИИ ещё обрабатывает анализ...
+            {(!latestAiAnalysis || (!latestAiAnalysis.ai_summary && !latestAiAnalysis.ai_recommendations?.items?.length)) && (
+              <div className="text-center py-6">
+                <div className="text-4xl mb-3">⏳</div>
+                <div className="text-gray-600 font-medium">ИИ анализирует ваши данные...</div>
+                <div className="text-gray-400 text-sm mt-1">Рекомендации появятся после обработки</div>
               </div>
             )}
           </div>
