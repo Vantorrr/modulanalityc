@@ -300,16 +300,27 @@ export default function Home() {
         <header className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Кнопка "Назад" - показывается только НЕ на главной */}
-              {activeTab !== "home" && (
-                <button 
-                  onClick={() => setActiveTab("home")}
-                  className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
-                  title="На главную"
-                >
-                  <ChevronLeftIcon size={22} />
-                </button>
-              )}
+              {/* Кнопка "Назад" - показывается ВСЕГДА */}
+              <button 
+                onClick={() => {
+                  if (activeTab === "home") {
+                    // На главной - выходим в основное приложение
+                    if (window.parent !== window) {
+                      window.parent.postMessage({ type: 'NAVIGATE_BACK' }, '*');
+                    } else {
+                      // Fallback если не embedded
+                      window.history.back();
+                    }
+                  } else {
+                    // На других вкладках - возвращаемся на главную
+                    setActiveTab("home");
+                  }
+                }}
+                className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                title={activeTab === "home" ? "Выйти в приложение" : "На главную"}
+              >
+                <ChevronLeftIcon size={22} />
+              </button>
               <div>
                 <h1 className="text-base font-bold text-gray-900">
                   {activeTab === "home" ? "Health Tracker" : 
