@@ -1853,20 +1853,15 @@ function CalendarPage() {
               <p className="text-xs font-bold text-gray-400 uppercase mb-3">Время отправки</p>
               
               {/* Дата и Время в одной строке */}
-              <div className="flex items-center justify-between gap-4">
-                {/* Дата - input поверх красивой кнопки */}
-                <div className="flex-1 relative">
+              <div className="flex items-center justify-between gap-3">
+                {/* Дата - нативный input стилизованный */}
+                <div className="flex-1">
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    className="w-full bg-white rounded-xl px-4 py-3 text-center border border-gray-200 hover:border-emerald-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all cursor-pointer font-medium text-gray-900"
                   />
-                  <div className="bg-white rounded-xl px-4 py-3 text-center border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
-                    <span className="font-medium text-gray-900">
-                      {selectedDate ? formatDateRussian(selectedDate) : "📅 Выбрать дату"}
-                    </span>
-                  </div>
                 </div>
                 
                 <span className="text-gray-400 font-medium">в</span>
