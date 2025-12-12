@@ -658,93 +658,124 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
 // Кнопка загрузки анализа
 function ProcessingScreen() {
-  const [messageIndex, setMessageIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
   
-  const messages = [
-    { text: "Загружаем файл...", icon: "📤" },
-    { text: "Анализируем изображение...", icon: "🔍" },
-    { text: "ИИ распознаёт текст...", icon: "🤖" },
-    { text: "Извлекаем показатели...", icon: "📊" },
-    { text: "Проверяем референсы...", icon: "✅" },
-    { text: "Формируем отчёт...", icon: "📝" },
+  const steps = [
+    { text: "Загружаю фото", icon: "📷", duration: 1500 },
+    { text: "Распознаю текст", icon: "🔍", duration: 1500 },
+    { text: "Анализирую показатели", icon: "🧬", duration: 1500 },
+    { text: "Пишу рекомендации", icon: "💊", duration: 1500 },
   ];
   
   useEffect(() => {
-    // Меняем сообщение каждые 1.5 секунды
-    const messageInterval = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % messages.length);
-    }, 1500);
+    const timers: NodeJS.Timeout[] = [];
+    let totalDelay = 0;
     
-    // Плавно увеличиваем прогресс
-    const progressInterval = setInterval(() => {
-      setProgress(prev => Math.min(prev + 2, 95));
-    }, 100);
+    steps.forEach((step, index) => {
+      if (index > 0) {
+        totalDelay += steps[index - 1].duration;
+        const timer = setTimeout(() => {
+          setCurrentStep(index);
+        }, totalDelay);
+        timers.push(timer);
+      }
+    });
     
-    return () => {
-      clearInterval(messageInterval);
-      clearInterval(progressInterval);
-    };
+    return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-white to-teal-50 z-[9999] flex flex-col items-center justify-center p-6">
-      {/* Animated circles background */}
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 z-[9999] flex flex-col items-center justify-center p-6">
+      {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-200 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-200 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-cyan-200 rounded-full opacity-15 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-sm">
-        {/* Icon with glow */}
-        <div className="relative mb-8">
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-emerald-400 rounded-3xl blur-2xl opacity-40 animate-pulse"></div>
-          
-          {/* Icon container */}
-          <div className="relative w-28 h-28 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl flex items-center justify-center">
-            <span className="text-5xl">{messages[messageIndex].icon}</span>
+      <div className="relative z-10 flex flex-col items-center w-full max-w-md">
+        {/* Logo/Icon */}
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-emerald-400 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+          <div className="relative w-24 h-24 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
+            <span className="text-4xl">{steps[currentStep].icon}</span>
           </div>
         </div>
         
-        {/* Current step */}
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">
-            {messages[messageIndex].text}
-          </h3>
-          <p className="text-gray-500 text-sm">
-            Шаг {messageIndex + 1} из {messages.length}
-          </p>
+        {/* Title */}
+        <h2 className="text-white text-2xl font-bold mb-2 text-center">
+          Анализирую ваши данные
+        </h2>
+        <p className="text-gray-400 text-sm mb-10 text-center">
+          Это займёт несколько секунд
+        </p>
+        
+        {/* Steps */}
+        <div className="w-full space-y-4 mb-8">
+          {steps.map((step, index) => {
+            const isCompleted = index < currentStep;
+            const isActive = index === currentStep;
+            
+            return (
+              <div 
+                key={index}
+                className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 ${
+                  isActive 
+                    ? 'bg-white/10 border border-white/20 shadow-lg' 
+                    : isCompleted 
+                      ? 'bg-emerald-500/10 border border-emerald-500/20' 
+                      : 'opacity-40'
+                }`}
+              >
+                {/* Step indicator */}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${
+                  isCompleted 
+                    ? 'bg-emerald-500' 
+                    : isActive 
+                      ? 'bg-gradient-to-br from-purple-500 to-blue-500 animate-pulse' 
+                      : 'bg-white/10'
+                }`}>
+                  {isCompleted ? (
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <span className="text-2xl">{step.icon}</span>
+                  )}
+                </div>
+                
+                {/* Step text */}
+                <div className="flex-1">
+                  <div className={`font-semibold transition-colors ${
+                    isCompleted ? 'text-emerald-400' : isActive ? 'text-white' : 'text-gray-500'
+                  }`}>
+                    {step.text}
+                  </div>
+                  {isActive && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-3 h-3 bg-purple-500 rounded-full animate-ping"></div>
+                      <span className="text-xs text-gray-400">Выполняется...</span>
+                    </div>
+                  )}
+                  {isCompleted && (
+                    <span className="text-xs text-emerald-400">Готово ✓</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
         
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
           <div 
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
+            className="bg-gradient-to-r from-emerald-400 to-cyan-400 h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           />
         </div>
         
-        <p className="text-emerald-600 font-bold text-lg mb-6">{progress}%</p>
-        
-        {/* Steps indicators */}
-        <div className="flex gap-2 mb-8">
-          {messages.map((_, i) => (
-            <div 
-              key={i} 
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i <= messageIndex 
-                  ? 'bg-emerald-500' 
-                  : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
-        
-        <p className="text-gray-500 text-center text-xs">
-          ИИ анализирует ваш документ.<br/>Пожалуйста, не закрывайте приложение.
+        <p className="text-gray-500 text-xs mt-6 text-center">
+          Пожалуйста, не закрывайте приложение
         </p>
       </div>
     </div>
