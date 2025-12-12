@@ -749,8 +749,17 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
     if (!file) return;
     
     setUploading(true);
+    const startTime = Date.now();
+    
     try {
       await analysesApi.upload(file);
+      
+      // Показываем заставку минимум 3 секунды
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 3000) {
+        await new Promise(resolve => setTimeout(resolve, 3000 - elapsed));
+      }
+      
       // Переходим на вкладку Анализы
       if (onSuccess) {
         onSuccess();
@@ -1188,16 +1197,23 @@ function BiomarkerTablePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const startTime = Date.now();
+    
     try {
       setUploading(true);
       await analysesApi.upload(file);
+      
+      // Показываем заставку минимум 3 секунды
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 3000) {
+        await new Promise(resolve => setTimeout(resolve, 3000 - elapsed));
+      }
+      
       setToast({msg: '✅ Анализ загружен! Идет распознавание...', type: 'success'});
       
       // Reload data
-      setTimeout(() => {
-        loadBiomarkers();
-        loadAnalyses();
-      }, 1000);
+      loadBiomarkers();
+      loadAnalyses();
       
       // Reset input
       if (fileInputRef.current) {
