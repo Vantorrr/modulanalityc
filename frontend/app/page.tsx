@@ -1540,8 +1540,6 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 
 // Модалка "Добавить дату"
 function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
-  console.log('[AddDateModal] Mounted with props:', { biomarkerCode, biomarkerName, biomarkerUnit });
-  
   const [value, setValue] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [refMin, setRefMin] = useState('');
@@ -1551,32 +1549,26 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
   
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
-    console.log('[AddDateModal] Value changed:', val);
     setValue(val);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('[AddDateModal] handleSubmit called!', { value, date });
     e.preventDefault();
     setError('');
     
     const numValue = parseFloat(value);
-    console.log('[AddDateModal] Parsed value:', numValue, 'isNaN:', isNaN(numValue));
     
     if (!value || isNaN(numValue)) {
-      console.log('[AddDateModal] Validation failed: empty or NaN value');
       setError('Введите корректное значение');
       return;
     }
     if (!date) {
-      console.log('[AddDateModal] Validation failed: no date');
       setError('Выберите дату');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[AddDateModal] Sending:', { biomarkerCode, value: numValue, unit: biomarkerUnit, date });
       
       await biomarkersApi.addValue(biomarkerCode, {
         value: numValue,
@@ -1586,7 +1578,6 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
         ref_max: refMax ? parseFloat(refMax) : undefined,
       });
       
-      console.log('[AddDateModal] Success!');
       onSuccess();
     } catch (err: any) {
       console.error("[AddDateModal] Failed:", err);
@@ -1596,111 +1587,132 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
     }
   };
 
+  // Helper to format date for display
+  const formattedDate = new Date(date).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <div 
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform transition-all scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Добавить значение</h2>
-            <p className="text-sm text-gray-500">{biomarkerName || biomarkerCode}</p>
+            <h2 className="text-xl font-bold text-gray-900 leading-tight">Добавить значение</h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">{biomarkerName || biomarkerCode}</p>
           </div>
           <button 
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all -mr-2 -mt-2"
           >
-            <span className="text-gray-500 text-lg">×</span>
+            <span className="text-xl leading-none">&times;</span>
           </button>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium flex items-center gap-2">
+            <span>⚠️</span>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Значение */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
               Значение <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center gap-3">
+            <div className="relative flex items-center group">
               <input
                 type="text"
                 inputMode="decimal"
                 value={value}
                 onChange={handleValueChange}
-                className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 text-lg font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-                placeholder="Введите значение"
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3.5 text-lg font-semibold text-gray-900 placeholder-gray-400 outline-none transition-all pr-16"
+                placeholder="0.0"
                 autoFocus
               />
-              <span className="text-gray-500 font-medium min-w-[50px]">{biomarkerUnit || 'ед.'}</span>
+              <span className="absolute right-4 text-gray-400 font-medium pointer-events-none">
+                {biomarkerUnit || 'ед.'}
+              </span>
             </div>
           </div>
 
           {/* Дата */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
               Дата измерения <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-            />
+            <div className="relative group">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+              />
+              <div className="w-full bg-gray-50 border-2 border-transparent group-hover:bg-white group-hover:border-emerald-200 rounded-2xl px-4 py-3.5 flex items-center justify-between text-gray-900 transition-all cursor-pointer">
+                <span className="font-medium text-base">
+                  {formattedDate}
+                </span>
+                <CalendarIcon className="text-gray-400 group-hover:text-emerald-500 transition-colors" size={20} />
+              </div>
+            </div>
           </div>
 
-          {/* Референсы (скрыты по умолчанию) */}
-          <div className="text-sm text-gray-500">
-            Референсные значения (необязательно):
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={refMin}
-                onChange={(e) => setRefMin(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                placeholder="Мин"
-              />
-              <span className="text-gray-400">—</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={refMax}
-                onChange={(e) => setRefMax(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                placeholder="Макс"
-              />
+          {/* Референсы */}
+          <div className="pt-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+              Референсные значения <span className="text-gray-400 font-normal">(опционально)</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={refMin}
+                  onChange={(e) => setRefMin(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                  className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all text-center placeholder-gray-400"
+                  placeholder="Мин"
+                />
+              </div>
+              <span className="text-gray-300 font-bold">—</span>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={refMax}
+                  onChange={(e) => setRefMax(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                  className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all text-center placeholder-gray-400"
+                  placeholder="Макс"
+                />
+              </div>
             </div>
           </div>
 
           {/* Кнопки */}
-          <div className="flex gap-3 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all"
               disabled={loading}
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 transition-colors flex items-center justify-center gap-2"
+              className="py-3.5 rounded-2xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:bg-emerald-300 disabled:scale-100 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
               disabled={loading}
             >
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Сохранение...
-                </>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : 'Сохранить'}
             </button>
           </div>
