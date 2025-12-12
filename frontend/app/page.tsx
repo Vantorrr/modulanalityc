@@ -2378,13 +2378,31 @@ function ProfilePage() {
 // Компонент кликабельной статистики истории
 function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
   const [view, setView] = useState<'stats' | 'list'>('stats');
+  const [scrollTarget, setScrollTarget] = useState<'first' | 'last' | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   
   const sortedAnalyses = [...analyses].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   
-  const firstAnalysis = sortedAnalyses[sortedAnalyses.length - 1];
-  const lastAnalysis = sortedAnalyses[0];
+  const firstAnalysis = sortedAnalyses[sortedAnalyses.length - 1]; // Самый старый
+  const lastAnalysis = sortedAnalyses[0]; // Самый новый
+
+  // Прокрутка к нужному анализу после переключения view
+  useEffect(() => {
+    if (view === 'list' && scrollTarget && listRef.current) {
+      setTimeout(() => {
+        if (scrollTarget === 'first') {
+          // Первый анализ = последний в списке, прокручиваем вниз
+          listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+        } else if (scrollTarget === 'last') {
+          // Последний анализ = первый в списке, прокручиваем вверх
+          listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        setScrollTarget(null);
+      }, 100);
+    }
+  }, [view, scrollTarget]);
   
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -2401,19 +2419,30 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
           <ChevronLeftIcon size={16} />
           Назад к статистике
         </button>
-        {sortedAnalyses.length === 0 ? (
-          <p className="text-gray-400 text-sm">Нет загруженных анализов</p>
-        ) : (
-          sortedAnalyses.map(a => (
-            <div key={a.id} className="bg-white border border-gray-200 rounded-lg p-2 flex items-center gap-2">
-              <ClipboardIcon size={16} className="text-emerald-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{a.title}</p>
-                <p className="text-xs text-gray-400">{formatDate(a.created_at)}</p>
+        <div ref={listRef} className="max-h-64 overflow-y-auto space-y-2 scroll-smooth">
+          {sortedAnalyses.length === 0 ? (
+            <p className="text-gray-400 text-sm">Нет загруженных анализов</p>
+          ) : (
+            sortedAnalyses.map((a, i) => (
+              <div 
+                key={a.id} 
+                id={i === sortedAnalyses.length - 1 ? 'first-analysis-item' : i === 0 ? 'last-analysis-item' : undefined}
+                className={`bg-white border rounded-lg p-2 flex items-center gap-2 ${
+                  (scrollTarget === 'first' && i === sortedAnalyses.length - 1) || 
+                  (scrollTarget === 'last' && i === 0) 
+                    ? 'border-emerald-400 ring-2 ring-emerald-100' 
+                    : 'border-gray-200'
+                }`}
+              >
+                <ClipboardIcon size={16} className="text-emerald-500" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{a.title}</p>
+                  <p className="text-xs text-gray-400">{formatDate(a.created_at)}</p>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
     );
   }
@@ -2430,7 +2459,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       
       {firstAnalysis && (
         <button 
-          onClick={() => setView('list')}
+          onClick={() => { setView('list'); setScrollTarget('first'); }}
           className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
         >
           <span className="text-sm text-gray-600">Первый анализ: </span>
@@ -2440,7 +2469,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       
       {lastAnalysis && (
         <button 
-          onClick={() => setView('list')}
+          onClick={() => { setView('list'); setScrollTarget('last'); }}
           className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
         >
           <span className="text-sm text-gray-600">Последний анализ: </span>
