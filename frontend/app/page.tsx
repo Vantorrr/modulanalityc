@@ -801,6 +801,7 @@ function AnalysesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedBiomarkers, setExpandedBiomarkers] = useState<number | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1143,36 +1144,48 @@ function AnalysesPage() {
                   )}
 
                   {!loadingDetails && biomarkers.length > 0 && (
-                    <div>
-                      <h3 className="text-xs font-bold text-gray-900 mb-2 uppercase">
-                        Все показатели ({biomarkers.length})
-                      </h3>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {biomarkers.map((b: any, j: number) => (
-                          <div key={b.id || j} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                            <div className="flex-1 pr-2">
-                              <div className="font-medium text-xs text-gray-900">{b.name || b.biomarker_name || b.biomarker_code || "Показатель"}</div>
-                              <div className="text-[10px] text-gray-400 mt-0.5">
-                                Норма: {b.ref_min ?? "?"} - {b.ref_max ?? "?"} {b.unit || ""}
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <button 
+                        onClick={() => setExpandedBiomarkers(expandedBiomarkers === item.id ? null : item.id)}
+                        className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition"
+                      >
+                        <h3 className="text-xs font-bold text-gray-900 uppercase">
+                          Показатели ({biomarkers.length})
+                        </h3>
+                        <ChevronRightIcon 
+                          size={14} 
+                          className={`text-gray-400 transition-transform ${expandedBiomarkers === item.id ? "rotate-90" : ""}`} 
+                        />
+                      </button>
+                      
+                      {expandedBiomarkers === item.id && (
+                        <div className="space-y-2 max-h-64 overflow-y-auto p-3 border-t border-gray-200 bg-white">
+                          {biomarkers.map((b: any, j: number) => (
+                            <div key={b.id || j} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                              <div className="flex-1 pr-2">
+                                <div className="font-medium text-xs text-gray-900">{b.name || b.biomarker_name || b.biomarker_code || "Показатель"}</div>
+                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                  Норма: {b.ref_min ?? "?"} - {b.ref_max ?? "?"} {b.unit || ""}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`font-bold text-xs ${
+                                  b.status === 'normal' ? 'text-emerald-600' : 
+                                  b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
+                                }`}>
+                                  {b.value} {b.unit || ""}
+                                </div>
+                                <div className={`text-[10px] ${
+                                  b.status === 'normal' ? 'text-emerald-500' : 
+                                  b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
+                                }`}>
+                                  {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className={`font-bold text-xs ${
-                                b.status === 'normal' ? 'text-emerald-600' : 
-                                b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
-                              }`}>
-                                {b.value} {b.unit || ""}
-                              </div>
-                              <div className={`text-[10px] ${
-                                b.status === 'normal' ? 'text-emerald-500' : 
-                                b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
-                              }`}>
-                                {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
