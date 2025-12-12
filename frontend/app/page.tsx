@@ -1848,17 +1848,16 @@ function MedcardPage() {
 function MedcardEvents() {
   const [documents, setDocuments] = useState<MedicalDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    medcardApi.getAll(filter || undefined)
+    medcardApi.getAll()
       .then(setDocuments)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [filter]);
+  }, []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1882,7 +1881,7 @@ function MedcardEvents() {
     setUploading(true);
     try {
       const title = file.name.replace(/\.[^/.]+$/, '');
-      const newDoc = await medcardApi.upload(file, title, filter || 'other');
+      const newDoc = await medcardApi.upload(file, title, 'other');
       setDocuments(prev => [newDoc, ...prev]);
       
       // Показываем успешное уведомление
@@ -1896,13 +1895,6 @@ function MedcardEvents() {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
-
-  const categories = [
-    { id: "analysis", label: "Анализы", Icon: ClipboardIcon, color: "bg-emerald-50 text-emerald-600" },
-    { id: "consultation", label: "Врачи", Icon: UserIcon, color: "bg-blue-50 text-blue-600" },
-    { id: "examination", label: "Исслед.", Icon: BarChartIcon, color: "bg-violet-50 text-violet-600" },
-    { id: "other", label: "Прочее", Icon: FolderIcon, color: "bg-orange-50 text-orange-600" },
-  ];
 
   const getFileIcon = (type: string) => {
     if (type.includes('pdf')) return <FileTextIcon size={18} />;
@@ -1947,6 +1939,13 @@ function MedcardEvents() {
         />
       </div>
       
+      {/* Описание раздела */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p className="text-sm text-gray-700 leading-relaxed">
+          Сюда Вы можете загружать все анализы, результаты исследований, назначения врачей и прочую важную информацию.
+        </p>
+      </div>
+      
       <div className="relative">
         <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input 
@@ -1954,21 +1953,6 @@ function MedcardEvents() {
           placeholder="Поиск документов..." 
           className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-      </div>
-
-      <div className="grid grid-cols-4 gap-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setFilter(filter === cat.id ? null : cat.id)}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${filter === cat.id ? cat.color : 'bg-gray-100 text-gray-600'}`}>
-              <cat.Icon size={22} />
-            </div>
-            <span className="text-[11px] font-medium text-gray-600">{cat.label}</span>
-          </button>
-        ))}
       </div>
 
       <div className="space-y-3">
