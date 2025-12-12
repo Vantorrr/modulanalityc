@@ -674,41 +674,59 @@ function ProcessingScreen() {
   ];
 
   return (
-    <div className="fixed inset-0 bg-white/95 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="relative mb-10">
-        {/* Animated glow */}
-        <div className="absolute -inset-4 bg-emerald-100/50 rounded-full animate-ping opacity-75 duration-1000"></div>
-        <div className="absolute -inset-8 bg-emerald-50/30 rounded-full animate-pulse opacity-50 duration-2000"></div>
-        
-        {/* Icon container */}
-        <div className="relative w-28 h-28 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl shadow-2xl shadow-emerald-200 flex items-center justify-center text-white">
-          <svg className="animate-[pulse_3s_ease-in-out_infinite]" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-            <path d="M12 18v-6" />
-            <path d="M8 15l4 4 4-4" />
-          </svg>
-        </div>
+    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-white to-teal-50 z-[9999] flex flex-col items-center justify-center p-6">
+      {/* Animated circles background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-200 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
-      
-      <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center min-h-[1.5em] transition-all duration-300">
-        {messages[messageIndex]}
-      </h3>
-      
-      <p className="text-gray-500 text-center text-sm font-medium max-w-xs leading-relaxed">
-        Пожалуйста, не закрывайте приложение.<br/>Это может занять до 30 секунд.
-      </p>
 
-      {/* Progress indicators */}
-      <div className="flex gap-2 mt-8">
-        {[0, 1, 2].map(i => (
-          <div 
-            key={i} 
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
-              i === messageIndex ? 'bg-emerald-500 scale-125' : 'bg-gray-200'
-            }`}
-          />
-        ))}
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Icon with glow */}
+        <div className="relative mb-10">
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-emerald-400 rounded-3xl blur-2xl opacity-40 animate-pulse"></div>
+          
+          {/* Icon container */}
+          <div className="relative w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl flex items-center justify-center">
+            <svg className="w-16 h-16 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Text */}
+        <h3 className="text-3xl font-bold text-gray-800 mb-3 text-center transition-opacity duration-500">
+          {messages[messageIndex]}
+        </h3>
+        
+        <p className="text-gray-600 text-center text-sm max-w-xs leading-relaxed mb-8">
+          Пожалуйста, не закрывайте приложение.<br/>Это может занять до 30 секунд.
+        </p>
+
+        {/* Progress dots */}
+        <div className="flex gap-2">
+          {[0, 1, 2].map(i => (
+            <div 
+              key={i} 
+              className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                i === messageIndex 
+                  ? 'bg-emerald-500 scale-150' 
+                  : 'bg-gray-300'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Spinning loader */}
+        <div className="mt-8">
+          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+        </div>
       </div>
     </div>
   );
@@ -748,6 +766,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
 
   return (
     <>
+      {uploading && <ProcessingScreen />}
       <button
         onClick={handleClick}
         disabled={uploading}
@@ -1228,6 +1247,9 @@ function BiomarkerTablePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-24">
+      {/* Processing Screen */}
+      {uploading && <ProcessingScreen />}
+      
       {/* Toast */}
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
