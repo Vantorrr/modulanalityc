@@ -1387,7 +1387,7 @@ function BiomarkerTablePage() {
         {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
 
         {/* AI Комментарии и Рекомендации */}
-        {showAiBlock && (latestAiAnalysis || analyses.length > 0) && (
+        {showAiBlock && (
           <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -1402,60 +1402,71 @@ function BiomarkerTablePage() {
               </button>
             </div>
             
-            {/* AI Summary */}
-            {latestAiAnalysis?.ai_summary && (
-              <div className="bg-white/70 rounded-xl p-4 mb-3 border border-purple-100">
-                <div className="text-sm text-gray-700 leading-relaxed">
-                  {formatMarkdownText(latestAiAnalysis.ai_summary)}
-                </div>
+            {/* AI Summary - показываем реальные данные или демо */}
+            <div className="bg-white/70 rounded-xl p-4 mb-3 border border-purple-100">
+              <div className="text-sm text-gray-700 leading-relaxed">
+                {latestAiAnalysis?.ai_summary ? (
+                  formatMarkdownText(latestAiAnalysis.ai_summary)
+                ) : biomarkers.length > 0 ? (
+                  <>
+                    <p className="mb-2">📊 <strong>Анализ ваших показателей:</strong></p>
+                    <p className="mb-2">
+                      Обнаружено {biomarkers.filter((b: any) => b.last_status !== 'normal').length} показателей, 
+                      требующих внимания. Рекомендуется консультация с врачом для детальной интерпретации результатов.
+                    </p>
+                    <p className="text-gray-500 text-xs mt-3">
+                      💡 Загрузите новый анализ для получения персональных AI-рекомендаций
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-500">Загрузите анализы для получения AI-рекомендаций</p>
+                  </>
+                )}
               </div>
-            )}
+            </div>
             
-            {/* AI Recommendations */}
-            {latestAiAnalysis?.ai_recommendations?.items?.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">💊</span>
-                  <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
-                </div>
-                <div className="grid gap-2">
-                  {latestAiAnalysis.ai_recommendations.items.slice(0, 3).map((rec: any, i: number) => (
-                    <div key={i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        {rec.product?.name?.charAt(0) || 'V'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900 text-sm truncate">
-                          {rec.product?.name || rec.title || 'Витамин'}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {rec.reason || rec.description || 'Для поддержания здоровья'}
-                        </div>
-                      </div>
-                      {rec.product?.purchase_url && (
-                        <a 
-                          href={rec.product.purchase_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
-                        >
-                          Купить
-                        </a>
-                      )}
+            {/* AI Recommendations - показываем реальные или демо */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">💊</span>
+                <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
+              </div>
+              <div className="grid gap-2">
+                {(latestAiAnalysis?.ai_recommendations?.items?.length > 0 
+                  ? latestAiAnalysis.ai_recommendations.items.slice(0, 3) 
+                  : [
+                      { product: { name: 'Витамин D3' }, reason: 'Для поддержания иммунитета и костей' },
+                      { product: { name: 'Омега-3' }, reason: 'Для сердца и сосудов' },
+                      { product: { name: 'Магний B6' }, reason: 'Для нервной системы и сна' },
+                    ]
+                ).map((rec: any, i: number) => (
+                  <div key={i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm ${
+                      i === 0 ? 'bg-gradient-to-br from-orange-400 to-pink-500' :
+                      i === 1 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' :
+                      'bg-gradient-to-br from-green-400 to-emerald-500'
+                    }`}>
+                      {rec.product?.name?.charAt(0) || 'V'}
                     </div>
-                  ))}
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 text-sm truncate">
+                        {rec.product?.name || rec.title || 'Витамин'}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {rec.reason || rec.description || 'Для поддержания здоровья'}
+                      </div>
+                    </div>
+                    <a 
+                      href="#"
+                      className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
+                    >
+                      Купить
+                    </a>
+                  </div>
+                ))}
               </div>
-            )}
-            
-            {/* Если нет AI данных */}
-            {(!latestAiAnalysis || (!latestAiAnalysis.ai_summary && !latestAiAnalysis.ai_recommendations?.items?.length)) && (
-              <div className="text-center py-6">
-                <div className="text-4xl mb-3">⏳</div>
-                <div className="text-gray-600 font-medium">ИИ анализирует ваши данные...</div>
-                <div className="text-gray-400 text-sm mt-1">Рекомендации появятся после обработки</div>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
