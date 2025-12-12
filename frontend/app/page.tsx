@@ -939,18 +939,24 @@ function AnalysesPage() {
           const biomarkers = Array.isArray(item.biomarkers) ? item.biomarkers : [];
           const hasIssues = biomarkers.some((b: any) => b.status !== 'normal');
           
+          // Проверяем, не завис ли анализ (более 5 минут в pending/processing)
+          const createdAt = new Date(item.created_at).getTime();
+          const now = Date.now();
+          const minutesPending = (now - createdAt) / (1000 * 60);
+          const isStuck = isProcessing && minutesPending > 5;
+          
           return (
             <button 
               key={item.id || i} 
-              onClick={() => !isProcessing && openAnalysisDetails(item)}
-              disabled={isProcessing}
+              onClick={() => !isProcessing && !isStuck && openAnalysisDetails(item)}
+              disabled={isProcessing && !isStuck}
               className={`w-full text-left bg-white rounded-xl border p-4 transition-all relative overflow-hidden ${
-                isProcessing ? 'border-emerald-200 shadow-sm' : 
-                isFailed ? 'border-red-200 opacity-80' :
+                isProcessing && !isStuck ? 'border-emerald-200 shadow-sm' : 
+                isFailed || isStuck ? 'border-red-200 opacity-80' :
                 'border-gray-200 hover:shadow-md hover:border-emerald-200 active:scale-[0.98]'
               }`}
             >
-              {isProcessing && (
+              {isProcessing && !isStuck && (
                 <div className="absolute inset-0 bg-emerald-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
                   <div className="flex flex-col items-center gap-2">
                     <LoaderIcon size={24} className="text-emerald-500" />
@@ -966,15 +972,15 @@ function AnalysesPage() {
                 </div>
                 {!isProcessing && (
                   <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                    isFailed ? "bg-red-100 text-red-600" :
+                    isFailed || isStuck ? "bg-red-100 text-red-600" :
                     !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                   }`}>
-                    {isFailed ? "Ошибка" : !hasIssues ? "Норма" : "Отклонение"}
+                    {isFailed ? "Ошибка" : isStuck ? "Таймаут" : !hasIssues ? "Норма" : "Отклонение"}
                   </div>
                 )}
               </div>
               
-              {!isProcessing && !isFailed && (
+              {!isProcessing && !isFailed && !isStuck && (
                 <div className="flex flex-wrap gap-2">
                   {biomarkers.slice(0, 3).map((b: any, j: number) => (
                     <span key={j} className={`text-xs px-2 py-1 rounded border ${
@@ -991,11 +997,13 @@ function AnalysesPage() {
                 </div>
               )}
               
-              {isFailed && (
-                <p className="text-xs text-red-500 mt-2">{item.error_message || "Сбой обработки"}</p>
+              {(isFailed || isStuck) && (
+                <p className="text-xs text-red-500 mt-2">
+                  {isStuck ? "⏱️ Время ожидания истекло. Попробуйте загрузить снова." : (item.error_message || "Сбой обработки")}
+                </p>
               )}
 
-              {!isProcessing && !isFailed && (
+              {!isProcessing && !isFailed && !isStuck && (
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-xs text-gray-400">Нажмите для подробностей</span>
                   <ChevronRightIcon size={16} className="text-gray-400" />
