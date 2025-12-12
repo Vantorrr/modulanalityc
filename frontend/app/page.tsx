@@ -647,6 +647,25 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
   const [selectedBiomarker, setSelectedBiomarker] = useState<string>('');
   const [period, setPeriod] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
+  // Определяем временной диапазон данных
+  const dataRange = useMemo(() => {
+    if (analyses.length === 0) return { months: 0, hasData: false };
+    
+    const dates = analyses
+      .filter(a => a.created_at)
+      .map(a => new Date(a.created_at).getTime())
+      .sort((a, b) => a - b);
+    
+    if (dates.length === 0) return { months: 0, hasData: false };
+    
+    const oldest = dates[0];
+    const newest = dates[dates.length - 1];
+    const diffMs = newest - oldest;
+    const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30);
+    
+    return { months: Math.ceil(diffMonths), hasData: true };
+  }, [analyses]);
+
   // Собираем все уникальные биомаркеры
   const allBiomarkers = useMemo(() => {
     const biomarkerMap = new Map<string, string>();
@@ -663,6 +682,18 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     });
     return Array.from(biomarkerMap.entries()).map(([code, name]) => ({ code, name }));
   }, [analyses]);
+
+  // Умные периоды - показываем только доступные
+  const availablePeriods = useMemo(() => {
+    const periods: Array<{ value: '3m' | '6m' | '1y' | 'all', label: string }> = [];
+    
+    if (dataRange.months >= 3) periods.push({ value: '3m', label: '3 мес' });
+    if (dataRange.months >= 6) periods.push({ value: '6m', label: '6 мес' });
+    if (dataRange.months >= 12) periods.push({ value: '1y', label: 'Год' });
+    periods.push({ value: 'all', label: dataRange.months < 3 ? 'Все' : 'Всё время' });
+    
+    return periods;
+  }, [dataRange.months]);
 
   // Данные для графика
   const chartData = useMemo(() => {
@@ -770,8 +801,15 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
       {/* Expanded content */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-gray-100">
+          {/* Описание */}
+          <div className="mt-3 mb-3 p-2 bg-blue-50 border border-blue-100 rounded-lg">
+            <p className="text-[10px] text-gray-600 leading-relaxed">
+              Отслеживайте динамику выбранного показателя: как менялся уровень гемоглобина, витамина D и других биомаркеров во времени
+            </p>
+          </div>
+
           {/* Выбор показателя */}
-          <div className="mt-3 flex gap-2">
+          <div className="flex gap-2">
             <select
               value={selectedBiomarker}
               onChange={(e) => setSelectedBiomarker(e.target.value)}
@@ -784,26 +822,24 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
             </select>
           </div>
 
-          {/* Период */}
-          <div className="flex gap-1 mt-2">
-            {[
-              { value: '3m', label: '3м' },
-              { value: '6m', label: '6м' },
-              { value: '1y', label: 'Год' },
-              { value: 'all', label: 'Всё' },
-            ].map(p => (
-              <button
-                key={p.value}
-                onClick={() => setPeriod(p.value as any)}
-                className={`flex-1 py-1 text-[10px] font-medium rounded transition-colors ${
-                  period === p.value 
-                    ? 'bg-emerald-500 text-white' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+          {/* Период - только доступные */}
+          {availablePeriods.length > 1 && (
+            <div className="flex gap-1 mt-2">
+              {availablePeriods.map(p => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`flex-1 py-1 text-[10px] font-medium rounded transition-colors ${
+                    period === p.value 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
           </div>
 
           {/* Мини-график */}
