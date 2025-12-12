@@ -794,7 +794,11 @@ function AnalysesPage() {
               <SparklesIcon size={16} className="text-indigo-600" />
               <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
             </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedAnalysis.ai_summary}</p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {typeof selectedAnalysis.ai_summary === 'string' 
+                ? selectedAnalysis.ai_summary 
+                : "Отчет сформирован"}
+            </p>
           </div>
         )}
 
@@ -803,12 +807,12 @@ function AnalysesPage() {
             Показатели {loadingDetails ? '(загрузка...)' : `(${selectedAnalysis.biomarkers?.length || 0})`}
           </h2>
           <div className="space-y-3">
-            {selectedAnalysis.biomarkers?.map((b: any, i: number) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+            {Array.isArray(selectedAnalysis.biomarkers) && selectedAnalysis.biomarkers.map((b: any, i: number) => (
+              <div key={b.id || i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                 <div>
-                  <div className="font-medium text-sm text-gray-900">{b.name}</div>
+                  <div className="font-medium text-sm text-gray-900">{b.name || b.biomarker_name || b.biomarker_code || "Показатель"}</div>
                   <div className="text-xs text-gray-400">
-                    Норма: {b.ref_min} - {b.ref_max} {b.unit}
+                    Норма: {b.ref_min ?? "?"} - {b.ref_max ?? "?"} {b.unit || ""}
                   </div>
                 </div>
                 <div className="text-right">
@@ -816,7 +820,7 @@ function AnalysesPage() {
                     b.status === 'normal' ? 'text-emerald-600' : 
                     b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
                   }`}>
-                    {b.value} {b.unit}
+                    {b.value} {b.unit || ""}
                   </div>
                   <div className={`text-xs ${
                     b.status === 'normal' ? 'text-emerald-500' : 
@@ -827,6 +831,9 @@ function AnalysesPage() {
                 </div>
               </div>
             ))}
+            {(!selectedAnalysis.biomarkers || selectedAnalysis.biomarkers.length === 0) && !loadingDetails && (
+               <p className="text-sm text-gray-400 italic">Показатели не найдены или не распознаны</p>
+            )}
           </div>
         </div>
 
