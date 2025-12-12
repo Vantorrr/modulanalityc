@@ -993,13 +993,18 @@ function formatMarkdownText(text: string) {
 // === BIOMARKER TABLE PAGE ===
 // Таблица анализов (как в health-tracker.ru)
 function BiomarkerTablePage() {
+  const { checkAndPromptMedcard } = useMedcard();
   const [biomarkers, setBiomarkers] = useState<any[]>([]);
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadBiomarkers();
+    loadAnalyses();
   }, []);
 
   const loadBiomarkers = async () => {
@@ -1012,6 +1017,44 @@ function BiomarkerTablePage() {
       setToast({msg: 'Ошибка загрузки данных', type: 'error'});
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnalyses = async () => {
+    try {
+      const data = await analysesApi.getAll();
+      setAnalyses(data.items || []);
+    } catch (err) {
+      console.error("Failed to load analyses", err);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!checkAndPromptMedcard()) return;
+    
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      await analysesApi.upload(file);
+      setToast({msg: '✅ Анализ загружен! Идет распознавание...', type: 'success'});
+      
+      // Reload data
+      setTimeout(() => {
+        loadBiomarkers();
+        loadAnalyses();
+      }, 1000);
+      
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err: any) {
+      console.error("Upload failed", err);
+      setToast({msg: `❌ ${err?.message || 'Ошибка загрузки'}`, type: 'error'});
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -1048,11 +1091,41 @@ function BiomarkerTablePage() {
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {/* Заголовок */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Таблица анализов</h1>
-          <p className="text-sm text-gray-500 mt-1">История ваших медицинских показателей</p>
+        {/* Заголовок и кнопка загрузки */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Таблица анализов</h1>
+            <p className="text-sm text-gray-500 mt-1">История ваших медицинских показателей</p>
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-300 flex items-center gap-2 shadow-md"
+          >
+            {uploading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Загрузка...</span>
+              </>
+            ) : (
+              <>
+                <UploadIcon className="w-5 h-5" />
+                <span>Загрузить</span>
+              </>
+            )}
+          </button>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        {/* Аналитика */}
+        {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
 
         {/* Поиск */}
         {biomarkers.length > 0 && (
