@@ -433,9 +433,16 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   }, []);
 
   const totalAnalyses = analyses.length;
-  const outOfRangeCount = analyses.reduce((acc, a) => 
-    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status !== 'normal').length : 0), 0
-  );
+  
+  // Считаем количество АНАЛИЗОВ с отклонениями (а не количество показателей!)
+  const analysesWithIssues = analyses.filter(a => 
+    Array.isArray(a.biomarkers) && a.biomarkers.some(b => b.status !== 'normal')
+  ).length;
+  
+  // Количество анализов где все в норме
+  const analysesAllNormal = analyses.filter(a => 
+    Array.isArray(a.biomarkers) && a.biomarkers.length > 0 && a.biomarkers.every(b => b.status === 'normal')
+  ).length;
 
   // Рассчитываем реальный индекс здоровья на основе показателей
   const totalBiomarkers = analyses.reduce((acc, a) => 
@@ -489,20 +496,26 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <button 
+          onClick={() => onNavigate("analyses")}
+          className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-left hover:shadow-md hover:border-blue-300 transition-all active:scale-[0.98]"
+        >
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-2">
             <DropletIcon size={22} />
           </div>
           <div className="text-2xl font-bold text-gray-900">{totalAnalyses}</div>
           <div className="text-xs text-gray-500 mt-1">Загружено анализов</div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        </button>
+        <button 
+          onClick={() => onNavigate("analyses")}
+          className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-left hover:shadow-md hover:border-rose-300 transition-all active:scale-[0.98]"
+        >
           <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center mb-2">
             <AlertCircleIcon size={22} />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{outOfRangeCount}</div>
-          <div className="text-xs text-gray-500 mt-1">Вне нормы</div>
-        </div>
+          <div className="text-2xl font-bold text-gray-900">{analysesWithIssues}</div>
+          <div className="text-xs text-gray-500 mt-1">Анализов с отклонениями</div>
+        </button>
       </div>
 
       <div className="space-y-3">
