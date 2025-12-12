@@ -794,6 +794,78 @@ function Toast({ message, type = 'success', onClose }: { message: string, type?:
   );
 }
 
+// Функция для форматирования markdown текста в JSX
+function formatMarkdownText(text: string) {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  const elements: JSX.Element[] = [];
+  let key = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    
+    // Пропускаем пустые строки
+    if (!line.trim()) {
+      elements.push(<br key={key++} />);
+      continue;
+    }
+    
+    // Обрабатываем заголовки (###)
+    if (line.startsWith('###')) {
+      const headerText = line.replace(/^###\s*/, '').replace(/⚠️|💡|📊|🔬/g, '').trim();
+      elements.push(
+        <div key={key++} className="font-bold text-sm text-gray-900 mt-3 mb-1">
+          {headerText}
+        </div>
+      );
+      continue;
+    }
+    
+    // Обрабатываем элементы списка с ####
+    if (line.startsWith('####')) {
+      line = line.replace(/^####\s*/, '');
+    }
+    
+    // Обрабатываем жирный текст (**)
+    const parts: (string | JSX.Element)[] = [];
+    let currentText = line;
+    let partKey = 0;
+    
+    const boldRegex = /\*\*([^*]+)\*\*/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = boldRegex.exec(currentText)) !== null) {
+      // Добавляем текст до жирного
+      if (match.index > lastIndex) {
+        parts.push(currentText.substring(lastIndex, match.index));
+      }
+      // Добавляем жирный текст
+      parts.push(<strong key={`bold-${key}-${partKey++}`} className="font-bold text-gray-900">{match[1]}</strong>);
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Добавляем оставшийся текст
+    if (lastIndex < currentText.length) {
+      parts.push(currentText.substring(lastIndex));
+    }
+    
+    // Если нет жирного текста, просто используем исходную строку
+    if (parts.length === 0) {
+      parts.push(currentText);
+    }
+    
+    elements.push(
+      <div key={key++} className="leading-relaxed">
+        {parts}
+      </div>
+    );
+  }
+  
+  return <>{elements}</>;
+}
+
 // Страница анализов
 function AnalysesPage() {
   const { isProfileFilled, checkAndPromptMedcard } = useMedcard();
@@ -1137,9 +1209,9 @@ function AnalysesPage() {
                         <SparklesIcon size={14} className="text-indigo-600" />
                         <span className="text-xs font-bold text-indigo-600 uppercase">AI Резюме</span>
                       </div>
-                      <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {typeof item.ai_summary === 'string' ? item.ai_summary : "Отчет сформирован"}
-                      </p>
+                      <div className="text-xs text-gray-700">
+                        {typeof item.ai_summary === 'string' ? formatMarkdownText(item.ai_summary) : "Отчет сформирован"}
+                      </div>
                     </div>
                   )}
 
