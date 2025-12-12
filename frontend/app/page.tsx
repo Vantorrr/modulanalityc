@@ -1826,6 +1826,7 @@ function MedcardEvents() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1839,15 +1840,36 @@ function MedcardEvents() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Проверка типа файла
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('⚠️ Пожалуйста, загрузите файл в формате PDF, JPG или PNG');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    
+    // Проверка размера (макс 50 МБ)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('⚠️ Размер файла не должен превышать 50 МБ');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    
     setUploading(true);
     try {
       const title = file.name.replace(/\.[^/.]+$/, '');
-      const newDoc = await medcardApi.upload(file, title, 'other');
+      const newDoc = await medcardApi.upload(file, title, filter || 'other');
       setDocuments(prev => [newDoc, ...prev]);
-    } catch (err) {
+      
+      // Показываем успешное уведомление
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
+    } catch (err: any) {
       console.error(err);
+      alert(`❌ Ошибка загрузки: ${err.message || 'Попробуйте позже'}`);
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -1858,14 +1880,6 @@ function MedcardEvents() {
     { id: "other", label: "Прочее", Icon: FolderIcon, color: "bg-orange-50 text-orange-600" },
   ];
 
-  // Демо данные
-  const displayDocuments = documents.length > 0 ? documents : [
-    { id: 1, title: "УЗИ щитовидной железы", created_at: "Сегодня", file_type: "application/pdf", file_size: 2400000 },
-    { id: 2, title: "Заключение эндокринолога", created_at: "Вчера", file_type: "application/pdf", file_size: 1100000 },
-    { id: 3, title: "Биохимия крови", created_at: "20 ноя", file_type: "image/jpeg", file_size: 850000 },
-    { id: 4, title: "МРТ головного мозга", created_at: "15 окт", file_type: "application/zip", file_size: 45000000 },
-  ] as any[];
-
   const getFileIcon = (type: string) => {
     if (type.includes('pdf')) return <FileTextIcon size={18} />;
     if (type.includes('image')) return <ImageIcon size={18} />;
@@ -1875,6 +1889,19 @@ function MedcardEvents() {
   const formatSize = (bytes: number) => {
     if (bytes > 1000000) return `${(bytes / 1000000).toFixed(1)} MB`;
     return `${(bytes / 1000).toFixed(0)} KB`;
+  };
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Сегодня';
+    if (diffDays === 1) return 'Вчера';
+    
+    const day = date.getDate();
+    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    return `${day} ${months[date.getMonth()]}`;
   };
 
   return (
@@ -1923,7 +1950,9 @@ function MedcardEvents() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">Недавние</h2>
-          <button className="text-sm font-semibold text-emerald-600">Все</button>
+          {documents.length > 0 && (
+            <button className="text-sm font-semibold text-emerald-600">Все</button>
+          )}
         </div>
         
         <div className="space-y-2">
@@ -1931,32 +1960,55 @@ function MedcardEvents() {
             <div className="flex justify-center py-8">
               <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
             </div>
-          ) : displayDocuments.map((doc: any) => (
-            <div 
-              key={doc.id} 
-              onClick={() => {
-                if (doc.id && typeof doc.id === 'number') {
-                  window.open(medcardApi.getDownloadUrl(doc.id), '_blank');
-                } else {
-                  alert(`📄 ${doc.title}\n\nДокумент из демо-данных. Загрузите реальный документ для просмотра.`);
-                }
-              }}
-              className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
-            >
-              <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-200 text-gray-500">
-                {getFileIcon(doc.file_type)}
+          ) : documents.length === 0 ? (
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 text-center border-2 border-dashed border-gray-300">
+              <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-sm">
+                <FolderIcon size={36} className="text-gray-400" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-gray-900 text-sm truncate">{doc.title}</div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {doc.document_date || doc.created_at?.split?.('T')?.[0] || doc.created_at} • {formatSize(doc.file_size)}
-                </div>
-              </div>
-              <ChevronRightIcon size={18} className="text-gray-300" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Документов пока нет</h3>
+              <p className="text-sm text-gray-500 mb-4 max-w-xs mx-auto">
+                Загрузите заключения врачей, результаты обследований и другие медицинские документы
+              </p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white font-bold text-sm rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+              >
+                <UploadIcon size={18} />
+                Загрузить документ
+              </button>
             </div>
-          ))}
+          ) : (
+            documents.map((doc: any) => (
+              <div 
+                key={doc.id} 
+                onClick={() => window.open(medcardApi.getDownloadUrl(doc.id), '_blank')}
+                className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-200 text-gray-500">
+                  {getFileIcon(doc.file_type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900 text-sm truncate">{doc.title}</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {doc.document_date ? formatDate(doc.document_date) : (doc.created_at ? formatDate(doc.created_at) : 'Дата неизвестна')} • {formatSize(doc.file_size)}
+                  </div>
+                </div>
+                <ChevronRightIcon size={18} className="text-gray-300" />
+              </div>
+            ))
+          )}
         </div>
       </div>
+      
+      {/* Success notification */}
+      {uploadSuccess && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 p-4 bg-emerald-500 text-white rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <CheckCircleIcon size={18} />
+          </div>
+          <div className="flex-1 font-medium text-sm">✅ Документ успешно загружен!</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2995,3 +3047,4 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
     </div>
   );
 }
+
