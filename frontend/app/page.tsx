@@ -1177,9 +1177,11 @@ function BiomarkerTablePage() {
   const { checkAndPromptMedcard } = useMedcard();
   const [biomarkers, setBiomarkers] = useState<any[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [latestAiAnalysis, setLatestAiAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
+  const [showAiBlock, setShowAiBlock] = useState(true);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1204,7 +1206,16 @@ function BiomarkerTablePage() {
   const loadAnalyses = async () => {
     try {
       const data = await analysesApi.getAll();
-      setAnalyses(data.items || []);
+      const items = data.items || [];
+      setAnalyses(items);
+      
+      // Загружаем полные данные последнего завершенного анализа для AI-комментариев
+      const completed = items.filter((a: any) => a.status === 'completed');
+      if (completed.length > 0) {
+        const latestId = completed[0].id;
+        const fullData = await analysesApi.getById(latestId);
+        setLatestAiAnalysis(fullData);
+      }
     } catch (err) {
       console.error("Failed to load analyses", err);
     }
@@ -1324,6 +1335,77 @@ function BiomarkerTablePage() {
 
         {/* Аналитика */}
         {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
+
+        {/* AI Комментарии и Рекомендации */}
+        {latestAiAnalysis && showAiBlock && (
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🤖</span>
+                <h3 className="font-bold text-gray-800">Заключение ИИ</h3>
+              </div>
+              <button 
+                onClick={() => setShowAiBlock(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* AI Summary */}
+            {latestAiAnalysis.ai_summary && (
+              <div className="bg-white/70 rounded-xl p-4 mb-3 border border-purple-100">
+                <div className="text-sm text-gray-700 leading-relaxed">
+                  {formatMarkdownText(latestAiAnalysis.ai_summary)}
+                </div>
+              </div>
+            )}
+            
+            {/* AI Recommendations */}
+            {latestAiAnalysis.ai_recommendations?.items?.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">💊</span>
+                  <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
+                </div>
+                <div className="grid gap-2">
+                  {latestAiAnalysis.ai_recommendations.items.slice(0, 3).map((rec: any, i: number) => (
+                    <div key={i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        {rec.product?.name?.charAt(0) || 'V'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 text-sm truncate">
+                          {rec.product?.name || rec.title || 'Витамин'}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {rec.reason || rec.description || 'Для поддержания здоровья'}
+                        </div>
+                      </div>
+                      {rec.product?.purchase_url && (
+                        <a 
+                          href={rec.product.purchase_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-colors"
+                        >
+                          Купить
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Если нет AI данных */}
+            {!latestAiAnalysis.ai_summary && !latestAiAnalysis.ai_recommendations?.items?.length && (
+              <div className="text-center py-4 text-gray-500 text-sm">
+                ИИ ещё обрабатывает анализ...
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Поиск */}
         {biomarkers.length > 0 && (
