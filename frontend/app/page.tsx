@@ -1149,12 +1149,19 @@ function BiomarkerTablePage() {
 
   // Открыть детали биомаркера
   const openBiomarkerDetail = async (code: string) => {
+    console.log('[BiomarkerTable] Opening detail for code:', code);
     try {
       const data = await biomarkersApi.getDetail(code);
-      setSelectedBiomarker(data);
-    } catch (err) {
+      console.log('[BiomarkerTable] Got detail data:', JSON.stringify(data));
+      if (data && data.code) {
+        setSelectedBiomarker(data);
+      } else {
+        console.error('[BiomarkerTable] Invalid data structure:', data);
+        setToast({msg: 'Данные не найдены или некорректны', type: 'error'});
+      }
+    } catch (err: any) {
       console.error("Failed to load biomarker details", err);
-      setToast({msg: 'Ошибка загрузки деталей', type: 'error'});
+      setToast({msg: `Ошибка: ${err?.message || 'Не удалось загрузить детали'}`, type: 'error'});
     }
   };
 
@@ -1301,6 +1308,20 @@ function BiomarkerTablePage() {
 function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: () => void }) {
   const [showAddDateModal, setShowAddDateModal] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+  
+  console.log('[BiomarkerDetail] Rendering with biomarker:', biomarker?.name, biomarker?.history?.length);
+  
+  // Защита от пустых данных
+  if (!biomarker || !biomarker.code) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        <p>Ошибка загрузки данных биомаркера</p>
+        <button onClick={onBack} className="text-blue-600 mt-2">Назад</button>
+      </div>
+    );
+  }
+  
+  const history = biomarker.history || [];
 
   const deleteValue = async (valueId: number) => {
     if (!confirm('Удалить это значение?')) return;
@@ -1323,11 +1344,12 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 
   // График
   const chartData = useMemo(() => {
-    const sorted = [...biomarker.history]
+    if (!history.length) return [];
+    const sorted = [...history]
       .filter((h: any) => h.measured_at)
       .sort((a: any, b: any) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
     return sorted;
-  }, [biomarker.history]);
+  }, [history]);
 
   const renderChart = () => {
     if (chartData.length < 2) return null;
@@ -1399,8 +1421,8 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 
         {/* Заголовок */}
         <div className="bg-white rounded-xl shadow-md p-4">
-          <h1 className="text-xl font-bold text-gray-800">{biomarker.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">{biomarker.unit}</p>
+          <h1 className="text-xl font-bold text-gray-800">{biomarker.name || biomarker.code || 'Биомаркер'}</h1>
+          <p className="text-sm text-gray-500 mt-1">{biomarker.unit || '—'}</p>
           
           {/* Статистика */}
           <div className="grid grid-cols-3 gap-4 mt-4">
@@ -1441,7 +1463,12 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
           </div>
 
           <div className="divide-y divide-gray-100">
-            {biomarker.history.map((item: any) => (
+            {history.length === 0 && (
+              <div className="px-4 py-8 text-center text-gray-500">
+                Нет данных. Добавьте первое значение.
+              </div>
+            )}
+            {history.map((item: any) => (
               <div key={item.id} className="px-4 py-3 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
