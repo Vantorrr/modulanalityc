@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext, useMemo } from "react";
 import {
   HomeIcon, ClipboardIcon, FolderIcon, CalendarIcon, UserIcon,
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
@@ -2334,8 +2334,10 @@ function ProfilePage() {
 
 // Компонент кликабельной статистики истории
 function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
-  const [view, setView] = useState<'stats' | 'list'>('stats');
+  const [view, setView] = useState<'stats' | 'list' | 'analytics'>('stats');
   const [scrollTarget, setScrollTarget] = useState<'first' | 'last' | null>(null);
+  const [selectedBiomarker, setSelectedBiomarker] = useState<string>('');
+  const [period, setPeriod] = useState<'3m' | '6m' | '1y' | 'all'>('all');
   const listRef = useRef<HTMLDivElement>(null);
   
   const sortedAnalyses = [...analyses].sort((a, b) => 
@@ -2345,15 +2347,63 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
   const firstAnalysis = sortedAnalyses[sortedAnalyses.length - 1]; // Самый старый
   const lastAnalysis = sortedAnalyses[0]; // Самый новый
 
+  // Собираем все уникальные биомаркеры из истории
+  const allBiomarkers = useMemo(() => {
+    const biomarkerMap = new Map<string, string>();
+    analyses.forEach(a => {
+      if (Array.isArray(a.biomarkers)) {
+        a.biomarkers.forEach((b: any) => {
+          const code = b.biomarker_code || b.code || b.name;
+          const name = b.biomarker_name || b.name || code;
+          if (code && !biomarkerMap.has(code)) {
+            biomarkerMap.set(code, name);
+          }
+        });
+      }
+    });
+    return Array.from(biomarkerMap.entries()).map(([code, name]) => ({ code, name }));
+  }, [analyses]);
+
+  // Данные для графика выбранного показателя
+  const chartData = useMemo(() => {
+    if (!selectedBiomarker) return [];
+    
+    const now = new Date();
+    const periodStart = period === '3m' ? new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()) :
+                        period === '6m' ? new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()) :
+                        period === '1y' ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()) :
+                        new Date(0);
+    
+    const data: { date: string; value: number; status: string }[] = [];
+    
+    analyses.forEach(a => {
+      const analysisDate = new Date(a.created_at);
+      if (analysisDate < periodStart) return;
+      
+      if (Array.isArray(a.biomarkers)) {
+        const biomarker = a.biomarkers.find((b: any) => 
+          (b.biomarker_code || b.code || b.name) === selectedBiomarker
+        );
+        if (biomarker) {
+          data.push({
+            date: a.created_at.split('T')[0],
+            value: biomarker.value,
+            status: biomarker.status
+          });
+        }
+      }
+    });
+    
+    return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [analyses, selectedBiomarker, period]);
+
   // Прокрутка к нужному анализу после переключения view
   useEffect(() => {
     if (view === 'list' && scrollTarget && listRef.current) {
       setTimeout(() => {
         if (scrollTarget === 'first') {
-          // Первый анализ = последний в списке, прокручиваем вниз
           listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
         } else if (scrollTarget === 'last') {
-          // Последний анализ = первый в списке, прокручиваем вверх
           listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         }
         setScrollTarget(null);
@@ -2366,6 +2416,172 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
+  const formatShortDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  };
+
+  // Простой SVG график
+  const renderChart = () => {
+    if (chartData.length === 0) {
+      return (
+        <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
+          Нет данных за выбранный период
+        </div>
+      );
+    }
+
+    if (chartData.length === 1) {
+      return (
+        <div className="h-40 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-emerald-600">{chartData[0].value}</div>
+            <div className="text-xs text-gray-400 mt-1">{formatShortDate(chartData[0].date)}</div>
+          </div>
+        </div>
+      );
+    }
+
+    const values = chartData.map(d => d.value);
+    const minVal = Math.min(...values) * 0.9;
+    const maxVal = Math.max(...values) * 1.1;
+    const range = maxVal - minVal || 1;
+    
+    const width = 280;
+    const height = 120;
+    const padding = 20;
+    
+    const points = chartData.map((d, i) => {
+      const x = padding + (i / (chartData.length - 1)) * (width - padding * 2);
+      const y = height - padding - ((d.value - minVal) / range) * (height - padding * 2);
+      return { x, y, ...d };
+    });
+    
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
+    return (
+      <div className="relative">
+        <svg width="100%" viewBox={`0 0 ${width} ${height + 30}`} className="overflow-visible">
+          {/* Gradient fill */}
+          <defs>
+            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+          
+          {/* Area */}
+          <path d={areaPath} fill="url(#chartGradient)" />
+          
+          {/* Line */}
+          <path d={linePath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          
+          {/* Points */}
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="4" fill="white" stroke={p.status === 'normal' ? '#10b981' : '#ef4444'} strokeWidth="2" />
+              <text x={p.x} y={height + 15} textAnchor="middle" className="text-[9px] fill-gray-400">
+                {formatShortDate(p.date)}
+              </text>
+            </g>
+          ))}
+        </svg>
+        
+        {/* Min/Max labels */}
+        <div className="absolute left-0 top-2 text-[10px] text-gray-400">{maxVal.toFixed(1)}</div>
+        <div className="absolute left-0 bottom-8 text-[10px] text-gray-400">{minVal.toFixed(1)}</div>
+      </div>
+    );
+  };
+
+  // View: Analytics
+  if (view === 'analytics') {
+    return (
+      <div className="space-y-3">
+        <button 
+          onClick={() => setView('stats')}
+          className="flex items-center gap-1 text-emerald-600 text-sm font-medium"
+        >
+          <ChevronLeftIcon size={16} />
+          Назад
+        </button>
+        
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <BarChartIcon size={18} className="text-emerald-500" />
+            Динамика показателя
+          </h4>
+          
+          {/* Выбор показателя */}
+          <div className="mb-3">
+            <label className="text-xs text-gray-500 block mb-1">Показатель</label>
+            <select
+              value={selectedBiomarker}
+              onChange={(e) => setSelectedBiomarker(e.target.value)}
+              className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
+            >
+              <option value="">Выберите показатель...</option>
+              {allBiomarkers.map(b => (
+                <option key={b.code} value={b.code}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Выбор периода */}
+          <div className="flex gap-1 mb-4">
+            {[
+              { value: '3m', label: '3 мес' },
+              { value: '6m', label: '6 мес' },
+              { value: '1y', label: 'Год' },
+              { value: 'all', label: 'Всё' },
+            ].map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value as any)}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  period === p.value 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* График */}
+          {selectedBiomarker ? renderChart() : (
+            <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
+              Выберите показатель для отображения графика
+            </div>
+          )}
+          
+          {/* Статистика */}
+          {chartData.length > 1 && (
+            <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="text-lg font-bold text-gray-900">{Math.min(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-[10px] text-gray-400">Мин</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-emerald-600">
+                  {(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}
+                </div>
+                <div className="text-[10px] text-gray-400">Среднее</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-gray-900">{Math.max(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-[10px] text-gray-400">Макс</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // View: List
   if (view === 'list') {
     return (
       <div className="space-y-2">
@@ -2404,8 +2620,21 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
     );
   }
 
+  // View: Stats (default)
   return (
     <div className="space-y-2">
+      {/* Кнопка аналитики */}
+      <button 
+        onClick={() => setView('analytics')}
+        className="w-full text-left p-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-colors group"
+      >
+        <div className="flex items-center gap-2">
+          <BarChartIcon size={18} className="text-emerald-600" />
+          <span className="font-bold text-emerald-700">📊 Аналитика показателей →</span>
+        </div>
+        <p className="text-xs text-emerald-600 mt-1">Графики изменения показателей во времени</p>
+      </button>
+      
       <button 
         onClick={() => setView('list')}
         className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
