@@ -11,22 +11,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Disable caching of built assets to avoid stale bundles on Railway
-  output: 'standalone',
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store',
-          },
-        ],
-      },
-    ];
-  },
-
   // Proxy API calls to avoid CORS/Mixed Content issues
   async rewrites() {
     return [
