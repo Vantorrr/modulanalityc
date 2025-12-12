@@ -995,19 +995,17 @@ function formatMarkdownText(text: string) {
 function BiomarkerTablePage() {
   const [biomarkers, setBiomarkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
     loadBiomarkers();
-  }, [selectedCategory]);
+  }, []);
 
   const loadBiomarkers = async () => {
     try {
       setLoading(true);
-      const data = await biomarkersApi.getAll(selectedCategory);
+      const data = await biomarkersApi.getAll();
       setBiomarkers(data.items);
     } catch (err) {
       console.error("Failed to load biomarkers", err);
@@ -1017,30 +1015,17 @@ function BiomarkerTablePage() {
     }
   };
 
-  // Группировка по категориям
-  const groupedBiomarkers = useMemo(() => {
-    const groups: Record<string, any[]> = {};
-    biomarkers.forEach(b => {
-      const cat = b.category || 'other';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(b);
-    });
-    return groups;
-  }, [biomarkers]);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const categoryNames: Record<string, string> = {
-    hematology: 'Гематология',
-    biochemistry: 'Биохимия крови',
-    hormones: 'Гормональные исследования',
-    vitamins: 'Витамины и микроэлементы',
-    minerals: 'Минералы',
-    lipids: 'Липидный профиль',
-    liver: 'Печеночные показатели',
-    kidney: 'Почечные показатели',
-    thyroid: 'Щитовидная железа',
-    inflammation: 'Инфекционные маркеры',
-    other: 'Другое',
-  };
+  // Фильтрация по поиску
+  const filteredBiomarkers = useMemo(() => {
+    if (!searchQuery.trim()) return biomarkers;
+    const query = searchQuery.toLowerCase();
+    return biomarkers.filter(b => 
+      b.name.toLowerCase().includes(query) ||
+      b.code.toLowerCase().includes(query)
+    );
+  }, [biomarkers, searchQuery]);
 
   // Открыть детали биомаркера
   const openBiomarkerDetail = async (code: string) => {
@@ -1064,19 +1049,24 @@ function BiomarkerTablePage() {
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
         {/* Заголовок */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Таблица анализов</h1>
-            <p className="text-sm text-gray-500">История ваших медицинских показателей</p>
-          </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"
-          >
-            <span className="text-lg">+</span>
-            Добавить показатель
-          </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Таблица анализов</h1>
+          <p className="text-sm text-gray-500 mt-1">История ваших медицинских показателей</p>
         </div>
+
+        {/* Поиск */}
+        {biomarkers.length > 0 && (
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Поиск показателей..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        )}
 
         {loading && (
           <div className="text-center py-8">
@@ -1089,79 +1079,70 @@ function BiomarkerTablePage() {
             <div className="text-5xl mb-4">📊</div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Нет данных</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Загрузите анализ или добавьте показатель вручную
+              Загрузите анализы чтобы увидеть показатели
             </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
-            >
-              Добавить показатель
-            </button>
           </div>
         )}
 
-        {/* Список по категориям */}
-        {!loading && Object.keys(groupedBiomarkers).map(category => (
-          <div key={category} className="bg-white rounded-xl shadow-sm overflow-hidden">
-            {/* Заголовок категории */}
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
-              <h2 className="text-white font-semibold">{categoryNames[category] || category}</h2>
-              <span className="text-white text-sm opacity-80">{groupedBiomarkers[category].length} показ.</span>
-            </div>
-
-            {/* Список биомаркеров */}
+        {/* Список показателей */}
+        {!loading && filteredBiomarkers.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="divide-y divide-gray-100">
-              {groupedBiomarkers[category].map((bio: any) => (
+              {filteredBiomarkers.map((bio: any) => (
                 <button
                   key={bio.code}
                   onClick={() => openBiomarkerDetail(bio.code)}
-                  className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  className="w-full px-4 py-4 hover:bg-gray-50 transition-colors text-left flex items-center gap-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">{bio.name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {bio.unit} • {bio.total_measurements} измерений
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 truncate">{bio.name}</div>
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                      <span>{bio.unit}</span>
+                      <span>•</span>
+                      <span>{bio.total_measurements} {bio.total_measurements === 1 ? 'измерение' : 'измерений'}</span>
                     </div>
-                    <div className="text-right ml-4">
-                      {bio.last_value !== null && bio.last_value !== undefined ? (
-                        <>
-                          <div className={`text-lg font-bold ${
-                            bio.last_status === 'normal' ? 'text-green-600' :
-                            bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
-                            'text-red-600'
-                          }`}>
-                            {bio.last_value}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {bio.last_measured_at ? new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {bio.last_value !== null && bio.last_value !== undefined ? (
+                      <div>
+                        <div className={`text-xl font-bold ${
+                          bio.last_status === 'normal' ? 'text-green-600' :
+                          bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
+                          'text-red-600'
+                        }`}>
+                          {bio.last_value}
+                        </div>
+                        {bio.last_measured_at && (
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
                               day: '2-digit',
                               month: '2-digit',
                               year: '2-digit',
-                            }) : '—'}
+                            })}
                           </div>
-                        </>
-                      ) : (
-                        <div className="text-sm text-gray-400">—</div>
-                      )}
-                    </div>
-                    <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400">—</div>
+                    )}
                   </div>
+                  <ChevronRightIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 </button>
               ))}
             </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Модалка добавления показателя */}
-      {showAddModal && <AddBiomarkerModal onClose={() => setShowAddModal(false)} onSuccess={() => {
-        setShowAddModal(false);
-        loadBiomarkers();
-      }} />}
+        {!loading && biomarkers.length > 0 && filteredBiomarkers.length === 0 && (
+          <div className="text-center py-8 bg-white rounded-xl shadow-sm">
+            <div className="text-3xl mb-3">🔍</div>
+            <h3 className="text-md font-semibold text-gray-700">Ничего не найдено</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Попробуйте изменить запрос
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1269,7 +1250,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         {/* Заголовок */}
         <div className="bg-white rounded-xl shadow-md p-4">
           <h1 className="text-xl font-bold text-gray-800">{biomarker.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">{biomarker.unit} • {categoryNames[biomarker.category] || biomarker.category}</p>
+          <p className="text-sm text-gray-500 mt-1">{biomarker.unit}</p>
           
           {/* Статистика */}
           <div className="grid grid-cols-3 gap-4 mt-4">
@@ -1379,43 +1360,6 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
   );
 }
 
-const categoryNames: Record<string, string> = {
-  hematology: 'Гематология',
-  biochemistry: 'Биохимия крови',
-  hormones: 'Гормональные исследования',
-  vitamins: 'Витамины и микроэлементы',
-  minerals: 'Минералы',
-  lipids: 'Липидный профиль',
-  liver: 'Печеночные показатели',
-  kidney: 'Почечные показатели',
-  thyroid: 'Щитовидная железа',
-  inflammation: 'Инфекционные маркеры',
-  other: 'Другое',
-};
-
-// Модалка "Добавить показатель"
-function AddBiomarkerModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('other');
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Добавление нового показателя</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Пока эта функция в разработке. Вы можете добавлять значения к существующим показателям.
-        </p>
-        <button
-          onClick={onClose}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700"
-        >
-          Закрыть
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // Модалка "Добавить дату"
 function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
