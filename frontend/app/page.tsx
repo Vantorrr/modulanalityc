@@ -1858,17 +1858,17 @@ function CalendarPage() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="flex-1 bg-white rounded-lg px-3 py-2.5 border border-gray-200 text-sm font-medium text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+                  className="flex-1 bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm font-medium text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none h-10"
                 />
                 
                 <span className="text-gray-400 text-sm">в</span>
                 
                 {/* Время */}
-                <div className="flex items-center bg-white rounded-lg border border-gray-200 px-2 py-1">
+                <div className="flex items-center bg-white rounded-lg border border-gray-200 px-2 h-10">
                   <select
                     value={selectedHour}
                     onChange={(e) => setSelectedHour(e.target.value)}
-                    className="bg-transparent text-sm font-medium text-gray-900 outline-none cursor-pointer py-1"
+                    className="bg-transparent text-sm font-medium text-gray-900 outline-none cursor-pointer"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i.toString().padStart(2, '0')}>
@@ -1880,7 +1880,7 @@ function CalendarPage() {
                   <select
                     value={selectedMinute}
                     onChange={(e) => setSelectedMinute(e.target.value)}
-                    className="bg-transparent text-sm font-medium text-gray-900 outline-none cursor-pointer py-1"
+                    className="bg-transparent text-sm font-medium text-gray-900 outline-none cursor-pointer"
                   >
                     {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
                       <option key={m} value={m}>{m}</option>
