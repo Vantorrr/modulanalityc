@@ -1261,6 +1261,8 @@ function AnalysesPage() {
                     </div>
                   )}
 
+                  {/* AI Рекомендации с продуктами */}
+                  {/* TODO: Заказчик должен заменить URL магазина в строке ниже (https://shop.example.com) на свой эндпоинт */}
                   {!loadingDetails && item.ai_recommendations?.items?.length > 0 && (
                     <div>
                       <div className="flex items-center gap-2 mb-2">
@@ -1272,10 +1274,15 @@ function AnalysesPage() {
                           <div key={k} className="bg-gray-50 rounded-lg p-2.5">
                             <div className="font-medium text-xs text-gray-900">{rec.product?.name}</div>
                             <div className="text-[10px] text-gray-500 mt-0.5">{rec.reason}</div>
-                            {rec.product?.price && (
-                              <button className="mt-1.5 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-600 transition">
-                                Купить за {rec.product.price} ₽
-                              </button>
+                            {rec.product?.name && (
+                              <a 
+                                href={`https://shop.example.com/product/${rec.product.id || 'default'}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block mt-1.5 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-600 transition"
+                              >
+                                💊 Купить {rec.product.price ? `за ${rec.product.price} ₽` : ''}
+                              </a>
                             )}
                           </div>
                         ))}
