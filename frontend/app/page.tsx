@@ -121,6 +121,7 @@ function NotificationBell() {
   const [notifications, setNotifications] = useState<Reminder[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const loadNotifications = async () => {
     setLoading(true);
@@ -132,6 +133,16 @@ function NotificationBell() {
         return daysUntil >= 0 && daysUntil <= 7 && !r.is_completed;
       });
       setNotifications(upcoming);
+      
+      // Проверяем непрочитанные
+      const lastRead = localStorage.getItem('notifications_last_read');
+      if (!lastRead) {
+        setUnreadCount(upcoming.length);
+      } else {
+        const lastReadTime = new Date(lastRead).getTime();
+        const unread = upcoming.filter(r => new Date(r.created_at || r.scheduled_date).getTime() > lastReadTime);
+        setUnreadCount(unread.length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -143,12 +154,25 @@ function NotificationBell() {
     loadNotifications();
   }, []);
 
-  const count = notifications.length;
+  const handleOpenPopup = () => {
+    setShowPopup(true);
+    // Помечаем все как прочитанные
+    localStorage.setItem('notifications_last_read', new Date().toISOString());
+    setUnreadCount(0);
+  };
+
+  const count = unreadCount;
 
   return (
     <div className="relative">
       <button 
-        onClick={() => setShowPopup(!showPopup)}
+        onClick={() => {
+          if (!showPopup) {
+            handleOpenPopup();
+          } else {
+            setShowPopup(false);
+          }
+        }}
         className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center relative text-gray-600 hover:bg-gray-200 transition-colors"
       >
         <BellIcon size={18} />

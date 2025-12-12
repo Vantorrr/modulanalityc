@@ -77,6 +77,8 @@ export interface Reminder {
   reminder_type: 'analysis' | 'checkup' | 'medication' | 'custom';
   frequency?: 'once' | 'daily' | 'weekly' | 'monthly';
   is_completed: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Recommendation {
