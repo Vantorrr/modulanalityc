@@ -1214,6 +1214,7 @@ function BiomarkerTablePage() {
   const [uploading, setUploading] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
   const [aiBlockExpanded, setAiBlockExpanded] = useState(false);
+  const [addBiomarkerCategory, setAddBiomarkerCategory] = useState<string | null>(null);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1717,6 +1718,17 @@ function BiomarkerTablePage() {
                           <ChevronRightIcon className="w-5 h-5 text-gray-300 flex-shrink-0" />
                         </button>
                       ))}
+                      {/* Кнопка добавить показатель */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAddBiomarkerCategory(category);
+                        }}
+                        className="w-full px-5 py-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 border-t border-gray-100"
+                      >
+                        <span className="text-lg">+</span>
+                        Добавить показатель
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1734,6 +1746,203 @@ function BiomarkerTablePage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Модалка добавления нового показателя в категорию */}
+      {addBiomarkerCategory && (
+        <AddNewBiomarkerModal
+          category={addBiomarkerCategory}
+          categoryName={categoryNames[addBiomarkerCategory] || addBiomarkerCategory}
+          onClose={() => setAddBiomarkerCategory(null)}
+          onSuccess={() => {
+            setAddBiomarkerCategory(null);
+            loadBiomarkers();
+            setToast({msg: 'Показатель добавлен', type: 'success'});
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Модалка добавления нового биомаркера в категорию
+function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: any) {
+  const [name, setName] = useState('');
+  const [value, setValue] = useState('');
+  const [unit, setUnit] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Список популярных показателей по категориям
+  const suggestions: Record<string, string[]> = {
+    'HORMONES': ['Тестостерон', 'Эстрадиол', 'Прогестерон', 'Пролактин', 'ЛГ', 'ФСГ', 'Кортизол', 'Инсулин', 'ДГЭА-С'],
+    'VITAMINS': ['Витамин D', 'Витамин B12', 'Витамин B6', 'Фолиевая кислота', 'Витамин A', 'Витамин E'],
+    'MINERALS': ['Железо', 'Ферритин', 'Цинк', 'Магний', 'Кальций', 'Калий', 'Натрий', 'Селен'],
+    'HEMATOLOGY': ['Эритроциты', 'Гемоглобин', 'Гематокрит', 'Лейкоциты', 'Тромбоциты', 'СОЭ'],
+    'BIOCHEMISTRY': ['Глюкоза', 'Общий белок', 'Альбумин', 'Мочевая кислота', 'Амилаза'],
+    'LIPIDS': ['Общий холестерин', 'ЛПВП', 'ЛПНП', 'Триглицериды'],
+    'LIVER': ['АЛТ', 'АСТ', 'ГГТ', 'Билирубин общий', 'Билирубин прямой', 'Щелочная фосфатаза'],
+    'KIDNEY': ['Креатинин', 'Мочевина', 'СКФ'],
+    'THYROID': ['ТТГ', 'Т3 свободный', 'Т4 свободный', 'АТ-ТПО', 'АТ-ТГ'],
+    'INFLAMMATION': ['СРБ', 'Прокальцитонин', 'Интерлейкин-6'],
+    'OTHER': [],
+  };
+
+  const currentSuggestions = suggestions[category] || [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!name.trim()) {
+      setError('Введите название показателя');
+      return;
+    }
+    if (!value || isNaN(parseFloat(value))) {
+      setError('Введите значение');
+      return;
+    }
+    if (!unit.trim()) {
+      setError('Введите единицы измерения');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Создаём код из названия
+      const code = name.trim().toUpperCase().replace(/\s+/g, '_').substring(0, 20);
+      
+      await biomarkersApi.addValue(code, {
+        value: parseFloat(value),
+        unit: unit.trim(),
+        measured_at: date,
+      });
+      
+      onSuccess();
+    } catch (err: any) {
+      console.error("[AddNewBiomarker] Failed:", err);
+      setError(err?.message || 'Ошибка при добавлении');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Добавить показатель</h2>
+            <p className="text-sm text-gray-500 mt-1">{categoryName?.replace(/^[^\s]+\s/, '')}</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200"
+          >
+            ×
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Быстрый выбор */}
+        {currentSuggestions.length > 0 && !name && (
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-500 mb-2">Выберите или введите вручную:</label>
+            <div className="flex flex-wrap gap-2">
+              {currentSuggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setName(s)}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Название */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Название показателя</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Например: Тестостерон"
+            />
+          </div>
+
+          {/* Значение и Единицы в одной строке */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Значение</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={value}
+                onChange={(e) => setValue(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0.0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Единицы</label>
+              <input
+                type="text"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="нмоль/л"
+              />
+            </div>
+          </div>
+
+          {/* Дата */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Дата измерения</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Кнопки */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200"
+              disabled={loading}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="py-3 rounded-xl font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400"
+              disabled={loading}
+            >
+              {loading ? 'Добавление...' : 'Добавить'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
