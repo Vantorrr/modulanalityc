@@ -941,7 +941,7 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
         periodStart = new Date(0);
     }
     
-    const data: { date: string; value: number; status: string }[] = [];
+    const data: { date: string; value: number; status: string; unit?: string }[] = [];
     
     analyses.forEach(a => {
       const analysisDate = new Date(a.created_at);
@@ -955,7 +955,8 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
           data.push({
             date: a.created_at.split('T')[0],
             value: biomarker.value,
-            status: biomarker.status
+            status: biomarker.status,
+            unit: biomarker.unit
           });
         }
       }
@@ -981,7 +982,8 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
       return (
         <div className="text-center py-4">
           <span className="text-2xl font-bold text-emerald-600">{chartData[0].value}</span>
-          <span className="text-xs text-gray-400 ml-1">{formatShortDate(chartData[0].date)}</span>
+          {chartData[0].unit && <span className="text-sm text-gray-500 ml-1 font-medium">{chartData[0].unit}</span>}
+          <span className="text-xs text-gray-400 ml-2">{formatShortDate(chartData[0].date)}</span>
         </div>
       );
     }
@@ -1084,15 +1086,24 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
           {chartData.length > 1 && (
             <div className="mt-2 flex justify-around text-center border-t border-gray-100 pt-2">
               <div>
-                <div className="text-sm font-bold text-gray-900">{Math.min(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-sm font-bold text-gray-900">
+                  {Math.min(...chartData.map(d => d.value)).toFixed(1)}
+                  {chartData[0].unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{chartData[0].unit}</span>}
+                </div>
                 <div className="text-[9px] text-gray-400">Мин</div>
               </div>
               <div>
-                <div className="text-sm font-bold text-emerald-600">{(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}</div>
+                <div className="text-sm font-bold text-emerald-600">
+                  {(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}
+                  {chartData[0].unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{chartData[0].unit}</span>}
+                </div>
                 <div className="text-[9px] text-gray-400">Сред</div>
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900">{Math.max(...chartData.map(d => d.value)).toFixed(1)}</div>
+                <div className="text-sm font-bold text-gray-900">
+                  {Math.max(...chartData.map(d => d.value)).toFixed(1)}
+                  {chartData[0].unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{chartData[0].unit}</span>}
+                </div>
                 <div className="text-[9px] text-gray-400">Макс</div>
               </div>
             </div>
@@ -1590,8 +1601,8 @@ function BiomarkerTablePage() {
                         </div>
                         <a 
                           href={product.purchase_url || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                           className="px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
                         >
                           Купить
@@ -2207,15 +2218,24 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
           <div className="grid grid-cols-3 gap-4 mt-4" role="region" aria-label="Статистика">
             <div className="text-center">
               <div className="text-xs text-gray-500">Минимум</div>
-              <div className="text-lg font-bold text-blue-600">{biomarker.min_value?.toFixed(1) ?? '—'}</div>
+              <div className="text-lg font-bold text-blue-600">
+                {biomarker.min_value?.toFixed(1) ?? '—'}
+                {biomarker.min_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">Среднее</div>
-              <div className="text-lg font-bold text-gray-700">{biomarker.avg_value?.toFixed(1) ?? '—'}</div>
+              <div className="text-lg font-bold text-gray-700">
+                {biomarker.avg_value?.toFixed(1) ?? '—'}
+                {biomarker.avg_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">Максимум</div>
-              <div className="text-lg font-bold text-red-600">{biomarker.max_value?.toFixed(1) ?? '—'}</div>
+              <div className="text-lg font-bold text-red-600">
+                {biomarker.max_value?.toFixed(1) ?? '—'}
+                {biomarker.max_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
+              </div>
             </div>
           </div>
         </div>
