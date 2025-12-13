@@ -2115,6 +2115,23 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
             </g>
           );
         })}
+
+        {/* X-axis labels (Dates) */}
+        {chartData.map((d: any, i: number) => {
+           const showLabel = i === 0 || i === chartData.length - 1 || (chartData.length > 4 && i === Math.floor(chartData.length / 2));
+           
+           if (!showLabel) return null;
+
+           const x = padding + (i / (chartData.length - 1)) * chartWidth;
+           const dateStr = new Date(d.measured_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+           
+           const anchor = i === 0 ? "start" : (i === chartData.length - 1 ? "end" : "middle");
+           
+           return (
+              <text key={`date-${i}`} x={x} y={height - 5} textAnchor={anchor} fontSize="10" fill="#999">{dateStr}</text>
+           );
+        })}
+
         {/* Line */}
         <polyline
           points={points}
