@@ -1320,6 +1320,7 @@ function BiomarkerTablePage() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all'); // Фильтр категории
   const [filterAbnormal, setFilterAbnormal] = useState(false);
   const [filterFilled, setFilterFilled] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -1416,15 +1417,19 @@ function BiomarkerTablePage() {
 
   // Группировка по категориям (с автоопределением)
   const groupedBiomarkers = useMemo(() => {
-    // Инициализируем все категории
+    // Инициализируем категории
     const groups: Record<string, any[]> = {};
-    // Порядок важен!
     const orderedCategories = [
       'HEMATOLOGY', 'BIOCHEMISTRY', 'HORMONES', 'VITAMINS', 'MINERALS',
       'LIPIDS', 'LIVER', 'KIDNEY', 'THYROID', 'INFLAMMATION', 'OTHER'
     ];
     
-    orderedCategories.forEach(cat => {
+    // Если выбрана конкретная категория, берем только её
+    const categoriesToShow = selectedCategory === 'all' 
+      ? orderedCategories 
+      : orderedCategories.filter(c => c === selectedCategory);
+    
+    categoriesToShow.forEach(cat => {
       groups[cat] = [];
     });
 
@@ -1433,7 +1438,11 @@ function BiomarkerTablePage() {
       // Используем автоопределение категории по названию
       const cat = detectCategory(b.name || '', b.code || '');
       const targetCat = groups[cat] ? cat : 'OTHER';
-      groups[targetCat].push(b);
+      
+      // Добавляем только если категория отображается
+      if (groups[targetCat]) {
+        groups[targetCat].push(b);
+      }
     });
 
     // Если идет поиск или включен фильтр "Только заполненные" - скрываем пустые категории
@@ -1446,7 +1455,7 @@ function BiomarkerTablePage() {
     }
 
     return groups;
-  }, [filteredBiomarkers, searchQuery, filterFilled]);
+  }, [filteredBiomarkers, searchQuery, filterFilled, selectedCategory]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -1620,16 +1629,29 @@ function BiomarkerTablePage() {
         {/* Панель фильтров */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Поиск */}
-            <div className="relative w-full md:w-1/3">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск показателей..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-sm"
-              />
+            {/* Поиск и Категория */}
+            <div className="flex flex-1 gap-4">
+              <div className="relative flex-1">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Поиск показателей..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-sm"
+                />
+              </div>
+              
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-48 px-3 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-sm text-gray-700"
+              >
+                <option value="all">Все категории</option>
+                {Object.entries(categoryNames).map(([key, name]) => (
+                  <option key={key} value={key}>{name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Фильтры */}
