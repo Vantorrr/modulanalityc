@@ -2030,6 +2030,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
   const [showAddDateModal, setShowAddDateModal] = useState(false);
   const [editingValue, setEditingValue] = useState<any>(null); // Для редактирования
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+  const [period, setPeriod] = useState<'all' | '1y' | '6m' | '3m'>('all');
   
   console.log('[BiomarkerDetail] Rendering with biomarker:', biomarker?.name, biomarker?.history?.length);
   
@@ -2076,11 +2077,28 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
   // График
   const chartData = useMemo(() => {
     if (!history.length) return [];
-    const sorted = [...history]
-      .filter((h: any) => h.measured_at)
-      .sort((a: any, b: any) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
-    return sorted;
-  }, [history]);
+    
+    let data = [...history]
+      .filter((h: any) => h.measured_at || h.created_at)
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.measured_at || a.created_at).getTime();
+        const dateB = new Date(b.measured_at || b.created_at).getTime();
+        return dateA - dateB;
+      });
+
+    if (period !== 'all') {
+      const now = new Date();
+      const cutoff = new Date();
+      
+      if (period === '1y') cutoff.setFullYear(now.getFullYear() - 1);
+      if (period === '6m') cutoff.setMonth(now.getMonth() - 6);
+      if (period === '3m') cutoff.setMonth(now.getMonth() - 3);
+      
+      data = data.filter((h: any) => new Date(h.measured_at || h.created_at) >= cutoff);
+    }
+
+    return data;
+  }, [history, period]);
 
   const renderChart = () => {
     if (chartData.length < 2) {
@@ -2130,7 +2148,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
            if (!showLabel) return null;
 
            const x = padding + (i / (chartData.length - 1)) * chartWidth;
-           const dateStr = new Date(d.measured_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+           const dateStr = new Date(d.measured_at || d.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
            
            const anchor = i === 0 ? "start" : (i === chartData.length - 1 ? "end" : "middle");
            
@@ -2198,7 +2216,22 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 
         {/* График */}
         <div className="bg-white rounded-xl shadow-md p-4">
-          <h2 className="text-md font-semibold text-gray-700 mb-3">Динамика</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-md font-semibold text-gray-700">Динамика</h2>
+            <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+              {(['all', '1y', '6m', '3m'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${
+                    period === p ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {p === 'all' ? 'Все' : p === '1y' ? 'Год' : p === '6m' ? '6 мес' : '3 мес'}
+                </button>
+              ))}
+            </div>
+          </div>
           {renderChart()}
         </div>
 
@@ -2239,11 +2272,11 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                       )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-1">
-                      <span>{item.measured_at ? new Date(item.measured_at).toLocaleDateString('ru-RU', {
+                      <span>{new Date(item.measured_at || item.created_at).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
-                      }) : '—'}</span>
+                      })}</span>
                       {item.lab_name && (
                         <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{item.lab_name}</span>
                       )}
