@@ -2227,7 +2227,10 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                   <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Реф. знач.</div>
                   <div className="text-sm font-bold text-gray-900 leading-tight">
                     {hasRef ? (
-                      <span>{lastRefMin}–{lastRefMax}</span>
+                      <span>
+                        {lastRefMin}–{lastRefMax}
+                        {biomarker.unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                      </span>
                     ) : (
                       '—'
                     )}
