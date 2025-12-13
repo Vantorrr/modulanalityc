@@ -1213,7 +1213,7 @@ function BiomarkerTablePage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedBiomarker, setSelectedBiomarker] = useState<any | null>(null);
-  const [aiBlockExpanded, setAiBlockExpanded] = useState(true);
+  const [aiBlockExpanded, setAiBlockExpanded] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1319,7 +1319,7 @@ function BiomarkerTablePage() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Названия категорий на русском
   const categoryNames: Record<string, string> = {
