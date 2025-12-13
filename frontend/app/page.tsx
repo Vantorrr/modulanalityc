@@ -2083,7 +2083,14 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
   }, [history]);
 
   const renderChart = () => {
-    if (chartData.length < 2) return null;
+    if (chartData.length < 2) {
+      return (
+        <div className="text-center text-sm text-gray-400 py-8 border border-dashed border-gray-200 rounded-lg">
+          Недостаточно данных для построения графика.<br/>
+          Добавьте еще хотя бы одно значение.
+        </div>
+      );
+    }
 
     const values = chartData.map((d: any) => d.value);
     const minVal = Math.min(...values, biomarker.min_value || 0);
@@ -2103,7 +2110,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
     }).join(' ');
 
     return (
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="mx-auto">
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="mx-auto" role="img" aria-label="График динамики">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => {
           const y = height - padding - frac * chartHeight;
@@ -2173,7 +2180,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
           <p className="text-sm text-gray-500 mt-1">{biomarker.unit || '—'}</p>
           
           {/* Статистика */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-3 gap-4 mt-4" role="region" aria-label="Статистика">
             <div className="text-center">
               <div className="text-xs text-gray-500">Минимум</div>
               <div className="text-lg font-bold text-blue-600">{biomarker.min_value?.toFixed(1) ?? '—'}</div>
@@ -2190,12 +2197,10 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         </div>
 
         {/* График */}
-        {chartData.length >= 2 && (
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <h2 className="text-md font-semibold text-gray-700 mb-3">Динамика</h2>
-            {renderChart()}
-          </div>
-        )}
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <h2 className="text-md font-semibold text-gray-700 mb-3">Динамика</h2>
+          {renderChart()}
+        </div>
 
         {/* История */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
