@@ -223,16 +223,29 @@ async def create_biomarker_value(
     
     Используется когда пользователь хочет добавить показатель без загрузки анализа.
     """
-    # Get biomarker
+    # Get biomarker or create if not exists
     biomarker_stmt = select(Biomarker).where(Biomarker.code == biomarker_code)
     biomarker_result = await db.execute(biomarker_stmt)
     biomarker = biomarker_result.scalar_one_or_none()
     
     if not biomarker:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Биомаркер не найден",
+        # Auto-create missing biomarker
+        from app.api.v1.analyses import detect_biomarker_category
+        
+        # Use provided code as name initially (frontend sends generated code from name)
+        # If the code is just upper case name (e.g. "КАЛИЙ"), use it as name_ru properly
+        name_ru = biomarker_code.title() if biomarker_code.isupper() and len(biomarker_code) > 3 else biomarker_code
+        
+        category = detect_biomarker_category(name_ru, biomarker_code)
+        
+        biomarker = Biomarker(
+            code=biomarker_code,
+            name_ru=name_ru,
+            default_unit=value_data.unit,
+            category=category,
         )
+        db.add(biomarker)
+        await db.flush()
     
     # Determine status
     status_value = BiomarkerStatus.NORMAL
