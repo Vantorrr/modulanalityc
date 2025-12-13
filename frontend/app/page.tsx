@@ -4023,6 +4023,8 @@ function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [customBiomarkers, setCustomBiomarkers] = useState<string>("");
+  const [availableBiomarkers, setAvailableBiomarkers] = useState<any[]>([]);
+  const [selectedBiomarkerCodes, setSelectedBiomarkerCodes] = useState<Set<string>>(new Set());
   
   // Устанавливаем время по умолчанию на текущее + 1 час
   const getDefaultTime = () => {
@@ -4075,6 +4077,21 @@ function CalendarPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Загружаем биомаркеры для выбранной категории
+  useEffect(() => {
+    if (selectedCategory && selectedCategory !== '') {
+      biomarkersApi.getAll()
+        .then((allBiomarkers: any[]) => {
+          const filtered = allBiomarkers.filter((b: any) => b.category === selectedCategory);
+          setAvailableBiomarkers(filtered);
+        })
+        .catch(console.error);
+    } else {
+      setAvailableBiomarkers([]);
+      setSelectedBiomarkerCodes(new Set());
+    }
+  }, [selectedCategory]);
+
   const handleAddReminder = async () => {
     if (!newTitle || !selectedDate) {
       alert("⚠️ Заполните название и дату");
@@ -4096,9 +4113,15 @@ function CalendarPage() {
       // Формируем description с категорией и биомаркерами
       let description = "";
       if (selectedCategory) {
+        // Собираем названия выбранных биомаркеров
+        const selectedNames = availableBiomarkers
+          .filter(b => selectedBiomarkerCodes.has(b.code))
+          .map(b => b.name)
+          .join(', ');
+        
         const metadata = {
           category: selectedCategory,
-          biomarkers: customBiomarkers.trim() || null
+          biomarkers: selectedNames || customBiomarkers.trim() || null
         };
         description = JSON.stringify(metadata);
       }
@@ -4117,6 +4140,8 @@ function CalendarPage() {
       setSelectedDate("");
       setSelectedCategory("");
       setCustomBiomarkers("");
+      setAvailableBiomarkers([]);
+      setSelectedBiomarkerCodes(new Set());
       const defaultTime = getDefaultTime();
       setSelectedHour(defaultTime.hour);
       setSelectedMinute(defaultTime.minute);
@@ -4352,11 +4377,64 @@ function CalendarPage() {
               )}
             </div>
 
-            {/* Дополнительные биомаркеры */}
-            {selectedCategory && (
+            {/* Список биомаркеров для выбора */}
+            {selectedCategory && availableBiomarkers.length > 0 && (
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
-                  Дополнительные показатели (необязательно)
+                  Выберите показатели ({selectedBiomarkerCodes.size} из {availableBiomarkers.length})
+                </label>
+                <div className="bg-gray-50 rounded-xl p-3 max-h-64 overflow-y-auto space-y-2">
+                  {availableBiomarkers.map((bio: any) => (
+                    <label
+                      key={bio.code}
+                      className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedBiomarkerCodes.has(bio.code)}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedBiomarkerCodes);
+                          if (e.target.checked) {
+                            newSet.add(bio.code);
+                          } else {
+                            newSet.delete(bio.code);
+                          }
+                          setSelectedBiomarkerCodes(newSet);
+                        }}
+                        className="w-4 h-4 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">{bio.name}</div>
+                        <div className="text-xs text-gray-500">{bio.unit}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBiomarkerCodes(new Set(availableBiomarkers.map((b: any) => b.code)))}
+                    className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
+                  >
+                    Выбрать все
+                  </button>
+                  <span className="text-gray-300">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBiomarkerCodes(new Set())}
+                    className="text-xs text-gray-500 font-medium hover:text-gray-700"
+                  >
+                    Снять выбор
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Текстовое поле для ручного ввода (если нет готовых биомаркеров) */}
+            {selectedCategory && availableBiomarkers.length === 0 && (
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
+                  Показатели (необязательно)
                 </label>
                 <textarea
                   placeholder="Например: Тестостерон, Эстрадиол, Пролактин"
@@ -4366,7 +4444,7 @@ function CalendarPage() {
                   className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Перечислите конкретные показатели через запятую, если хотите уточнить
+                  Перечислите конкретные показатели через запятую
                 </p>
               </div>
             )}
@@ -4424,6 +4502,8 @@ function CalendarPage() {
                 setSelectedDate("");
                 setSelectedCategory("");
                 setCustomBiomarkers("");
+                setAvailableBiomarkers([]);
+                setSelectedBiomarkerCodes(new Set());
                 const defaultTime = getDefaultTime();
                 setSelectedHour(defaultTime.hour);
                 setSelectedMinute(defaultTime.minute);
