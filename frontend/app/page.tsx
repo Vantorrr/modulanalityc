@@ -4081,7 +4081,9 @@ function CalendarPage() {
   useEffect(() => {
     if (selectedCategory && selectedCategory !== '') {
       biomarkersApi.getAll()
-        .then((allBiomarkers: any[]) => {
+        .then((response: any) => {
+          // API возвращает объект { items: [...], total: N }
+          const allBiomarkers = response.items || response || [];
           const filtered = allBiomarkers.filter((b: any) => b.category === selectedCategory);
           setAvailableBiomarkers(filtered);
         })
