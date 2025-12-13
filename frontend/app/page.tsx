@@ -1712,6 +1712,7 @@ function BiomarkerTablePage() {
 // Детальная страница биомаркера
 function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: () => void }) {
   const [showAddDateModal, setShowAddDateModal] = useState(false);
+  const [editingValue, setEditingValue] = useState<any>(null); // Для редактирования
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   
   console.log('[BiomarkerDetail] Rendering with biomarker:', biomarker?.name, biomarker?.history?.length);
@@ -1745,6 +1746,15 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
       console.error("Failed to delete value", err);
       setToast({msg: 'Ошибка удаления', type: 'error'});
     }
+  };
+
+  const reloadBiomarker = async () => {
+    const updated = await biomarkersApi.getDetail(biomarker.code);
+    biomarker.history = updated.history;
+    biomarker.total_measurements = updated.total_measurements;
+    biomarker.min_value = updated.min_value;
+    biomarker.max_value = updated.max_value;
+    biomarker.avg_value = updated.avg_value;
   };
 
   // График
@@ -1901,16 +1911,28 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                       )}
                     </div>
                   </div>
-                  {!item.analysis_id && (
+                  <div className="flex items-center gap-1">
+                    {/* Кнопка редактирования - для ВСЕХ значений */}
+                    <button
+                      onClick={() => setEditingValue(item)}
+                      className="text-blue-500 hover:text-blue-700 p-1"
+                      title="Редактировать"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    {/* Кнопка удаления */}
                     <button
                       onClick={() => deleteValue(item.id)}
-                      className="text-red-500 hover:text-red-700 ml-2"
+                      className="text-red-500 hover:text-red-700 p-1"
+                      title="Удалить"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -1918,23 +1940,31 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         </div>
       </div>
 
-      {/* Модалка добавления даты */}
+      {/* Модалка добавления */}
       {showAddDateModal && (
         <AddDateModal
           biomarkerCode={biomarker.code || ''}
           biomarkerName={biomarker.name || biomarker.code || 'Показатель'}
           biomarkerUnit={biomarker.unit || 'ед.'}
-          onClose={() => { console.log('[Modal] onClose called'); setShowAddDateModal(false); }}
+          onClose={() => { setShowAddDateModal(false); }}
           onSuccess={async () => {
             setShowAddDateModal(false);
             setToast({msg: 'Значение добавлено', type: 'success'});
-            // Перезагрузка данных
-            const updated = await biomarkersApi.getDetail(biomarker.code);
-            biomarker.history = updated.history;
-            biomarker.total_measurements = updated.total_measurements;
-            biomarker.min_value = updated.min_value;
-            biomarker.max_value = updated.max_value;
-            biomarker.avg_value = updated.avg_value;
+            await reloadBiomarker();
+          }}
+        />
+      )}
+
+      {/* Модалка редактирования */}
+      {editingValue && (
+        <EditValueModal
+          item={editingValue}
+          biomarkerUnit={biomarker.unit || 'ед.'}
+          onClose={() => setEditingValue(null)}
+          onSuccess={async () => {
+            setEditingValue(null);
+            setToast({msg: 'Значение обновлено', type: 'success'});
+            await reloadBiomarker();
           }}
         />
       )}
@@ -2095,6 +2125,149 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
             <button
               type="submit"
               className="py-3.5 rounded-2xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:bg-emerald-300 disabled:scale-100 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : 'Сохранить'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Модалка "Редактировать значение"
+function EditValueModal({ item, biomarkerUnit, onClose, onSuccess }: any) {
+  const [value, setValue] = useState(String(item.value || ''));
+  const [date, setDate] = useState(item.measured_at ? item.measured_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+    setValue(val);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    const numValue = parseFloat(value);
+    
+    if (!value || isNaN(numValue)) {
+      setError('Введите корректное значение');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      await biomarkersApi.updateValue(item.id, {
+        value: numValue,
+        measured_at: date,
+      });
+      
+      onSuccess();
+    } catch (err: any) {
+      console.error("[EditValueModal] Failed:", err);
+      setError(err?.message || 'Ошибка при обновлении');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formattedDate = new Date(date).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 leading-tight">Редактировать</h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">Изменить значение показателя</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all -mr-2 -mt-2"
+          >
+            <span className="text-xl leading-none">&times;</span>
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium flex items-center gap-2">
+            <span>⚠️</span>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Значение */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+              Значение <span className="text-red-500">*</span>
+            </label>
+            <div className="relative flex items-center group">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={value}
+                onChange={handleValueChange}
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-2xl px-4 py-3.5 text-lg font-semibold text-gray-900 placeholder-gray-400 outline-none transition-all pr-16"
+                placeholder="0.0"
+                autoFocus
+              />
+              <span className="absolute right-4 text-gray-400 font-medium pointer-events-none">
+                {biomarkerUnit || 'ед.'}
+              </span>
+            </div>
+          </div>
+
+          {/* Дата */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+              Дата измерения <span className="text-red-500">*</span>
+            </label>
+            <div className="relative group">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+              />
+              <div className="w-full bg-gray-50 border-2 border-transparent group-hover:bg-white group-hover:border-blue-200 rounded-2xl px-4 py-3.5 flex items-center justify-between text-gray-900 transition-all cursor-pointer">
+                <span className="font-medium text-base">
+                  {formattedDate}
+                </span>
+                <CalendarIcon className="text-gray-400 group-hover:text-blue-500 transition-colors" size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Кнопки */}
+          <div className="grid grid-cols-2 gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all"
+              disabled={loading}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="py-3.5 rounded-2xl font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 disabled:bg-blue-300 disabled:scale-100 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
               disabled={loading}
             >
               {loading ? (
