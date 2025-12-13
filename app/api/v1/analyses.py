@@ -17,7 +17,144 @@ from app.core.config import settings
 from app.core.database import get_async_session
 from app.core.security import get_current_user_id
 from app.models.analysis import Analysis, AnalysisFile, AnalysisStatus, AnalysisType, LabProvider
-from app.models.biomarker import UserBiomarker, Biomarker, BiomarkerReference, BiomarkerStatus
+from app.models.biomarker import UserBiomarker, Biomarker, BiomarkerReference, BiomarkerStatus, BiomarkerCategory
+
+
+def detect_biomarker_category(name: str, code: str) -> BiomarkerCategory:
+    """Определяет категорию биомаркера по названию или коду."""
+    name_lower = (name or "").lower()
+    code_lower = (code or "").lower()
+    combined = f"{name_lower} {code_lower}"
+    
+    # Гематология (кровь)
+    hematology_keywords = [
+        'гемоглобин', 'hemoglobin', 'hgb', 'hb',
+        'эритроцит', 'erythrocyte', 'rbc', 'мсv', 'mch', 'mchc', 'rdw',
+        'лейкоцит', 'leukocyte', 'wbc',
+        'тромбоцит', 'platelet', 'plt', 'mpv',
+        'гематокрит', 'hematocrit', 'hct',
+        'ретикулоцит', 'reticulocyte',
+        'нейтрофил', 'neutrophil',
+        'лимфоцит', 'lymphocyte',
+        'моноцит', 'monocyte',
+        'эозинофил', 'eosinophil',
+        'базофил', 'basophil',
+        'соэ', 'esr', 'coe',
+    ]
+    if any(kw in combined for kw in hematology_keywords):
+        return BiomarkerCategory.HEMATOLOGY
+    
+    # Гормоны
+    hormone_keywords = [
+        'тестостерон', 'testosterone',
+        'эстрадиол', 'estradiol', 'e2',
+        'прогестерон', 'progesterone',
+        'пролактин', 'prolactin',
+        'лг', 'lh', 'лютеинизирующий',
+        'фсг', 'fsh', 'фолликулостимулирующий',
+        'кортизол', 'cortisol',
+        'инсулин', 'insulin',
+        'дгэа', 'dhea', 'dheas',
+        'андростендион', 'androstenedione',
+        'соматотропин', 'hgh', 'стг',
+    ]
+    if any(kw in combined for kw in hormone_keywords):
+        return BiomarkerCategory.HORMONES
+    
+    # Щитовидная железа
+    thyroid_keywords = [
+        'ттг', 'tsh', 'тиреотропный',
+        'т3', 't3', 'трийодтиронин',
+        'т4', 't4', 'тироксин',
+        'ат-тпо', 'anti-tpo', 'антитела к тиреоидной',
+        'ат-тг', 'anti-tg', 'тиреоглобулин',
+    ]
+    if any(kw in combined for kw in thyroid_keywords):
+        return BiomarkerCategory.THYROID
+    
+    # Витамины
+    vitamin_keywords = [
+        'витамин', 'vitamin', 'vit',
+        'b12', 'b6', 'b1', 'b2', 'b9',
+        'фолиевая', 'folic', 'folate',
+        'кальциферол', 'calciferol', '25-oh',
+        'ретинол', 'retinol',
+        'токоферол', 'tocopherol',
+        'аскорбиновая', 'ascorbic',
+    ]
+    if any(kw in combined for kw in vitamin_keywords):
+        return BiomarkerCategory.VITAMINS
+    
+    # Минералы
+    mineral_keywords = [
+        'железо', 'iron', 'fe ', 'ферритин', 'ferritin',
+        'цинк', 'zinc', 'zn',
+        'магний', 'magnesium', 'mg',
+        'кальций', 'calcium', 'ca',
+        'калий', 'potassium', 'k+',
+        'натрий', 'sodium', 'na+',
+        'селен', 'selenium',
+        'медь', 'copper', 'cu',
+        'фосфор', 'phosphorus',
+    ]
+    if any(kw in combined for kw in mineral_keywords):
+        return BiomarkerCategory.MINERALS
+    
+    # Липиды
+    lipid_keywords = [
+        'холестерин', 'cholesterol', 'chol',
+        'лпвп', 'hdl', 'лпнп', 'ldl', 'лпонп', 'vldl',
+        'триглицерид', 'triglyceride', 'tg',
+        'липопротеин', 'lipoprotein',
+    ]
+    if any(kw in combined for kw in lipid_keywords):
+        return BiomarkerCategory.LIPIDS
+    
+    # Печень
+    liver_keywords = [
+        'алт', 'alt', 'аланин',
+        'аст', 'ast', 'аспартат',
+        'ггт', 'ggt', 'гамма-глутамил',
+        'билирубин', 'bilirubin',
+        'щелочная фосфатаза', 'alkaline phosphatase', 'alp',
+    ]
+    if any(kw in combined for kw in liver_keywords):
+        return BiomarkerCategory.LIVER
+    
+    # Почки
+    kidney_keywords = [
+        'креатинин', 'creatinine',
+        'мочевина', 'urea', 'bun',
+        'мочевая кислота', 'uric acid',
+        'скф', 'gfr', 'клиренс',
+        'цистатин', 'cystatin',
+    ]
+    if any(kw in combined for kw in kidney_keywords):
+        return BiomarkerCategory.KIDNEY
+    
+    # Биохимия (общая)
+    biochem_keywords = [
+        'глюкоза', 'glucose', 'glu',
+        'белок', 'protein', 'альбумин', 'albumin',
+        'амилаза', 'amylase',
+        'липаза', 'lipase',
+        'лактатдегидрогеназа', 'ldh',
+        'кфк', 'ck', 'креатинкиназа',
+    ]
+    if any(kw in combined for kw in biochem_keywords):
+        return BiomarkerCategory.BIOCHEMISTRY
+    
+    # Воспаление
+    inflammation_keywords = [
+        'срб', 'crp', 'с-реактивный',
+        'прокальцитонин', 'procalcitonin',
+        'интерлейкин', 'interleukin', 'il-',
+        'ферритин', 'ferritin',
+    ]
+    if any(kw in combined for kw in inflammation_keywords):
+        return BiomarkerCategory.INFLAMMATION
+    
+    return BiomarkerCategory.OTHER
 from app.models.user import User
 from app.schemas.analysis import (
     AnalysisCreate,
@@ -148,11 +285,15 @@ async def process_analysis_file(
             biomarker = result.scalar_one_or_none()
             
             if not biomarker:
-                # Create new biomarker entry
+                # Create new biomarker entry with auto-detected category
+                raw_name = bio_data.get("raw_name", bio_data["code"])
+                category = detect_biomarker_category(raw_name, bio_data["code"])
+                
                 biomarker = Biomarker(
                     code=bio_data["code"],
-                    name_ru=bio_data.get("raw_name", bio_data["code"]),
+                    name_ru=raw_name,
                     default_unit=bio_data.get("unit", ""),
+                    category=category,  # Auto-detected category
                 )
                 db.add(biomarker)
                 await db.flush()

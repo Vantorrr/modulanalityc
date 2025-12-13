@@ -95,9 +95,49 @@ async def ensure_db_schema():
             # or harmless if it fails due to other reasons.
             await conn.execute(text("ALTER TABLE user_biomarkers ALTER COLUMN analysis_id DROP NOT NULL"))
             logger.info("✅ HOTFIX APPLIED: user_biomarkers.analysis_id is now nullable")
+            
+            # Add lab_name column if not exists
+            await conn.execute(text("""
+                ALTER TABLE user_biomarkers 
+                ADD COLUMN IF NOT EXISTS lab_name VARCHAR(100)
+            """))
+            logger.info("✅ Added lab_name column to user_biomarkers")
     except Exception as e:
         # It's okay if it fails (e.g. table doesn't exist yet, handled by migrations)
         logger.warning(f"Schema hotfix note: {e}")
+    
+    # Update biomarker categories
+    await update_biomarker_categories()
+
+
+async def update_biomarker_categories():
+    """Update categories for existing biomarkers based on their names."""
+    from app.core.database import async_session_maker
+    from app.models.biomarker import Biomarker, BiomarkerCategory
+    from app.api.v1.analyses import detect_biomarker_category
+    from sqlalchemy import select, update
+    
+    try:
+        async with async_session_maker() as session:
+            # Get all biomarkers with OTHER category
+            stmt = select(Biomarker).where(Biomarker.category == BiomarkerCategory.OTHER)
+            result = await session.execute(stmt)
+            biomarkers = result.scalars().all()
+            
+            updated = 0
+            for bio in biomarkers:
+                new_category = detect_biomarker_category(bio.name_ru, bio.code)
+                if new_category != BiomarkerCategory.OTHER:
+                    bio.category = new_category
+                    updated += 1
+            
+            if updated > 0:
+                await session.commit()
+                logger.info(f"✅ Updated categories for {updated} biomarkers")
+            else:
+                logger.info("📋 All biomarker categories are up to date")
+    except Exception as e:
+        logger.warning(f"Could not update biomarker categories: {e}")
 
 
 # Create FastAPI app
