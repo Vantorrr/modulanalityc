@@ -1486,79 +1486,69 @@ function BiomarkerTablePage() {
         {/* Аналитика */}
         {analyses.length > 0 && <AnalyticsWidget analyses={analyses} />}
 
-        {/* AI Комментарии и Рекомендации */}
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-100 shadow-sm overflow-hidden">
-          {/* Header - всегда видно */}
+        {/* AI Заключение */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Header */}
           <button 
             onClick={() => setAiBlockExpanded(!aiBlockExpanded)}
-            className="w-full p-4 flex items-center justify-between hover:bg-purple-100/50 transition-colors"
+            className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🤖</span>
-              <h3 className="font-bold text-gray-800">Заключение ИИ</h3>
-              {!aiBlockExpanded && latestAiAnalysis?.ai_summary && (
-                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">Есть рекомендации</span>
-              )}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900">Заключение ИИ</h3>
+                {!aiBlockExpanded && latestAiAnalysis?.ai_summary && (
+                  <span className="text-xs text-gray-500">Есть рекомендации</span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">{aiBlockExpanded ? 'Свернуть' : 'Развернуть'}</span>
-              <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${aiBlockExpanded ? 'rotate-90' : ''}`} />
-            </div>
+            <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${aiBlockExpanded ? 'rotate-90' : ''}`} />
           </button>
           
-          {/* Content - сворачивается */}
-          {aiBlockExpanded && (
-            <div className="px-4 pb-4 space-y-4">
+          {/* Content */}
+          <div className={`overflow-hidden transition-all duration-300 ${aiBlockExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="px-5 pb-5 space-y-4 border-t border-gray-100">
               {/* AI Summary */}
-              <div className="bg-white/70 rounded-xl p-4 border border-purple-100">
-                <div className="text-sm text-gray-700 leading-relaxed">
+              <div className="pt-4">
+                <div className="text-sm text-gray-600 leading-relaxed">
                   {latestAiAnalysis?.ai_summary ? (
                     formatMarkdownText(latestAiAnalysis.ai_summary)
                   ) : biomarkers.length > 0 ? (
-                    <>
-                      <p className="mb-2">📊 <strong>Анализ ваших показателей:</strong></p>
-                      <p className="mb-2">
-                        Обнаружено {biomarkers.filter((b: any) => b.last_status !== 'normal').length} показателей, 
-                        требующих внимания. Рекомендуется консультация с врачом.
-                      </p>
-                    </>
+                    <p>
+                      Обнаружено <strong>{biomarkers.filter((b: any) => b.last_status !== 'normal').length}</strong> показателей, 
+                      требующих внимания. Рекомендуется консультация с врачом.
+                    </p>
                   ) : (
-                    <p className="text-gray-500">Загрузите анализы для получения AI-рекомендаций</p>
+                    <p className="text-gray-400">Загрузите анализы для получения рекомендаций</p>
                   )}
                 </div>
               </div>
               
-              {/* Рекомендуемые продукты из нашей базы */}
+              {/* Рекомендуемые продукты */}
               {products.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">💊</span>
-                    <span className="text-sm font-semibold text-gray-700">Рекомендуемые витамины</span>
-                    <span className="text-xs text-gray-400">из нашего каталога</span>
-                  </div>
-                  <div className="grid gap-2">
-                    {products.slice(0, 4).map((product: any, i: number) => (
-                      <div key={product.id || i} className="bg-white/70 rounded-xl p-3 border border-purple-100 flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
-                          i === 0 ? 'bg-gradient-to-br from-orange-400 to-pink-500' :
-                          i === 1 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' :
-                          i === 2 ? 'bg-gradient-to-br from-green-400 to-emerald-500' :
-                          'bg-gradient-to-br from-purple-400 to-indigo-500'
-                        }`}>
+                <div className="pt-2">
+                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Рекомендуемые препараты</h4>
+                  <div className="space-y-2">
+                    {products.slice(0, 3).map((product: any, i: number) => (
+                      <div key={product.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 font-medium text-sm">
                           {product.name?.charAt(0) || 'V'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 text-sm">{product.name}</div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{product.description || 'Витаминный комплекс'}</div>
+                          <div className="font-medium text-gray-900 text-sm truncate">{product.name}</div>
                           {product.price && (
-                            <div className="text-xs font-bold text-emerald-600 mt-0.5">{product.price} ₽</div>
+                            <div className="text-xs text-gray-500">{product.price} ₽</div>
                           )}
                         </div>
                         <a 
                           href={product.purchase_url || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-sm"
+                          className="px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
                         >
                           Купить
                         </a>
@@ -1573,17 +1563,17 @@ function BiomarkerTablePage() {
                 onClick={() => {
                   loadAnalyses();
                   loadBiomarkers();
-                  setToast({msg: '🔄 Данные обновлены', type: 'success'});
+                  setToast({msg: 'Данные обновлены', type: 'success'});
                 }}
-                className="w-full py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Обновить анализ
+                Обновить
               </button>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Поиск */}
