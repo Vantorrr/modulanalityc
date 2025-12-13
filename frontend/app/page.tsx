@@ -1618,80 +1618,120 @@ function BiomarkerTablePage() {
 
         {/* Список показателей по категориям (папкам) */}
         {!loading && filteredBiomarkers.length > 0 && (
-          <div className="space-y-3">
-            {Object.entries(groupedBiomarkers).map(([category, items]) => (
-              <div key={category} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                {/* Заголовок категории (папка) */}
-                <button
-                  onClick={() => toggleCategory(category)}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{categoryNames[category]?.split(' ')[0] || '📋'}</span>
-                    <span className="font-bold text-gray-800">
-                      {categoryNames[category]?.split(' ').slice(1).join(' ') || category}
-                    </span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                      {items.length}
-                    </span>
-                  </div>
-                  <ChevronRightIcon 
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
-                      expandedCategories.has(category) || expandedCategories.has('all') ? 'rotate-90' : ''
-                    }`} 
-                  />
-                </button>
-                
-                {/* Биомаркеры внутри категории */}
-                {(expandedCategories.has(category) || expandedCategories.has('all')) && (
-                  <div className="divide-y divide-gray-100">
-                    {items.map((bio: any) => (
-                      <button
-                        key={bio.code}
-                        onClick={() => openBiomarkerDetail(bio.code)}
-                        className="w-full px-4 py-3 hover:bg-gray-50 transition-colors text-left flex items-center gap-4 pl-12"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">{bio.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {bio.unit} • {bio.total_measurements} изм.
-                          </div>
+          <div className="space-y-4">
+            {Object.entries(groupedBiomarkers).map(([category, items]) => {
+              const isExpanded = expandedCategories.has(category) || expandedCategories.has('all');
+              const categoryColors: Record<string, string> = {
+                'HEMATOLOGY': 'from-red-500 to-rose-600',
+                'BIOCHEMISTRY': 'from-purple-500 to-violet-600',
+                'HORMONES': 'from-amber-500 to-orange-600',
+                'VITAMINS': 'from-green-500 to-emerald-600',
+                'MINERALS': 'from-cyan-500 to-teal-600',
+                'LIPIDS': 'from-pink-500 to-rose-600',
+                'LIVER': 'from-yellow-500 to-amber-600',
+                'KIDNEY': 'from-blue-500 to-indigo-600',
+                'THYROID': 'from-indigo-500 to-purple-600',
+                'INFLAMMATION': 'from-orange-500 to-red-600',
+                'OTHER': 'from-gray-500 to-slate-600',
+              };
+              const gradient = categoryColors[category] || categoryColors['OTHER'];
+              
+              return (
+                <div key={category} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                  {/* Заголовок категории (папка) */}
+                  <button
+                    onClick={() => toggleCategory(category)}
+                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-all duration-200 group"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Иконка папки с градиентом */}
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform`}>
+                        <span className="text-2xl filter drop-shadow-sm">
+                          {categoryNames[category]?.split(' ')[0] || '📋'}
+                        </span>
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-gray-800 text-lg">
+                          {categoryNames[category]?.split(' ').slice(1).join(' ') || category}
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          {bio.last_value !== null && bio.last_value !== undefined ? (
-                            <div>
-                              <div className={`text-lg font-bold ${
-                                bio.last_status === 'normal' ? 'text-green-600' :
-                                bio.last_status === 'low' || bio.last_status === 'high' ? 'text-orange-600' :
-                                'text-red-600'
-                              }`}>
-                                {bio.last_value}
-                              </div>
-                              {bio.last_measured_at && (
-                                <div className="text-xs text-gray-400">
-                                  {new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                  })}
-                                </div>
-                              )}
+                        <div className="text-sm text-gray-500">
+                          {items.length} {items.length === 1 ? 'показатель' : items.length < 5 ? 'показателя' : 'показателей'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Бейдж с количеством */}
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${gradient} text-white shadow-md`}>
+                        {items.length}
+                      </span>
+                      {/* Стрелка */}
+                      <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center transition-all duration-300 ${isExpanded ? 'bg-gray-200 rotate-90' : ''}`}>
+                        <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Биомаркеры внутри категории */}
+                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="border-t border-gray-100">
+                      {items.map((bio: any, idx: number) => (
+                        <button
+                          key={bio.code}
+                          onClick={() => openBiomarkerDetail(bio.code)}
+                          className={`w-full px-5 py-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all text-left flex items-center gap-4 ${idx !== items.length - 1 ? 'border-b border-gray-50' : ''}`}
+                        >
+                          {/* Индикатор статуса */}
+                          <div className={`w-2 h-10 rounded-full ${
+                            bio.last_status === 'normal' ? 'bg-green-400' :
+                            bio.last_status === 'low' ? 'bg-blue-400' :
+                            bio.last_status === 'high' ? 'bg-orange-400' :
+                            bio.last_status === 'critical' ? 'bg-red-500' :
+                            'bg-gray-200'
+                          }`} />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-800 truncate">{bio.name}</div>
+                            <div className="text-sm text-gray-500 mt-0.5 flex items-center gap-2">
+                              <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{bio.unit}</span>
+                              <span>•</span>
+                              <span>{bio.total_measurements} измерений</span>
                             </div>
-                          ) : (
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); openBiomarkerDetail(bio.code); }}
-                              className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
-                            >
-                              + Добавить
-                            </button>
-                          )}
-                        </div>
-                        <ChevronRightIcon className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                      </button>
-                    ))}
+                          </div>
+                          
+                          <div className="text-right flex-shrink-0">
+                            {bio.last_value !== null && bio.last_value !== undefined ? (
+                              <div>
+                                <div className={`text-xl font-bold ${
+                                  bio.last_status === 'normal' ? 'text-green-600' :
+                                  bio.last_status === 'low' ? 'text-blue-600' :
+                                  bio.last_status === 'high' ? 'text-orange-600' :
+                                  bio.last_status === 'critical' ? 'text-red-600' :
+                                  'text-gray-700'
+                                }`}>
+                                  {bio.last_value}
+                                </div>
+                                {bio.last_measured_at && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    {new Date(bio.last_measured_at).toLocaleDateString('ru-RU', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400 italic">нет данных</span>
+                            )}
+                          </div>
+                          
+                          <ChevronRightIcon className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
 
