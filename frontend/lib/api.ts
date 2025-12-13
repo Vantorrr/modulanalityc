@@ -445,6 +445,7 @@ export interface BiomarkerValueCreate {
   measured_at: string; // YYYY-MM-DD
   ref_min?: number;
   ref_max?: number;
+  lab_name?: string; // Название лаборатории
 }
 
 // API для таблицы анализов (биомаркеры)

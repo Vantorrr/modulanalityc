@@ -246,6 +246,13 @@ class UserBiomarker(Base):
         nullable=True,
     )
     
+    # Laboratory name (for manual entries)
+    lab_name: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Laboratory where the test was performed",
+    )
+    
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

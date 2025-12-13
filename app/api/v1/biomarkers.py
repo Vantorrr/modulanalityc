@@ -167,6 +167,7 @@ async def get_biomarker_detail(
             measured_at=value.measured_at,
             analysis_id=value.analysis_id,
             analysis_title=value.analysis.title if value.analysis else None,
+            lab_name=getattr(value, 'lab_name', None),  # Laboratory name
             created_at=value.created_at,
         ))
     
@@ -252,6 +253,7 @@ async def create_biomarker_value(
         ref_min=value_data.ref_min,
         ref_max=value_data.ref_max,
         measured_at=datetime.combine(value_data.measured_at, datetime.min.time()),
+        lab_name=value_data.lab_name,  # Laboratory name
     )
     
     db.add(user_biomarker)

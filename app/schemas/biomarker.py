@@ -19,6 +19,7 @@ class BiomarkerValueCreate(BaseModel):
     measured_at: date = Field(..., description="Дата измерения")
     ref_min: Optional[float] = Field(None, description="Минимум референса")
     ref_max: Optional[float] = Field(None, description="Максимум референса")
+    lab_name: Optional[str] = Field(None, max_length=100, description="Название лаборатории")
 
 
 class BiomarkerValueUpdate(BaseModel):
@@ -43,6 +44,7 @@ class BiomarkerHistoryItem(BaseSchema):
     measured_at: Optional[datetime] = None
     analysis_id: Optional[int] = None  # None if manually added
     analysis_title: Optional[str] = None
+    lab_name: Optional[str] = None  # Название лаборатории
     created_at: datetime
 
 

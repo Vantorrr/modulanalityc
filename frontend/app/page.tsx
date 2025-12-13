@@ -2139,14 +2139,17 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                         <span className="text-xs text-gray-400">({item.ref_min}–{item.ref_max})</span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {item.measured_at ? new Date(item.measured_at).toLocaleDateString('ru-RU', {
+                    <div className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-1">
+                      <span>{item.measured_at ? new Date(item.measured_at).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
-                      }) : '—'}
+                      }) : '—'}</span>
+                      {item.lab_name && (
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{item.lab_name}</span>
+                      )}
                       {item.analysis_title && (
-                        <span className="ml-2">• {item.analysis_title}</span>
+                        <span>• {item.analysis_title}</span>
                       )}
                     </div>
                   </div>
@@ -2217,6 +2220,9 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
   const [value, setValue] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [lab, setLab] = useState(''); // Лаборатория (опционально)
+  const [unit, setUnit] = useState(biomarkerUnit || ''); // Единицы измерения
+  const [refMin, setRefMin] = useState(''); // Референс мин
+  const [refMax, setRefMax] = useState(''); // Референс макс
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -2245,8 +2251,11 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
       
       await biomarkersApi.addValue(biomarkerCode, {
         value: numValue,
-        unit: biomarkerUnit || 'ед.',
+        unit: unit || biomarkerUnit || 'ед.',
         measured_at: date,
+        lab_name: lab || undefined,
+        ref_min: refMin ? parseFloat(refMin) : undefined,
+        ref_max: refMax ? parseFloat(refMax) : undefined,
       });
       
       onSuccess();
@@ -2294,24 +2303,33 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Значение */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
-              Значение <span className="text-red-500">*</span>
-            </label>
-            <div className="relative flex items-center group">
+          {/* Значение и Единицы */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                Значение <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={value}
                 onChange={handleValueChange}
-                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3.5 text-lg font-semibold text-gray-900 placeholder-gray-400 outline-none transition-all pr-16"
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3.5 text-lg font-semibold text-gray-900 placeholder-gray-400 outline-none transition-all"
                 placeholder="0.0"
                 autoFocus
               />
-              <span className="absolute right-4 text-gray-400 font-medium pointer-events-none">
-                {biomarkerUnit || 'ед.'}
-              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                Ед.изм.
+              </label>
+              <input
+                type="text"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-3 py-3.5 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none transition-all"
+                placeholder={biomarkerUnit || 'ед.'}
+              />
             </div>
           </div>
 
@@ -2349,6 +2367,32 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
               className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all placeholder-gray-400"
               placeholder="Например: Инвитро, КДЛ, Гемотест"
             />
+          </div>
+
+          {/* Референсы лаборатории */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+              Референсы лаборатории <span className="text-gray-400 font-normal">(опционально)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={refMin}
+                onChange={(e) => setRefMin(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all placeholder-gray-400"
+                placeholder="Мин (напр: 12.0)"
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                value={refMax}
+                onChange={(e) => setRefMax(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all placeholder-gray-400"
+                placeholder="Макс (напр: 160)"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1 ml-1">Укажите норму из бланка анализа</p>
           </div>
 
           {/* Кнопки */}
