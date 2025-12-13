@@ -4021,6 +4021,8 @@ function CalendarPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [customBiomarkers, setCustomBiomarkers] = useState<string>("");
   
   // Устанавливаем время по умолчанию на текущее + 1 час
   const getDefaultTime = () => {
@@ -4050,6 +4052,22 @@ function CalendarPage() {
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
 
+  // Категории биомаркеров
+  const biomarkerCategories: Record<string, string> = {
+    '': '—  Без категории',
+    'HEMATOLOGY': '🩸 Гематология',
+    'BIOCHEMISTRY': '🧪 Биохимия',
+    'HORMONES': '⚡ Гормоны',
+    'VITAMINS': '💊 Витамины',
+    'MINERALS': '🔬 Минералы',
+    'LIPIDS': '🫀 Липиды',
+    'LIVER': '🫁 Печень',
+    'KIDNEY': '💧 Почки',
+    'THYROID': '🦋 Щитовидная железа',
+    'INFLAMMATION': '🔥 Воспаление',
+    'OTHER': '📋 Прочее',
+  };
+
   useEffect(() => {
     calendarApi.getAll()
       .then(setReminders)
@@ -4075,18 +4093,30 @@ function CalendarPage() {
     try {
       const timeStr = `${selectedHour.padStart(2, '0')}:${selectedMinute.padStart(2, '0')}:00`;
       
+      // Формируем description с категорией и биомаркерами
+      let description = "";
+      if (selectedCategory) {
+        const metadata = {
+          category: selectedCategory,
+          biomarkers: customBiomarkers.trim() || null
+        };
+        description = JSON.stringify(metadata);
+      }
+      
       const reminder = await calendarApi.create({
         title: newTitle,
         scheduled_date: selectedDate,
         scheduled_time: timeStr,
-        reminder_type: "custom",
-        description: "",
+        reminder_type: selectedCategory ? "analysis" : "custom",
+        description: description,
         frequency: "once"
       } as any);
       setReminders(prev => [...prev, reminder]);
       setShowAddForm(false);
       setNewTitle("");
       setSelectedDate("");
+      setSelectedCategory("");
+      setCustomBiomarkers("");
       const defaultTime = getDefaultTime();
       setSelectedHour(defaultTime.hour);
       setSelectedMinute(defaultTime.minute);
@@ -4237,6 +4267,16 @@ function CalendarPage() {
             const dateStr = dateTime.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
             const timeStr = r.scheduled_time ? r.scheduled_time.substring(0, 5) : '00:00'; // HH:MM
             
+            // Парсим metadata из description
+            let metadata = null;
+            try {
+              if (r.description) {
+                metadata = JSON.parse(r.description);
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+
             return (
               <div 
                 key={r.id} 
@@ -4254,6 +4294,18 @@ function CalendarPage() {
                   <div className="text-xs text-gray-400 mt-0.5">
                     {dateStr} • {timeStr}
                   </div>
+                  {metadata?.category && (
+                    <div className="mt-2 text-xs">
+                      <span className="inline-block px-2 py-1 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg text-emerald-700 font-medium">
+                        {biomarkerCategories[metadata.category] || metadata.category}
+                      </span>
+                      {metadata.biomarkers && (
+                        <div className="text-gray-500 mt-1 leading-relaxed">
+                          {metadata.biomarkers}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -4280,6 +4332,44 @@ function CalendarPage() {
                 className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
               />
             </div>
+
+            {/* Категория биомаркеров */}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Категория анализов (необязательно)</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              >
+                {Object.entries(biomarkerCategories).map(([key, name]) => (
+                  <option key={key} value={key}>{name}</option>
+                ))}
+              </select>
+              {selectedCategory && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Будет напоминание сдать все анализы из категории "{biomarkerCategories[selectedCategory]}"
+                </p>
+              )}
+            </div>
+
+            {/* Дополнительные биомаркеры */}
+            {selectedCategory && (
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
+                  Дополнительные показатели (необязательно)
+                </label>
+                <textarea
+                  placeholder="Например: Тестостерон, Эстрадиол, Пролактин"
+                  value={customBiomarkers}
+                  onChange={(e) => setCustomBiomarkers(e.target.value)}
+                  rows={3}
+                  className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Перечислите конкретные показатели через запятую, если хотите уточнить
+                </p>
+              </div>
+            )}
             
             {/* Время отправки - единый стиль */}
             <div className="bg-gray-50 rounded-xl p-4">
@@ -4332,6 +4422,8 @@ function CalendarPage() {
                 setShowAddForm(false);
                 setNewTitle("");
                 setSelectedDate("");
+                setSelectedCategory("");
+                setCustomBiomarkers("");
                 const defaultTime = getDefaultTime();
                 setSelectedHour(defaultTime.hour);
                 setSelectedMinute(defaultTime.minute);
