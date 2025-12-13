@@ -1320,6 +1320,8 @@ function BiomarkerTablePage() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterAbnormal, setFilterAbnormal] = useState(false);
+  const [filterFilled, setFilterFilled] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Названия категорий на русском
@@ -1386,15 +1388,31 @@ function BiomarkerTablePage() {
     return 'OTHER';
   };
 
-  // Фильтрация по поиску
+  // Фильтрация
   const filteredBiomarkers = useMemo(() => {
-    if (!searchQuery.trim()) return biomarkers;
-    const query = searchQuery.toLowerCase();
-    return biomarkers.filter(b => 
-      b.name?.toLowerCase().includes(query) ||
-      b.code?.toLowerCase().includes(query)
-    );
-  }, [biomarkers, searchQuery]);
+    let result = biomarkers;
+
+    // Поиск
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(b => 
+        b.name?.toLowerCase().includes(query) ||
+        b.code?.toLowerCase().includes(query)
+      );
+    }
+
+    // Только отклонения
+    if (filterAbnormal) {
+      result = result.filter(b => 
+        b.last_status === 'low' || 
+        b.last_status === 'high' || 
+        b.last_status === 'critical_low' || 
+        b.last_status === 'critical_high'
+      );
+    }
+
+    return result;
+  }, [biomarkers, searchQuery, filterAbnormal]);
 
   // Группировка по категориям (с автоопределением)
   const groupedBiomarkers = useMemo(() => {
@@ -1418,8 +1436,8 @@ function BiomarkerTablePage() {
       groups[targetCat].push(b);
     });
 
-    // Если идет поиск - скрываем пустые категории
-    if (searchQuery) {
+    // Если идет поиск или включен фильтр "Только заполненные" - скрываем пустые категории
+    if (searchQuery || filterFilled) {
       Object.keys(groups).forEach(key => {
         if (groups[key].length === 0) {
           delete groups[key];
@@ -1428,7 +1446,7 @@ function BiomarkerTablePage() {
     }
 
     return groups;
-  }, [filteredBiomarkers, searchQuery]);
+  }, [filteredBiomarkers, searchQuery, filterFilled]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -1599,19 +1617,45 @@ function BiomarkerTablePage() {
           </div>
         </div>
 
-        {/* Поиск */}
-        {biomarkers.length > 0 && (
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Поиск показателей..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        {/* Панель фильтров */}
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Поиск */}
+            <div className="relative w-full md:w-1/3">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Поиск показателей..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-sm"
+              />
+            </div>
+
+            {/* Фильтры */}
+            <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={filterFilled}
+                  onChange={(e) => setFilterFilled(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">Скрыть пустые папки</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={filterAbnormal}
+                  onChange={(e) => setFilterAbnormal(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-600">Только отклонения</span>
+              </label>
+            </div>
           </div>
-        )}
+        </div>
 
         {loading && (
           <div className="text-center py-8">
