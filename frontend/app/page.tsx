@@ -896,6 +896,13 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     return Array.from(biomarkerMap.entries()).map(([code, name]) => ({ code, name }));
   }, [analyses]);
 
+  // Автовыбор первого показателя
+  useEffect(() => {
+    if (!selectedBiomarker && allBiomarkers.length > 0) {
+      setSelectedBiomarker(allBiomarkers[0].code);
+    }
+  }, [allBiomarkers, selectedBiomarker]);
+
   // Статичные периоды
   const periods = [
     { value: 'all', label: 'Все' },
@@ -1432,8 +1439,8 @@ function BiomarkerTablePage() {
       }
     });
 
-    // Если идет поиск или включен фильтр "Только заполненные" - скрываем пустые категории
-    if (searchQuery || filterFilled) {
+    // Если идет поиск, включен фильтр "Только заполненные" ИЛИ "Только отклонения" - скрываем пустые категории
+    if (searchQuery || filterFilled || filterAbnormal) {
       Object.keys(groups).forEach(key => {
         if (groups[key].length === 0) {
           delete groups[key];
