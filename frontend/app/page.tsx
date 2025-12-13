@@ -896,24 +896,13 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     return Array.from(biomarkerMap.entries()).map(([code, name]) => ({ code, name }));
   }, [analyses]);
 
-  // Умные периоды - показываем только доступные
-  const availablePeriods = useMemo(() => {
-    const periods: Array<{ value: '7d' | '14d' | '30d' | '3m' | '6m' | '1y' | 'all', label: string }> = [];
-    
-    // Детальные периоды для недавних данных
-    if (dataRange.days >= 7) periods.push({ value: '7d', label: '7 дн' });
-    if (dataRange.days >= 14) periods.push({ value: '14d', label: '14 дн' });
-    if (dataRange.days >= 30) periods.push({ value: '30d', label: '30 дн' });
-    
-    // Месячные периоды
-    if (dataRange.months >= 3) periods.push({ value: '3m', label: '3 мес' });
-    if (dataRange.months >= 6) periods.push({ value: '6m', label: '6 мес' });
-    if (dataRange.months >= 12) periods.push({ value: '1y', label: 'Год' });
-    
-    periods.push({ value: 'all', label: 'Все' });
-    
-    return periods;
-  }, [dataRange.days, dataRange.months]);
+  // Статичные периоды
+  const periods = [
+    { value: 'all', label: 'Все' },
+    { value: '1y', label: 'Год' },
+    { value: '6m', label: '6 мес' },
+    { value: '3m', label: '3 мес' },
+  ] as const;
 
   // Данные для графика
   const chartData = useMemo(() => {
@@ -1062,24 +1051,22 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
             </select>
           </div>
 
-          {/* Период - только доступные */}
-          {availablePeriods.length > 1 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {availablePeriods.map(p => (
-                <button
-                  key={p.value}
-                  onClick={() => setPeriod(p.value)}
-                  className={`px-3 py-1.5 text-[10px] font-medium rounded transition-colors ${
-                    period === p.value 
-                      ? 'bg-emerald-500 text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Период */}
+          <div className="flex bg-gray-100 rounded-lg p-1 gap-1 mt-3 w-fit">
+            {periods.map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`px-3 py-1 text-xs rounded-md transition-all ${
+                  period === p.value 
+                    ? 'bg-white shadow text-gray-900 font-medium' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
 
           {/* Мини-график */}
           <div className="mt-3">
