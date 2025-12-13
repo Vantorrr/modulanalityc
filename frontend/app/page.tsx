@@ -1336,6 +1336,55 @@ function BiomarkerTablePage() {
     'OTHER': '📋 Прочее',
   };
 
+  // Автоопределение категории по названию биомаркера
+  const detectCategory = (name: string, code: string): string => {
+    const n = (name || '').toLowerCase();
+    const c = (code || '').toLowerCase();
+    
+    // Гематология
+    if (/эритроцит|гемоглобин|гематокрит|лейкоцит|тромбоцит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил|rdw|mcv|mch|mchc|wbc|rbc|hgb|hct|plt/i.test(n + c)) {
+      return 'HEMATOLOGY';
+    }
+    // Печень
+    if (/алт|аст|alt|ast|билирубин|bilirubin|ггт|ggt|щф|alp|печен/i.test(n + c)) {
+      return 'LIVER';
+    }
+    // Почки
+    if (/креатинин|creatinine|мочевин|urea|мочев.*кислот|uric/i.test(n + c)) {
+      return 'KIDNEY';
+    }
+    // Липиды
+    if (/холестерин|cholesterol|лпвп|лпнп|hdl|ldl|триглицерид|lipid/i.test(n + c)) {
+      return 'LIPIDS';
+    }
+    // Гормоны
+    if (/ттг|tsh|т3|т4|t3|t4|тестостерон|эстроген|прогестерон|кортизол|инсулин|гормон/i.test(n + c)) {
+      return 'HORMONES';
+    }
+    // Витамины
+    if (/витамин|vitamin|b12|b6|d3|фолиев|фолат/i.test(n + c)) {
+      return 'VITAMINS';
+    }
+    // Минералы
+    if (/железо|iron|ферритин|ferritin|кальций|calcium|магний|magnesium|калий|potassium|натрий|sodium|цинк|zinc/i.test(n + c)) {
+      return 'MINERALS';
+    }
+    // Воспаление
+    if (/срб|crp|соэ|esr|воспал/i.test(n + c)) {
+      return 'INFLAMMATION';
+    }
+    // Биохимия (общее)
+    if (/глюкоз|glucose|белок|protein|альбумин|albumin|амилаз|amylase|кфк|ck|лдг|ldh/i.test(n + c)) {
+      return 'BIOCHEMISTRY';
+    }
+    // Щитовидка
+    if (/щитовид|thyroid/i.test(n + c)) {
+      return 'THYROID';
+    }
+    
+    return 'OTHER';
+  };
+
   // Фильтрация по поиску
   const filteredBiomarkers = useMemo(() => {
     if (!searchQuery.trim()) return biomarkers;
@@ -1346,11 +1395,12 @@ function BiomarkerTablePage() {
     );
   }, [biomarkers, searchQuery]);
 
-  // Группировка по категориям
+  // Группировка по категориям (с автоопределением)
   const groupedBiomarkers = useMemo(() => {
     const groups: Record<string, any[]> = {};
     filteredBiomarkers.forEach(b => {
-      const cat = b.category || 'OTHER';
+      // Используем автоопределение категории по названию
+      const cat = detectCategory(b.name || '', b.code || '');
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(b);
     });
