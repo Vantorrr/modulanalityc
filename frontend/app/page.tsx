@@ -2212,7 +2212,9 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         {/* Заголовок */}
         <div className="bg-white rounded-xl shadow-md p-4">
           <h1 className="text-xl font-bold text-gray-800">{biomarker.name || biomarker.code || 'Биомаркер'}</h1>
-          <p className="text-sm text-gray-500 mt-1">{biomarker.unit || '—'}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {biomarker.unit || history.find((h: any) => h.unit)?.unit || '—'}
+          </p>
           
           {/* Статистика */}
           {(() => {
@@ -2220,6 +2222,8 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
             const lastRefMin = history.find((h: any) => h.ref_min != null)?.ref_min;
             const lastRefMax = history.find((h: any) => h.ref_max != null)?.ref_max;
             const hasRef = lastRefMin !== undefined && lastRefMax !== undefined;
+            // Ищем единицу измерения (у биомаркера или в истории)
+            const displayUnit = biomarker.unit || history.find((h: any) => h.unit)?.unit;
             
             return (
               <div className="grid grid-cols-4 gap-2 mt-4" role="region" aria-label="Статистика">
@@ -2229,7 +2233,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                     {hasRef ? (
                       <span>
                         {lastRefMin}–{lastRefMax}
-                        {biomarker.unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                        {displayUnit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{displayUnit}</span>}
                       </span>
                     ) : (
                       '—'
@@ -2240,21 +2244,21 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                   <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Минимум</div>
                   <div className="text-lg font-bold text-blue-600 leading-none">
                     {biomarker.min_value?.toFixed(1) ?? '—'}
-                    {biomarker.min_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                    {biomarker.min_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{displayUnit}</span>}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Среднее</div>
                   <div className="text-lg font-bold text-gray-700 leading-none">
                     {biomarker.avg_value?.toFixed(1) ?? '—'}
-                    {biomarker.avg_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                    {biomarker.avg_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{displayUnit}</span>}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Максимум</div>
                   <div className="text-lg font-bold text-red-600 leading-none">
                     {biomarker.max_value?.toFixed(1) ?? '—'}
-                    {biomarker.max_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                    {biomarker.max_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{displayUnit}</span>}
                   </div>
                 </div>
               </div>
