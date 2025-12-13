@@ -1398,15 +1398,37 @@ function BiomarkerTablePage() {
 
   // Группировка по категориям (с автоопределением)
   const groupedBiomarkers = useMemo(() => {
+    // Инициализируем все категории
     const groups: Record<string, any[]> = {};
+    // Порядок важен!
+    const orderedCategories = [
+      'HEMATOLOGY', 'BIOCHEMISTRY', 'HORMONES', 'VITAMINS', 'MINERALS',
+      'LIPIDS', 'LIVER', 'KIDNEY', 'THYROID', 'INFLAMMATION', 'OTHER'
+    ];
+    
+    orderedCategories.forEach(cat => {
+      groups[cat] = [];
+    });
+
+    // Заполняем данными
     filteredBiomarkers.forEach(b => {
       // Используем автоопределение категории по названию
       const cat = detectCategory(b.name || '', b.code || '');
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(b);
+      const targetCat = groups[cat] ? cat : 'OTHER';
+      groups[targetCat].push(b);
     });
+
+    // Если идет поиск - скрываем пустые категории
+    if (searchQuery) {
+      Object.keys(groups).forEach(key => {
+        if (groups[key].length === 0) {
+          delete groups[key];
+        }
+      });
+    }
+
     return groups;
-  }, [filteredBiomarkers]);
+  }, [filteredBiomarkers, searchQuery]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -1597,19 +1619,17 @@ function BiomarkerTablePage() {
           </div>
         )}
 
-        {!loading && biomarkers.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-            <div className="text-5xl mb-4">📊</div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Нет данных</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Загрузите анализы чтобы увидеть показатели
-            </p>
-          </div>
-        )}
-
         {/* Список показателей по категориям (папкам) */}
-        {!loading && filteredBiomarkers.length > 0 && (
+        {!loading && (
           <div className="space-y-4">
+            {Object.keys(groupedBiomarkers).length === 0 && searchQuery && (
+               <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+                <div className="text-3xl mb-3">🔍</div>
+                <h3 className="text-md font-semibold text-gray-700">Ничего не найдено</h3>
+                <p className="text-sm text-gray-500 mt-1">Попробуйте изменить запрос</p>
+              </div>
+            )}
+
             {Object.entries(groupedBiomarkers).map(([category, items]) => {
               const isExpanded = expandedCategories.has(category) || expandedCategories.has('all');
               const categoryColors: Record<string, string> = {
@@ -1737,15 +1757,6 @@ function BiomarkerTablePage() {
           </div>
         )}
 
-        {!loading && biomarkers.length > 0 && filteredBiomarkers.length === 0 && (
-          <div className="text-center py-8 bg-white rounded-xl shadow-sm">
-            <div className="text-3xl mb-3">🔍</div>
-            <h3 className="text-md font-semibold text-gray-700">Ничего не найдено</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Попробуйте изменить запрос
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Модалка добавления нового показателя в категорию */}
