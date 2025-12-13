@@ -2215,29 +2215,48 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
           <p className="text-sm text-gray-500 mt-1">{biomarker.unit || '—'}</p>
           
           {/* Статистика */}
-          <div className="grid grid-cols-3 gap-4 mt-4" role="region" aria-label="Статистика">
-            <div className="text-center">
-              <div className="text-xs text-gray-500">Минимум</div>
-              <div className="text-lg font-bold text-blue-600">
-                {biomarker.min_value?.toFixed(1) ?? '—'}
-                {biomarker.min_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
+          {(() => {
+            // Ищем последние доступные референсные значения
+            const lastRefMin = history.find((h: any) => h.ref_min != null)?.ref_min;
+            const lastRefMax = history.find((h: any) => h.ref_max != null)?.ref_max;
+            const hasRef = lastRefMin !== undefined && lastRefMax !== undefined;
+            
+            return (
+              <div className="grid grid-cols-4 gap-2 mt-4" role="region" aria-label="Статистика">
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Реф. знач.</div>
+                  <div className="text-sm font-bold text-gray-900 leading-tight">
+                    {hasRef ? (
+                      <span>{lastRefMin}–{lastRefMax}</span>
+                    ) : (
+                      '—'
+                    )}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Минимум</div>
+                  <div className="text-lg font-bold text-blue-600 leading-none">
+                    {biomarker.min_value?.toFixed(1) ?? '—'}
+                    {biomarker.min_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Среднее</div>
+                  <div className="text-lg font-bold text-gray-700 leading-none">
+                    {biomarker.avg_value?.toFixed(1) ?? '—'}
+                    {biomarker.avg_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 font-medium whitespace-nowrap mb-0.5">Максимум</div>
+                  <div className="text-lg font-bold text-red-600 leading-none">
+                    {biomarker.max_value?.toFixed(1) ?? '—'}
+                    {biomarker.max_value !== undefined && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{biomarker.unit}</span>}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500">Среднее</div>
-              <div className="text-lg font-bold text-gray-700">
-                {biomarker.avg_value?.toFixed(1) ?? '—'}
-                {biomarker.avg_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500">Максимум</div>
-              <div className="text-lg font-bold text-red-600">
-                {biomarker.max_value?.toFixed(1) ?? '—'}
-                {biomarker.max_value !== undefined && <span className="text-xs font-normal text-gray-500 ml-1">{biomarker.unit}</span>}
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* График */}
