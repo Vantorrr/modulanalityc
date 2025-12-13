@@ -2024,7 +2024,9 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
   const [showAddDateModal, setShowAddDateModal] = useState(false);
   const [editingValue, setEditingValue] = useState<any>(null); // Для редактирования
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
-  const [period, setPeriod] = useState<'all' | '1y' | '6m' | '3m'>('all');
+  const [period, setPeriod] = useState<'all' | '1y' | '6m' | '3m' | 'custom'>('all');
+  const [customRange, setCustomRange] = useState<{start: string, end: string} | null>(null);
+  const [showRangePicker, setShowRangePicker] = useState(false);
   
   console.log('[BiomarkerDetail] Rendering with biomarker:', biomarker?.name, biomarker?.history?.length);
   
@@ -2080,7 +2082,17 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         return dateA - dateB;
       });
 
-    if (period !== 'all') {
+    if (period === 'custom' && customRange) {
+      const start = new Date(customRange.start);
+      const end = new Date(customRange.end);
+      // Set end to end of day
+      end.setHours(23, 59, 59, 999);
+      
+      data = data.filter((h: any) => {
+        const d = new Date(h.measured_at || h.created_at);
+        return d >= start && d <= end;
+      });
+    } else if (period !== 'all') {
       const now = new Date();
       const cutoff = new Date();
       
@@ -2216,7 +2228,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
               {(['all', '1y', '6m', '3m'] as const).map((p) => (
                 <button
                   key={p}
-                  onClick={() => setPeriod(p)}
+                  onClick={() => { setPeriod(p); setCustomRange(null); }}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${
                     period === p ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -2224,6 +2236,15 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
                   {p === 'all' ? 'Все' : p === '1y' ? 'Год' : p === '6m' ? '6 мес' : '3 мес'}
                 </button>
               ))}
+              <button
+                onClick={() => setShowRangePicker(true)}
+                className={`px-2 py-1 text-xs rounded-md transition-all flex items-center ${
+                  period === 'custom' ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title="Выбрать период"
+              >
+                📅
+              </button>
             </div>
           </div>
           {renderChart()}
@@ -2307,6 +2328,66 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
           </div>
         </div>
       </div>
+
+      {/* Модалка выбора периода */}
+      {showRangePicker && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+          onClick={(e) => e.target === e.currentTarget && setShowRangePicker(false)}
+        >
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-4 text-gray-900">Выбрать период</h3>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const start = formData.get('start') as string;
+              const end = formData.get('end') as string;
+              
+              if (start && end) {
+                setCustomRange({ start, end });
+                setPeriod('custom');
+                setShowRangePicker(false);
+              }
+            }} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Начало</label>
+                <input 
+                  name="start" 
+                  type="date" 
+                  required
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Конец</label>
+                <input 
+                  name="end" 
+                  type="date" 
+                  required
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRangePicker(false)}
+                  className="py-3 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="py-3 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Применить
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Модалка добавления */}
       {showAddDateModal && (
