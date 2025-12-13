@@ -363,7 +363,7 @@ export default function Home() {
         </header>
 
           {/* Content */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto pb-20">
             {activeTab === "home" && <HomePage onNavigate={setActiveTab} />}
             {activeTab === "analyses" && <BiomarkerTablePage />}
             {activeTab === "medcard" && <MedcardPage />}
@@ -372,7 +372,7 @@ export default function Home() {
           </main>
 
           {/* Bottom Navigation */}
-          <nav className="bg-white border-t border-gray-200 px-2 py-2">
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 z-50 max-w-md mx-auto">
             <div className="flex items-center justify-around">
               {[
                 { id: "home", label: "Главная", Icon: HomeIcon },
