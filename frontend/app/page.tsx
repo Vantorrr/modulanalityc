@@ -1446,7 +1446,7 @@ function BiomarkerTablePage() {
     return result;
   }, [biomarkers, searchQuery, filterAbnormal]);
 
-  const [showCreateModal, setShowCreateModal] = useState(false); // Для создания нового показателя
+  const [showCreateModal, setShowCreateModal] = useState(false); // Удалить потом, если не используется
 
   // Группировка по категориям (с автоопределением)
   const groupedBiomarkers = useMemo(() => {
@@ -1524,7 +1524,13 @@ function BiomarkerTablePage() {
   };
 
   if (selectedBiomarker) {
-    return <BiomarkerDetailPage biomarker={selectedBiomarker} onBack={() => setSelectedBiomarker(null)} />;
+    return <BiomarkerDetailPage 
+      biomarker={selectedBiomarker} 
+      onBack={() => setSelectedBiomarker(null)} 
+      onUpdate={() => {
+        loadBiomarkers(); // Перезагрузка списка при обновлении в деталях
+      }}
+    />;
   }
 
   return (
@@ -1662,67 +1668,54 @@ function BiomarkerTablePage() {
           </div>
         </div>
 
-        {/* Поиск и Категория и Кнопка добавления */}
+        {/* Поиск и Категория */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              {/* Поиск */}
-              <div className="relative flex-1 w-full">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Поиск показателей..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-brand-500 focus:outline-none transition-all text-sm"
-                />
-              </div>
-              
-              {/* Кнопка "Внести вручную" */}
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="w-full md:w-auto px-4 py-2.5 bg-white border border-brand-200 text-brand-700 font-medium rounded-lg hover:bg-brand-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                <span className="text-lg leading-none">+</span>
-                Внести результат
-              </button>
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Поиск */}
+            <div className="relative flex-1 w-full md:w-auto">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Поиск показателей..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-brand-500 focus:outline-none transition-all text-sm"
+              />
             </div>
+            
+            {/* Категория */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full md:w-64 px-3 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-brand-500 focus:outline-none transition-all text-sm text-gray-700"
+            >
+              <option value="all">Все категории</option>
+              {Object.entries(categoryNames).map(([key, name]) => (
+                <option key={key} value={key}>{name}</option>
+              ))}
+            </select>
 
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-              {/* Категория */}
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full md:w-64 px-3 py-2.5 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-brand-500 focus:outline-none transition-all text-sm text-gray-700"
-              >
-                <option value="all">Все категории</option>
-                {Object.entries(categoryNames).map(([key, name]) => (
-                  <option key={key} value={key}>{name}</option>
-                ))}
-              </select>
+            {/* Фильтры */}
+            <div className="flex gap-4 items-center w-full md:w-auto justify-end md:justify-start">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={filterFilled}
+                  onChange={(e) => setFilterFilled(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm text-gray-600">Скрыть пустые</span>
+              </label>
 
-              {/* Фильтры */}
-              <div className="flex gap-4 items-center">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={filterFilled}
-                    onChange={(e) => setFilterFilled(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                  />
-                  <span className="text-sm text-gray-600">Скрыть пустые</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={filterAbnormal}
-                    onChange={(e) => setFilterAbnormal(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                  />
-                  <span className="text-sm text-gray-600">Только отклонения</span>
-                </label>
-              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={filterAbnormal}
+                  onChange={(e) => setFilterAbnormal(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-600">Только отклонения</span>
+              </label>
             </div>
           </div>
         </div>
@@ -2086,7 +2079,7 @@ function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: an
 }
 
 // Детальная страница биомаркера
-function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: () => void }) {
+function BiomarkerDetailPage({ biomarker, onBack, onUpdate }: { biomarker: any, onBack: () => void, onUpdate?: () => void }) {
   const [showAddDateModal, setShowAddDateModal] = useState(false);
   const [editingValue, setEditingValue] = useState<any>(null); // Для редактирования
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
@@ -2490,19 +2483,6 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
         </div>
       )}
 
-      {/* Модалка создания нового показателя */}
-      {showCreateModal && (
-        <CreateBiomarkerModal
-          categoryNames={categoryNames}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={async () => {
-            setShowCreateModal(false);
-            setToast({msg: 'Показатель создан', type: 'success'});
-            await loadBiomarkers(); // Перезагружаем весь список
-          }}
-        />
-      )}
-
       {/* Модалка добавления значения */}
       {showAddDateModal && (
         <AddDateModal
@@ -2514,6 +2494,7 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
             setShowAddDateModal(false);
             setToast({msg: 'Значение добавлено', type: 'success'});
             await reloadBiomarker();
+            if (onUpdate) onUpdate(); // Обновляем глобальный список
           }}
         />
       )}
@@ -2536,206 +2517,8 @@ function BiomarkerDetailPage({ biomarker, onBack }: { biomarker: any, onBack: ()
 }
 
 
-// Модалка создания нового показателя
-function CreateBiomarkerModal({ categoryNames, onClose, onSuccess }: any) {
-  const [name, setName] = useState('');
-  const [value, setValue] = useState('');
-  const [unit, setUnit] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [lab, setLab] = useState('');
-  const [refMin, setRefMin] = useState('');
-  const [refMax, setRefMax] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!name.trim()) {
-      setError('Введите название показателя');
-      return;
-    }
-    
-    const numValue = parseFloat(value.replace(',', '.'));
-    if (!value || isNaN(numValue)) {
-      setError('Введите корректное значение');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Генерируем код из названия (транслит или просто uppercase)
-      const code = name.trim().toUpperCase().replace(/\s+/g, '_');
-      
-      await biomarkersApi.addValue(code, {
-        value: numValue,
-        unit: unit || 'ед.',
-        measured_at: date,
-        lab_name: lab || undefined,
-        ref_min: refMin ? parseFloat(refMin.replace(',', '.')) : undefined,
-        ref_max: refMax ? parseFloat(refMax.replace(',', '.')) : undefined,
-      });
-      
-      onSuccess();
-    } catch (err: any) {
-      console.error("[CreateBiomarkerModal] Failed:", err);
-      setError(err?.message || 'Ошибка при создании');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formattedDate = new Date(date).toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'long', year: 'numeric'
-  });
-
-  return (
-    <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform transition-all scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 leading-tight">Внести результат</h2>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Новый или существующий показатель</p>
-          </div>
-          <button 
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-all -mr-2 -mt-2"
-          >
-            <span className="text-xl leading-none">&times;</span>
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium flex items-center gap-2">
-            <span>⚠️</span> {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Название */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">
-              Название показателя <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-brand-500 rounded-xl px-4 py-3 font-medium text-gray-900 placeholder-gray-400 outline-none transition-all"
-              placeholder="Например: Глюкоза"
-              autoFocus
-            />
-          </div>
-
-          {/* Значение и Единица */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">
-                Значение <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-brand-500 rounded-xl px-4 py-3 font-bold text-gray-900 placeholder-gray-400 outline-none transition-all"
-                placeholder="0.0"
-              />
-            </div>
-            <div className="w-1/3">
-              <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">
-                Ед. изм.
-              </label>
-              <input
-                type="text"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-brand-500 rounded-xl px-4 py-3 font-medium text-gray-900 placeholder-gray-400 outline-none transition-all"
-                placeholder="ед."
-              />
-            </div>
-          </div>
-
-          {/* Дата */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">
-              Дата измерения <span className="text-red-500">*</span>
-            </label>
-            <div className="relative group">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-              />
-              <div className="w-full bg-gray-50 border-2 border-transparent group-hover:bg-white group-hover:border-brand-200 rounded-xl px-4 py-3 flex items-center justify-between text-gray-900 transition-all cursor-pointer">
-                <span className="font-medium">{formattedDate}</span>
-                <CalendarIcon className="text-gray-400 group-hover:text-brand-500 transition-colors" size={20} />
-              </div>
-            </div>
-          </div>
-
-          {/* Лаборатория и референсы (свернуты в блок) */}
-          <div className="bg-gray-50 rounded-xl p-3 space-y-3">
-            <div className="text-xs font-bold text-gray-400 uppercase">Дополнительно</div>
-             <input
-              type="text"
-              value={lab}
-              onChange={(e) => setLab(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
-              placeholder="Лаборатория (Инвитро, КДЛ...)"
-            />
-            <div className="flex gap-2">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={refMin}
-                onChange={(e) => setRefMin(e.target.value)}
-                className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
-                placeholder="Норма от"
-              />
-              <input
-                type="text"
-                inputMode="decimal"
-                value={refMax}
-                onChange={(e) => setRefMax(e.target.value)}
-                className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
-                placeholder="Норма до"
-              />
-            </div>
-          </div>
-
-          {/* Кнопки */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all"
-              disabled={loading}
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="py-3 rounded-xl font-bold text-white bg-brand-500 hover:bg-brand-600 active:scale-95 disabled:bg-brand-300 disabled:scale-100 transition-all shadow-lg shadow-brand-200 flex items-center justify-center gap-2"
-              disabled={loading}
-            >
-              {loading ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // Модалка "Добавить дату"
+function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
 function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, onSuccess }: any) {
   const [value, setValue] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
