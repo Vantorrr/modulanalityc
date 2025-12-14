@@ -584,7 +584,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
               <span className="font-medium">✨ Отлично</span>
             ) : problemSystems.length > 0 && healthIndex >= 75 ? (
               <div>
-                <div className="font-medium mb-1">⚠️ Общий индекс высокий, но есть локальные проблемы:</div>
+                <div className="font-medium mb-1">⚠️ Общий индекс высокий, но есть отклонения от нормы:</div>
                 <div className="text-xs text-white/90 space-y-0.5">
                   {problemSystems.slice(0, 3).map(sys => (
                     <div key={sys.system}>• {sys.name} ({sys.normal}/{sys.total} в норме)</div>
