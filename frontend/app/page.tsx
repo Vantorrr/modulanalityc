@@ -452,19 +452,78 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
     acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status === 'normal').length : 0), 0
   );
   
-  // Индекс здоровья: процент показателей в норме (если нет данных - 0)
+  // Анализ здоровья по системам организма
+  const systemsHealth = useMemo(() => {
+    // Группируем биомаркеры по системам
+    const systemsMap: Record<string, { total: number; normal: number; name: string }> = {};
+    
+    analyses.forEach(analysis => {
+      if (!Array.isArray(analysis.biomarkers)) return;
+      
+      analysis.biomarkers.forEach(b => {
+        const category = b.category || 'OTHER';
+        if (!systemsMap[category]) {
+          systemsMap[category] = { total: 0, normal: 0, name: getCategoryName(category) };
+        }
+        systemsMap[category].total++;
+        if (b.status === 'normal') {
+          systemsMap[category].normal++;
+        }
+      });
+    });
+    
+    // Рассчитываем индекс для каждой системы
+    return Object.entries(systemsMap).map(([key, data]) => ({
+      system: key,
+      name: data.name,
+      total: data.total,
+      normal: data.normal,
+      index: Math.round((data.normal / data.total) * 100),
+      hasIssues: (data.normal / data.total) < 0.8, // Проблема если <80% в норме
+    }));
+  }, [analyses]);
+  
+  // Общий индекс здоровья
   const healthIndex = totalBiomarkers > 0 ? Math.round((normalBiomarkers / totalBiomarkers) * 100) : 0;
   
-  // Текст статуса на основе индекса
-  const healthStatus = healthIndex >= 90 ? 'Отлично' : 
-                       healthIndex >= 75 ? 'Хорошо' : 
-                       healthIndex >= 50 ? 'Средне' : 
-                       healthIndex > 0 ? 'Требует внимания' : 'Нет данных';
+  // Выявляем системы с проблемами
+  const problemSystems = systemsHealth.filter(s => s.hasIssues);
   
-  // Цвет карточки в зависимости от индекса
-  const healthColor = healthIndex >= 75 ? 'bg-brand-500 shadow-brand-200' : 
-                      healthIndex >= 50 ? 'bg-amber-500 shadow-amber-200' : 
+  // Текст статуса
+  const healthStatus = totalBiomarkers === 0 ? 'Нет данных' :
+                       healthIndex >= 90 && problemSystems.length === 0 ? 'Отлично' :
+                       healthIndex >= 80 && problemSystems.length > 0 ? `Есть проблемы: ${problemSystems.map(s => s.name).join(', ')}` :
+                       healthIndex >= 70 ? `Требует внимания (${problemSystems.length} систем)` :
+                       'Рекомендуем обследование';
+  
+  // Цвет карточки
+  const healthColor = healthIndex >= 85 && problemSystems.length === 0 ? 'bg-brand-500 shadow-brand-200' : 
+                      healthIndex >= 75 ? 'bg-amber-500 shadow-amber-200' : 
                       healthIndex > 0 ? 'bg-rose-500 shadow-rose-200' : 'bg-gray-400 shadow-gray-200';
+  
+  // Функция получения названия категории
+  function getCategoryName(category: string): string {
+    const names: Record<string, string> = {
+      'HEMATOLOGY': 'Кровь',
+      'BIOCHEMISTRY': 'Биохимия',
+      'HORMONES': 'Гормоны',
+      'VITAMINS': 'Витамины',
+      'MINERALS': 'Минералы',
+      'LIPIDS': 'Липиды',
+      'LIVER': 'Печень',
+      'KIDNEY': 'Почки',
+      'THYROID': 'Щитовидная',
+      'INFLAMMATION': 'Воспаление',
+      'CARDIOVASCULAR': 'Сердце',
+      'REPRODUCTIVE': 'Репродуктивная',
+      'IMMUNE': 'Иммунитет',
+      'ADRENAL': 'Надпочечники',
+      'NERVOUS': 'Нервная система',
+      'MUSCULOSKELETAL': 'Мышцы/Кости',
+      'OTHER': 'Прочее',
+    };
+    return names[category] || category;
+  }
 
   return (
     <div className="px-4 py-5 space-y-5">
@@ -479,14 +538,36 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
         
         <div className={`${healthColor} rounded-2xl p-5 text-white shadow-lg transition-all`}>
           <p className="text-white/80 text-sm mb-1">Индекс здоровья</p>
-          <div className="flex items-baseline gap-2 mb-4">
+          <div className="flex items-baseline gap-2 mb-3">
             <span className="text-3xl font-bold">{healthIndex}</span>
             <span className="text-white/80 text-sm">/ 100</span>
           </div>
-          <div className="flex justify-between text-xs text-white/80 mb-2">
-            <span>{healthStatus}</span>
+          
+          {/* Статус */}
+          <div className="text-sm mb-3">
+            {problemSystems.length === 0 && healthIndex >= 85 ? (
+              <span className="font-medium">✨ Отлично</span>
+            ) : problemSystems.length > 0 && healthIndex >= 75 ? (
+              <div>
+                <div className="font-medium mb-1">⚠️ Общий индекс высокий, но есть локальные проблемы:</div>
+                <div className="text-xs text-white/90 space-y-0.5">
+                  {problemSystems.slice(0, 3).map(sys => (
+                    <div key={sys.system}>• {sys.name} ({sys.normal}/{sys.total} в норме)</div>
+                  ))}
+                  {problemSystems.length > 3 && (
+                    <div>и ещё {problemSystems.length - 3}...</div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <span className="font-medium">{healthStatus}</span>
+            )}
+          </div>
+          
+          {/* Прогресс-бар */}
+          <div className="flex justify-between text-xs text-white/70 mb-2">
             {totalBiomarkers > 0 && (
-              <span>{normalBiomarkers} из {totalBiomarkers} в норме</span>
+              <span>{normalBiomarkers} из {totalBiomarkers} показателей в норме</span>
             )}
           </div>
           <div className="h-2 bg-white/20 rounded-full">
