@@ -1931,6 +1931,17 @@ function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: an
     'OTHER': [],
   };
 
+  // Популярные единицы измерения
+  const commonUnits = [
+    'ммоль/л', 'мкмоль/л', 'нмоль/л', 'пмоль/л',
+    'г/л', 'мг/л', 'мкг/л', 'нг/мл', 'пг/мл',
+    'Ед/л', 'мЕд/л', 'МЕ/л', 'МЕ/мл',
+    '%', 'г/дл', 'мг/дл',
+    '10^6/мкл', '10^3/мкл', '10^9/л', '10^12/л',
+    'фл', 'пг', 'мм/ч', 'сек',
+    'мкг/мл', 'нг/л', 'ед.',
+  ];
+
   const currentSuggestions = suggestions[category] || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1945,8 +1956,8 @@ function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: an
       setError('Введите значение');
       return;
     }
-    if (!unit.trim()) {
-      setError('Введите единицы измерения');
+    if (!unit) {
+      setError('Выберите единицы измерения');
       return;
     }
 
@@ -2044,13 +2055,16 @@ function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: an
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Единицы</label>
-              <input
-                type="text"
+              <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="нмоль/л"
-              />
+              >
+                <option value="">Выберите...</option>
+                {commonUnits.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
             </div>
           </div>
 
