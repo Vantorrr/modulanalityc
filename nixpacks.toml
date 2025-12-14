@@ -1,0 +1,6 @@
+[phases.setup]
+nixPkgs = ['nodejs-18_x', 'python311']
+
+[variables]
+NODE_VERSION = "18"
+
