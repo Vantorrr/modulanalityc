@@ -455,18 +455,18 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   // Функция определения категории биомаркера
   function detectBiomarkerCategory(name: string): string {
     const n = name.toLowerCase();
+    // Гематология (ПЕРВЫМ - чтобы не перепутать с биохимией)
+    if (/гемоглобин|эритроцит|лейкоцит|тромбоцит|гематокрит|тромбокрит|mcv|mch|mchc|rdw|mpv|pct|соэ|esr|ретикулоцит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил|цп|цпэ|цветовой|палочкоядер|сегментоядер|юные/i.test(n)) return 'HEMATOLOGY';
     // Гормоны
-    if (/тестостерон|эстрадиол|прогестерон|пролактин|лг|фсг|ттг|т3|т4|тироксин|кортизол|дгэа|андростендион|альдостерон/i.test(n)) return 'HORMONES';
-    // Гематология
-    if (/гемоглобин|эритроцит|лейкоцит|тромбоцит|гематокрит|mcv|mch|mchc|rdw|mpv|соэ|ретикулоцит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил/i.test(n)) return 'HEMATOLOGY';
+    if (/тестостерон|эстрадиол|прогестерон|пролактин|лг|фсг|кортизол|дгэа|андростендион|альдостерон/i.test(n)) return 'HORMONES';
+    // Щитовидная (отдельно от гормонов)
+    if (/ттг|т3|т4|тироксин|трийодтиронин|тиреоглобулин|ат-тпо|ат-тг|tsh/i.test(n)) return 'THYROID';
     // Липиды
     if (/холестерин|лпнп|лпвп|триглицерид|липопротеин|апо\s?[ab]/i.test(n)) return 'LIPIDS';
     // Печень
     if (/алт|аст|билирубин|ггт|щф|альбумин|белок общий|гамма-глутамил/i.test(n)) return 'LIVER';
     // Почки
     if (/креатинин|мочевина|мочевая кислота|скф|цистатин|клубочков/i.test(n)) return 'KIDNEY';
-    // Щитовидная
-    if (/ттг|т3|т4|тироксин|трийодтиронин|тиреоглобулин|ат-тпо|ат-тг/i.test(n)) return 'THYROID';
     // Витамины
     if (/витамин|b12|фолиевая|фолат|d\s|25-oh/i.test(n)) return 'VITAMINS';
     // Минералы
@@ -475,7 +475,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
     if (/срб|c-реактивный|прокальцитонин|интерлейкин|tnf|фибриноген/i.test(n)) return 'INFLAMMATION';
     // Сердечно-сосудистая
     if (/тропонин|bnp|nt-probnp|гомоцистеин|миоглобин|креатинкиназа-мв/i.test(n)) return 'CARDIOVASCULAR';
-    // Биохимия (общее)
+    // Биохимия (общее - в конце как fallback)
     if (/глюкоз|гликир|hba1c|инсулин|амилаз|липаз/i.test(n)) return 'BIOCHEMISTRY';
     return 'OTHER';
   }
@@ -1481,8 +1481,8 @@ function BiomarkerTablePage() {
     const n = (name || '').toLowerCase();
     const c = (code || '').toLowerCase();
     
-    // Гематология
-    if (/эритроцит|гемоглобин|гематокрит|лейкоцит|тромбоцит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил|rdw|mcv|mch|mchc|wbc|rbc|hgb|hct|plt/i.test(n + c)) {
+    // Гематология (ПЕРВЫМ - общий анализ крови)
+    if (/эритроцит|гемоглобин|гематокрит|лейкоцит|тромбоцит|тромбокрит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил|rdw|mcv|mch|mchc|wbc|rbc|hgb|hct|plt|pct|соэ|esr|цп|цпэ|цветовой|палочкоядер|сегментоядер|юные|ретикулоцит|mpv/i.test(n + c)) {
       return 'HEMATOLOGY';
     }
     // Печень
@@ -1497,9 +1497,13 @@ function BiomarkerTablePage() {
     if (/холестерин|cholesterol|лпвп|лпнп|hdl|ldl|триглицерид|lipid/i.test(n + c)) {
       return 'LIPIDS';
     }
-    // Гормоны
-    if (/ттг|tsh|т3|т4|t3|t4|тестостерон|эстроген|прогестерон|кортизол|инсулин|гормон/i.test(n + c)) {
+    // Гормоны (без ТТГ - это щитовидка)
+    if (/тестостерон|эстроген|прогестерон|кортизол|инсулин|пролактин|лг|фсг/i.test(n + c)) {
       return 'HORMONES';
+    }
+    // Щитовидка
+    if (/ттг|tsh|т3|т4|t3|t4|тироксин|трийод|щитовид|thyroid/i.test(n + c)) {
+      return 'THYROID';
     }
     // Витамины
     if (/витамин|vitamin|b12|b6|d3|фолиев|фолат/i.test(n + c)) {
@@ -1509,17 +1513,13 @@ function BiomarkerTablePage() {
     if (/железо|iron|ферритин|ferritin|кальций|calcium|магний|magnesium|калий|potassium|натрий|sodium|цинк|zinc/i.test(n + c)) {
       return 'MINERALS';
     }
-    // Воспаление
-    if (/срб|crp|соэ|esr|воспал/i.test(n + c)) {
+    // Воспаление (без СОЭ - это гематология)
+    if (/срб|crp|c-реактив|воспал|прокальцитонин/i.test(n + c)) {
       return 'INFLAMMATION';
     }
     // Биохимия (общее)
     if (/глюкоз|glucose|белок|protein|альбумин|albumin|амилаз|amylase|кфк|ck|лдг|ldh/i.test(n + c)) {
       return 'BIOCHEMISTRY';
-    }
-    // Щитовидка
-    if (/щитовид|thyroid/i.test(n + c)) {
-      return 'THYROID';
     }
     
     // Новые категории

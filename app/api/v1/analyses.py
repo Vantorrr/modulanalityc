@@ -33,6 +33,7 @@ def detect_biomarker_category(name: str, code: str) -> BiomarkerCategory:
         'лейкоцит', 'leukocyte', 'wbc',
         'тромбоцит', 'platelet', 'plt', 'mpv',
         'гематокрит', 'hematocrit', 'hct',
+        'тромбокрит', 'thrombocrit', 'pct',
         'ретикулоцит', 'reticulocyte',
         'нейтрофил', 'neutrophil',
         'лимфоцит', 'lymphocyte',
@@ -40,6 +41,8 @@ def detect_biomarker_category(name: str, code: str) -> BiomarkerCategory:
         'эозинофил', 'eosinophil',
         'базофил', 'basophil',
         'соэ', 'esr', 'coe',
+        'цп', 'цпэ', 'цветовой показатель', 'color index',
+        'палочкоядер', 'сегментоядер', 'юные',
     ]
     if any(kw in combined for kw in hematology_keywords):
         return BiomarkerCategory.HEMATOLOGY
