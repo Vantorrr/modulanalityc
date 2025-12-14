@@ -1438,7 +1438,10 @@ function BiomarkerTablePage() {
     const groups: Record<string, any[]> = {};
     const orderedCategories = [
       'HEMATOLOGY', 'BIOCHEMISTRY', 'HORMONES', 'VITAMINS', 'MINERALS',
-      'LIPIDS', 'LIVER', 'KIDNEY', 'THYROID', 'INFLAMMATION', 'OTHER'
+      'LIPIDS', 'LIVER', 'KIDNEY', 'THYROID', 'INFLAMMATION',
+      'GASTROINTESTINAL', 'BONE', 'MUSCULOSKELETAL', 'ADRENAL', 'NERVOUS',
+      'PANCREAS', 'PARATHYROID', 'CARDIOVASCULAR', 'REPRODUCTIVE', 'URINARY',
+      'IMMUNE', 'COAGULATION', 'OTHER'
     ];
     
     // Если выбрана конкретная категория, берем только её
@@ -1452,8 +1455,8 @@ function BiomarkerTablePage() {
 
     // Заполняем данными
     filteredBiomarkers.forEach(b => {
-      // Используем автоопределение категории по названию
-      const cat = detectCategory(b.name || '', b.code || '');
+      // Используем category из API, если есть, иначе определяем автоматически
+      const cat = (b as any).category?.toUpperCase() || detectCategory(b.name || '', b.code || '');
       const targetCat = groups[cat] ? cat : 'OTHER';
       
       // Добавляем только если категория отображается
