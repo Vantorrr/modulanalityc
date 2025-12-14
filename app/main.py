@@ -106,8 +106,35 @@ async def ensure_db_schema():
         # It's okay if it fails (e.g. table doesn't exist yet, handled by migrations)
         logger.warning(f"Schema hotfix note: {e}")
     
+    # Add new biomarker category enum values (HOTFIX for Railway migration issues)
+    await add_biomarker_category_enums()
+    
     # Update biomarker categories
     await update_biomarker_categories()
+
+
+async def add_biomarker_category_enums():
+    """Add new biomarker category enum values if they don't exist."""
+    from app.core.database import engine
+    from sqlalchemy import text
+    
+    new_categories = [
+        'gastrointestinal', 'bone', 'musculoskeletal', 'adrenal',
+        'nervous', 'pancreas', 'parathyroid', 'cardiovascular',
+        'reproductive', 'urinary', 'immune', 'coagulation'
+    ]
+    
+    try:
+        async with engine.begin() as conn:
+            for category in new_categories:
+                try:
+                    await conn.execute(text(f"ALTER TYPE biomarkercategory ADD VALUE IF NOT EXISTS '{category}'"))
+                except Exception as e:
+                    # Value might already exist or other error - continue
+                    pass
+            logger.info(f"✅ Biomarker category enum values checked/added")
+    except Exception as e:
+        logger.warning(f"Could not add biomarker category enums: {e}")
 
 
 async def update_biomarker_categories():
