@@ -238,18 +238,6 @@ async def create_biomarker_value(
         
         category = detect_biomarker_category(name_ru, biomarker_code)
         
-        # HOTFIX: Use only safe (old) categories until new enum values are added to PostgreSQL
-        safe_categories = {
-            BiomarkerCategory.HEMATOLOGY, BiomarkerCategory.BIOCHEMISTRY,
-            BiomarkerCategory.HORMONES, BiomarkerCategory.VITAMINS,
-            BiomarkerCategory.MINERALS, BiomarkerCategory.LIPIDS,
-            BiomarkerCategory.LIVER, BiomarkerCategory.KIDNEY,
-            BiomarkerCategory.THYROID, BiomarkerCategory.INFLAMMATION,
-            BiomarkerCategory.OTHER,
-        }
-        if category not in safe_categories:
-            category = BiomarkerCategory.OTHER
-        
         biomarker = Biomarker(
             code=biomarker_code,
             name_ru=name_ru,

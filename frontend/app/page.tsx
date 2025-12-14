@@ -1892,11 +1892,10 @@ function BiomarkerTablePage() {
           categoryName={categoryNames[addBiomarkerCategory] || addBiomarkerCategory}
           onClose={() => setAddBiomarkerCategory(null)}
           onSuccess={async () => {
-            // Автоматически раскрываем папку "Прочее" (показатели сохраняются туда из-за fallback)
+            // Автоматически раскрываем папку, в которую добавили показатель
             setExpandedCategories(prev => {
               const next = new Set(prev);
-              next.add('OTHER'); // Новые показатели попадают в OTHER
-              next.add(addBiomarkerCategory); // И исходную папку тоже
+              next.add(addBiomarkerCategory);
               return next;
             });
             setAddBiomarkerCategory(null);
@@ -1905,7 +1904,7 @@ function BiomarkerTablePage() {
             await loadBiomarkers();
             
             // Показываем уведомление
-            setToast({msg: 'Показатель добавлен в папку "Прочее"!', type: 'success'});
+            setToast({msg: 'Показатель добавлен!', type: 'success'});
           }}
         />
       )}
