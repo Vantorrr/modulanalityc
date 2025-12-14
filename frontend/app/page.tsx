@@ -1729,6 +1729,18 @@ function BiomarkerTablePage() {
                 'KIDNEY': 'from-blue-500 to-indigo-600',
                 'THYROID': 'from-indigo-500 to-purple-600',
                 'INFLAMMATION': 'from-orange-500 to-red-600',
+                'GASTROINTESTINAL': 'from-lime-500 to-green-600',
+                'BONE': 'from-stone-500 to-gray-600',
+                'MUSCULOSKELETAL': 'from-red-600 to-rose-700',
+                'ADRENAL': 'from-yellow-600 to-orange-700',
+                'NERVOUS': 'from-purple-600 to-indigo-700',
+                'PANCREAS': 'from-amber-600 to-yellow-700',
+                'PARATHYROID': 'from-sky-500 to-blue-600',
+                'CARDIOVASCULAR': 'from-red-500 to-pink-600',
+                'REPRODUCTIVE': 'from-pink-600 to-rose-700',
+                'URINARY': 'from-cyan-600 to-blue-700',
+                'IMMUNE': 'from-brand-500 to-green-700',
+                'COAGULATION': 'from-rose-600 to-red-700',
                 'OTHER': 'from-gray-500 to-slate-600',
               };
               const gradient = categoryColors[category] || categoryColors['OTHER'];
