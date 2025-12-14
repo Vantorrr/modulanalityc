@@ -118,7 +118,6 @@ async def add_biomarker_category_enums():
     from app.core.database import engine
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
-    import asyncpg
     
     new_categories = [
         'gastrointestinal', 'bone', 'musculoskeletal', 'adrenal',
@@ -127,28 +126,25 @@ async def add_biomarker_category_enums():
     ]
     
     # ALTER TYPE ... ADD VALUE cannot run inside a transaction!
-    # We need to use raw asyncpg connection with autocommit
+    # Create a new engine with isolation_level AUTOCOMMIT
     try:
-        # Get connection URL from engine
-        url = str(engine.url)
-        # Convert from postgresql+asyncpg:// to postgresql://
-        raw_url = url.replace('postgresql+asyncpg://', 'postgresql://')
+        autocommit_engine = create_async_engine(
+            str(engine.url),
+            isolation_level="AUTOCOMMIT"
+        )
         
-        # Connect directly with asyncpg (autocommit by default)
-        conn = await asyncpg.connect(raw_url)
-        try:
+        async with autocommit_engine.connect() as conn:
             for category in new_categories:
                 try:
-                    await conn.execute(f"ALTER TYPE biomarkercategory ADD VALUE IF NOT EXISTS '{category}'")
+                    await conn.execute(text(f"ALTER TYPE biomarkercategory ADD VALUE IF NOT EXISTS '{category}'"))
                     logger.info(f"  + Added enum value: {category}")
-                except asyncpg.exceptions.DuplicateObjectError:
-                    # Value already exists - this is fine
-                    pass
                 except Exception as e:
-                    logger.warning(f"  Could not add {category}: {e}")
-            logger.info(f"✅ Biomarker category enum values checked/added")
-        finally:
-            await conn.close()
+                    # Value might already exist or other error - continue
+                    if 'already exists' not in str(e).lower() and 'duplicate' not in str(e).lower():
+                        logger.warning(f"  Could not add {category}: {e}")
+            
+        await autocommit_engine.dispose()
+        logger.info(f"✅ Biomarker category enum values checked/added")
     except Exception as e:
         logger.warning(f"Could not add biomarker category enums: {e}")
 
