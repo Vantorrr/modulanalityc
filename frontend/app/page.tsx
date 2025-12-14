@@ -52,7 +52,7 @@ function MedcardPromptModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
         {/* Header with icon */}
-        <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-6 text-center">
+        <div className="bg-gradient-to-br from-brand-400 to-teal-500 p-6 text-center">
           <div className="w-20 h-20 bg-white/20 rounded-full mx-auto flex items-center justify-center mb-4">
             <FolderIcon size={40} className="text-white" />
           </div>
@@ -62,14 +62,14 @@ function MedcardPromptModal({
         {/* Content */}
         <div className="p-6 text-center">
           <p className="text-gray-600 mb-6 leading-relaxed">
-            Для получения <span className="font-semibold text-emerald-600">персонализированных рекомендаций</span> и 
+            Для получения <span className="font-semibold text-brand-600">персонализированных рекомендаций</span> и 
             точной расшифровки анализов укажите ваши данные: рост, вес, аллергии и хронические заболевания.
           </p>
           
           <div className="space-y-3">
             <button
               onClick={onFill}
-              className="w-full py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+              className="w-full py-3.5 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-200"
             >
               Заполнить медкарту
             </button>
@@ -353,7 +353,7 @@ export default function Home() {
                    activeTab === "calendar" ? "Календарь" :
                    activeTab === "profile" ? "Профиль" : ""}
           </h1>
-                <p className="text-xs text-emerald-600 font-semibold">Медицинский ассистент</p>
+                <p className="text-xs text-brand-600 font-semibold">Медицинский ассистент</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -388,9 +388,9 @@ export default function Home() {
                 >
                   <tab.Icon
                     size={22}
-                    className={activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}
+                    className={activeTab === tab.id ? "text-brand-600" : "text-gray-400"}
                   />
-                  <span className={`text-[10px] font-semibold ${activeTab === tab.id ? "text-emerald-600" : "text-gray-400"}`}>
+                  <span className={`text-[10px] font-semibold ${activeTab === tab.id ? "text-brand-600" : "text-gray-400"}`}>
                     {tab.label}
                   </span>
                 </button>
@@ -462,7 +462,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
                        healthIndex > 0 ? 'Требует внимания' : 'Нет данных';
   
   // Цвет карточки в зависимости от индекса
-  const healthColor = healthIndex >= 75 ? 'bg-emerald-500 shadow-emerald-200' : 
+  const healthColor = healthIndex >= 75 ? 'bg-brand-500 shadow-brand-200' : 
                       healthIndex >= 50 ? 'bg-amber-500 shadow-amber-200' : 
                       healthIndex > 0 ? 'bg-rose-500 shadow-rose-200' : 'bg-gray-400 shadow-gray-200';
 
@@ -696,8 +696,8 @@ function ProcessingScreen() {
       <div className="relative z-10 flex flex-col items-center w-full max-w-md">
         {/* Logo/Icon */}
         <div className="relative mb-10">
-          <div className="absolute inset-0 bg-emerald-400 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-          <div className="relative w-24 h-24 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
+          <div className="absolute inset-0 bg-brand-400 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+          <div className="relative w-24 h-24 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
             <span className="text-4xl">{steps[currentStep].icon}</span>
           </div>
         </div>
@@ -723,14 +723,14 @@ function ProcessingScreen() {
                   isActive 
                     ? 'bg-white/10 border border-white/20 shadow-lg' 
                     : isCompleted 
-                      ? 'bg-emerald-500/10 border border-emerald-500/20' 
+                      ? 'bg-brand-500/10 border border-brand-500/20' 
                       : 'opacity-40'
                 }`}
               >
                 {/* Step indicator */}
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${
                   isCompleted 
-                    ? 'bg-emerald-500' 
+                    ? 'bg-brand-500' 
                     : isActive 
                       ? 'bg-gradient-to-br from-purple-500 to-blue-500 animate-pulse' 
                       : 'bg-white/10'
@@ -747,7 +747,7 @@ function ProcessingScreen() {
                 {/* Step text */}
                 <div className="flex-1">
                   <div className={`font-semibold transition-colors ${
-                    isCompleted ? 'text-emerald-400' : isActive ? 'text-white' : 'text-gray-500'
+                    isCompleted ? 'text-brand-400' : isActive ? 'text-white' : 'text-gray-500'
                   }`}>
                     {step.text}
                   </div>
@@ -758,7 +758,7 @@ function ProcessingScreen() {
                     </div>
                   )}
                   {isCompleted && (
-                    <span className="text-xs text-emerald-400">Готово ✓</span>
+                    <span className="text-xs text-brand-400">Готово ✓</span>
                   )}
                 </div>
               </div>
@@ -769,7 +769,7 @@ function ProcessingScreen() {
         {/* Progress bar */}
         <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
           <div 
-            className="bg-gradient-to-r from-emerald-400 to-cyan-400 h-full rounded-full transition-all duration-500 ease-out"
+            className="bg-gradient-to-r from-brand-400 to-cyan-400 h-full rounded-full transition-all duration-500 ease-out"
             style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           />
         </div>
@@ -831,7 +831,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
         disabled={uploading}
         className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 text-left hover:bg-gray-50 disabled:opacity-50"
       >
-        <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
           {uploading ? <LoaderIcon size={24} /> : <UploadIcon size={24} />}
         </div>
         <div className="flex-1">
@@ -981,7 +981,7 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
     if (chartData.length === 1) {
       return (
         <div className="text-center py-4">
-          <span className="text-2xl font-bold text-emerald-600">{chartData[0].value}</span>
+          <span className="text-2xl font-bold text-brand-600">{chartData[0].value}</span>
           {chartData[0].unit && <span className="text-sm text-gray-500 ml-1 font-medium">{chartData[0].unit}</span>}
           <span className="text-xs text-gray-400 ml-2">{formatShortDate(chartData[0].date)}</span>
         </div>
@@ -1030,7 +1030,7 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <BarChartIcon size={18} className="text-emerald-500" />
+          <BarChartIcon size={18} className="text-brand-500" />
           <span className="font-bold text-gray-900 text-sm">📊 Динамика показателей</span>
         </div>
         <ChevronRightIcon size={18} className={`text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`} />
@@ -1093,7 +1093,7 @@ function AnalyticsWidget({ analyses }: { analyses: any[] }) {
                 <div className="text-[9px] text-gray-400">Мин</div>
               </div>
               <div>
-                <div className="text-sm font-bold text-emerald-600">
+                <div className="text-sm font-bold text-brand-600">
                   {(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}
                   {chartData[0].unit && <span className="text-[10px] font-normal text-gray-500 ml-0.5">{chartData[0].unit}</span>}
                 </div>
@@ -1125,7 +1125,7 @@ function Toast({ message, type = 'success', onClose }: { message: string, type?:
       type === 'success' ? 'bg-gray-900 text-white' : 'bg-red-500 text-white'
     }`}>
       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-        type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+        type === 'success' ? 'bg-brand-500' : 'bg-white/20'
       }`}>
         {type === 'success' ? <CheckCircleIcon size={18} /> : <AlertCircleIcon size={18} />}
       </div>
@@ -1514,7 +1514,7 @@ function BiomarkerTablePage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-300 flex items-center gap-2 shadow-md"
+            className="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors disabled:bg-gray-300 flex items-center gap-2 shadow-md"
           >
             {uploading ? (
               <>
@@ -1686,7 +1686,7 @@ function BiomarkerTablePage() {
 
         {loading && (
           <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
           </div>
         )}
 
@@ -1707,7 +1707,7 @@ function BiomarkerTablePage() {
                 'HEMATOLOGY': 'from-red-500 to-rose-600',
                 'BIOCHEMISTRY': 'from-purple-500 to-violet-600',
                 'HORMONES': 'from-amber-500 to-orange-600',
-                'VITAMINS': 'from-green-500 to-emerald-600',
+                'VITAMINS': 'from-green-500 to-brand-600',
                 'MINERALS': 'from-cyan-500 to-teal-600',
                 'LIPIDS': 'from-pink-500 to-rose-600',
                 'LIVER': 'from-yellow-500 to-amber-600',
@@ -2566,7 +2566,7 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
                 inputMode="decimal"
                 value={value}
                 onChange={handleValueChange}
-                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-emerald-500 rounded-2xl px-4 py-4 text-xl font-bold text-gray-900 placeholder-gray-400 outline-none transition-all pr-20"
+                className="w-full bg-gray-50 border-2 border-transparent focus:bg-white focus:border-brand-500 rounded-2xl px-4 py-4 text-xl font-bold text-gray-900 placeholder-gray-400 outline-none transition-all pr-20"
                 placeholder="0.0"
                 autoFocus
               />
@@ -2589,11 +2589,11 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
                 max={new Date().toISOString().split('T')[0]}
                 className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
               />
-              <div className="w-full bg-gray-50 border-2 border-transparent group-hover:bg-white group-hover:border-emerald-200 rounded-2xl px-4 py-3.5 flex items-center justify-between text-gray-900 transition-all cursor-pointer">
+              <div className="w-full bg-gray-50 border-2 border-transparent group-hover:bg-white group-hover:border-brand-200 rounded-2xl px-4 py-3.5 flex items-center justify-between text-gray-900 transition-all cursor-pointer">
                 <span className="font-medium text-base">
                   {formattedDate}
                 </span>
-                <CalendarIcon className="text-gray-400 group-hover:text-emerald-500 transition-colors" size={20} />
+                <CalendarIcon className="text-gray-400 group-hover:text-brand-500 transition-colors" size={20} />
               </div>
             </div>
           </div>
@@ -2606,7 +2606,7 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
               type="text"
               value={lab}
               onChange={(e) => setLab(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500 transition-all placeholder-gray-400"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
               placeholder="Лаборатория: Инвитро, КДЛ..."
             />
             
@@ -2616,7 +2616,7 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
                 inputMode="decimal"
                 value={refMin}
                 onChange={(e) => setRefMin(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-500 transition-all placeholder-gray-400"
+                className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
                 placeholder="Норма от"
               />
               <span className="self-center text-gray-400">—</span>
@@ -2625,7 +2625,7 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
                 inputMode="decimal"
                 value={refMax}
                 onChange={(e) => setRefMax(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}
-                className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-500 transition-all placeholder-gray-400"
+                className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-brand-500 transition-all placeholder-gray-400"
                 placeholder="Норма до"
               />
             </div>
@@ -2644,7 +2644,7 @@ function AddDateModal({ biomarkerCode, biomarkerName, biomarkerUnit, onClose, on
             </button>
             <button
               type="submit"
-              className="py-3.5 rounded-2xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:bg-emerald-300 disabled:scale-100 transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
+              className="py-3.5 rounded-2xl font-bold text-white bg-brand-500 hover:bg-brand-600 active:scale-95 disabled:bg-brand-300 disabled:scale-100 transition-all shadow-lg shadow-brand-200 flex items-center justify-center gap-2"
               disabled={loading}
             >
               {loading ? (
@@ -3008,7 +3008,7 @@ function AnalysesPage() {
         <button
           onClick={handleUploadClick}
           disabled={uploading}
-          className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50"
+          className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center hover:bg-brand-600 transition-colors disabled:opacity-50"
         >
           {uploading ? <LoaderIcon size={20} className="animate-spin" /> : <PlusIcon size={20} />}
         </button>
@@ -3043,7 +3043,7 @@ function AnalysesPage() {
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center py-8">
-            <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
+            <LoaderIcon size={24} className="text-brand-500 animate-spin" />
           </div>
         ) : displayAnalyses.map((item: any, i) => {
           const isProcessing = item.status === 'pending' || item.status === 'processing';
@@ -3062,10 +3062,10 @@ function AnalysesPage() {
             <div 
               key={item.id || i} 
               className={`w-full bg-white rounded-xl border transition-all relative overflow-hidden ${
-                isProcessing && !isStuck ? 'border-emerald-200 shadow-sm' : 
+                isProcessing && !isStuck ? 'border-brand-200 shadow-sm' : 
                 isFailed || isStuck ? 'border-red-200 opacity-80' :
-                isExpanded ? 'border-emerald-300 shadow-lg' :
-                'border-gray-200 hover:shadow-md hover:border-emerald-200'
+                isExpanded ? 'border-brand-300 shadow-lg' :
+                'border-gray-200 hover:shadow-md hover:border-brand-200'
               }`}
             >
               {/* Header (всегда видимый, кликабельный) */}
@@ -3075,10 +3075,10 @@ function AnalysesPage() {
                 className="w-full text-left p-4 transition-all"
               >
                 {isProcessing && !isStuck && (
-                  <div className="absolute inset-0 bg-emerald-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                  <div className="absolute inset-0 bg-brand-50/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
                     <div className="flex flex-col items-center gap-2">
-                      <LoaderIcon size={24} className="text-emerald-500" />
-                      <span className="text-xs font-bold text-emerald-700 animate-pulse">AI обрабатывает...</span>
+                      <LoaderIcon size={24} className="text-brand-500" />
+                      <span className="text-xs font-bold text-brand-700 animate-pulse">AI обрабатывает...</span>
                     </div>
                   </div>
                 )}
@@ -3092,7 +3092,7 @@ function AnalysesPage() {
                     {!isProcessing && (
                       <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
                         isFailed || isStuck ? "bg-red-100 text-red-600" :
-                        !hasIssues ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                        !hasIssues ? "bg-brand-50 text-brand-600" : "bg-rose-50 text-rose-600"
                       }`}>
                         {isFailed ? "Ошибка" : isStuck ? "Таймаут" : !hasIssues ? "Норма" : "Отклонение"}
                       </div>
@@ -3110,7 +3110,7 @@ function AnalysesPage() {
                   <div className="flex flex-wrap gap-2">
                     {biomarkers.slice(0, 3).map((b: any, j: number) => (
                       <span key={j} className={`text-xs px-2 py-1 rounded border ${
-                        b.status === 'normal' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                        b.status === 'normal' ? 'bg-brand-50 text-brand-600 border-brand-200' :
                         b.status === 'low' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                         'bg-rose-50 text-rose-600 border-rose-200'
                       }`}>
@@ -3141,7 +3141,7 @@ function AnalysesPage() {
                 <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3 animate-in fade-in slide-in-from-top-2 duration-200">
                   {loadingDetails && (
                     <div className="flex flex-col items-center justify-center py-6 gap-2">
-                      <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
+                      <LoaderIcon size={24} className="text-brand-500 animate-spin" />
                       <span className="text-xs font-medium text-gray-500">Загружаем детали...</span>
                     </div>
                   )}
@@ -3185,13 +3185,13 @@ function AnalysesPage() {
                               </div>
                               <div className="text-right">
                                 <div className={`font-bold text-xs ${
-                                  b.status === 'normal' ? 'text-emerald-600' : 
+                                  b.status === 'normal' ? 'text-brand-600' : 
                                   b.status === 'low' ? 'text-amber-600' : 'text-rose-600'
                                 }`}>
                                   {b.value} {b.unit || ""}
                                 </div>
                                 <div className={`text-[10px] ${
-                                  b.status === 'normal' ? 'text-emerald-500' : 
+                                  b.status === 'normal' ? 'text-brand-500' : 
                                   b.status === 'low' ? 'text-amber-500' : 'text-rose-500'
                                 }`}>
                                   {b.status === 'normal' ? '✓ норма' : b.status === 'low' ? '↓ ниже' : '↑ выше'}
@@ -3222,7 +3222,7 @@ function AnalysesPage() {
                                 href={`https://shop.example.com/product/${rec.product.id || 'default'}`}
             target="_blank"
             rel="noopener noreferrer"
-                                className="inline-block mt-1.5 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-600 transition"
+                                className="inline-block mt-1.5 px-2.5 py-1 bg-brand-500 text-white text-[10px] font-bold rounded-lg hover:bg-brand-600 transition"
                               >
                                 💊 Купить {rec.product.price ? `за ${rec.product.price} ₽` : ''}
                               </a>
@@ -3315,7 +3315,7 @@ function PatientAboutTab() {
     return (
       <div className="py-10 text-center text-gray-400">
         <p className="mb-2">Не удалось загрузить профиль</p>
-        <button onClick={loadProfile} className="text-emerald-500 font-bold">Повторить</button>
+        <button onClick={loadProfile} className="text-brand-500 font-bold">Повторить</button>
       </div>
     );
   }
@@ -3327,7 +3327,7 @@ function PatientAboutTab() {
     { id: "allergies", label: "Аллергические реакции", Icon: AllergyIcon, color: "bg-amber-50 text-amber-600", count: (profile?.allergies as any[])?.length || 0, total: 5 },
     { id: "chronic", label: "Хронические заболевания", Icon: StethoscopeIcon, color: "bg-rose-50 text-rose-600", count: (profile?.chronic_diseases as any[])?.length || 0, total: 0 },
     { id: "hereditary", label: "Наследственные заболевания", Icon: DnaIcon, color: "bg-purple-50 text-purple-600", count: (profile?.hereditary_diseases as any[])?.length || 0, total: 0 },
-    { id: "lifestyle", label: "Образ жизни", Icon: AppleIcon, color: "bg-emerald-50 text-emerald-600", count: Object.keys(profile?.lifestyle || {}).length, total: 5 },
+    { id: "lifestyle", label: "Образ жизни", Icon: AppleIcon, color: "bg-brand-50 text-brand-600", count: Object.keys(profile?.lifestyle || {}).length, total: 5 },
     { id: "additional", label: "Дополнительная информация", Icon: InfoCircleIcon, color: "bg-gray-100 text-gray-600", count: Object.keys(profile?.additional_info || {}).length, total: 6 },
   ];
 
@@ -3339,7 +3339,7 @@ function PatientAboutTab() {
           <div className="font-bold text-gray-900 text-lg">Пациент</div>
           <div className="text-sm text-gray-500">33 года</div>
         </div>
-        <div className="ml-auto text-emerald-500">
+        <div className="ml-auto text-brand-500">
            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         </div>
       </div>
@@ -3358,7 +3358,7 @@ function PatientAboutTab() {
             </div>
             <div className="flex items-center gap-2">
               {cat.total > 0 && (
-                <span className={`text-sm ${cat.count > 0 ? "text-emerald-600 font-bold" : "text-rose-500"}`}>
+                <span className={`text-sm ${cat.count > 0 ? "text-brand-600 font-bold" : "text-rose-500"}`}>
                   {cat.count}/{cat.total}
                 </span>
               )}
@@ -3440,7 +3440,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
           <label className="text-xs font-bold text-gray-500 uppercase">Обхват талии (см)</label>
           <input type="number" min="40" max="200" value={formData.waist || ""} onChange={e => handleChange("waist", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="80" />
         </div>
-        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(formData)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3457,7 +3457,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
           <label className="text-xs font-bold text-gray-500 uppercase">Жалобы</label>
           <textarea value={formData.complaints || ""} onChange={e => handleChange("complaints", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Опишите проблемы..." rows={2} />
         </div>
-        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(formData)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3476,7 +3476,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             className="flex-1 p-2 rounded border border-gray-300" 
             placeholder="Напр: Аппендэктомия 2019" 
           />
-          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+          <button onClick={addItem} className="px-3 py-2 bg-brand-500 text-white rounded-lg font-bold">+</button>
         </div>
         {listItems.length > 0 && (
           <div className="space-y-1">
@@ -3488,7 +3488,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             ))}
           </div>
         )}
-        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(listItems)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3507,7 +3507,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             className="flex-1 p-2 rounded border border-gray-300" 
             placeholder="Напр: Пенициллин, орехи" 
           />
-          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+          <button onClick={addItem} className="px-3 py-2 bg-brand-500 text-white rounded-lg font-bold">+</button>
         </div>
         {listItems.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -3519,7 +3519,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             ))}
           </div>
         )}
-        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(listItems)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3538,7 +3538,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             className="flex-1 p-2 rounded border border-gray-300" 
             placeholder="Напр: Гипертония, Диабет 2 типа" 
           />
-          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+          <button onClick={addItem} className="px-3 py-2 bg-brand-500 text-white rounded-lg font-bold">+</button>
         </div>
         {listItems.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -3550,7 +3550,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             ))}
           </div>
         )}
-        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(listItems)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3569,7 +3569,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             className="flex-1 p-2 rounded border border-gray-300" 
             placeholder="Напр: Онкология (мама), Диабет (дедушка)" 
           />
-          <button onClick={addItem} className="px-3 py-2 bg-emerald-500 text-white rounded-lg font-bold">+</button>
+          <button onClick={addItem} className="px-3 py-2 bg-brand-500 text-white rounded-lg font-bold">+</button>
         </div>
         {listItems.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -3581,7 +3581,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             ))}
           </div>
         )}
-        <button onClick={() => onSave(listItems)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(listItems)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3641,7 +3641,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
             <option value="chronic">Хронический стресс</option>
           </select>
         </div>
-        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(formData)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3689,7 +3689,7 @@ function ProfileForm({ category, initialData, onSave }: { category: string, init
           <label className="text-xs font-bold text-gray-500 uppercase">Дополнительные заметки</label>
           <textarea value={formData.notes || ""} onChange={e => handleChange("notes", e.target.value)} className="w-full p-2 rounded border border-gray-300" placeholder="Любая важная информация о здоровье" rows={2} />
         </div>
-        <button onClick={() => onSave(formData)} className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
+        <button onClick={() => onSave(formData)} className="w-full bg-brand-500 text-white py-2 rounded-lg font-bold text-sm">Сохранить раздел</button>
       </div>
     );
   }
@@ -3847,7 +3847,7 @@ function MedcardEvents() {
         <input 
           type="text" 
           placeholder="Поиск документов..." 
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
 
@@ -3855,14 +3855,14 @@ function MedcardEvents() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">Недавние</h2>
           {documents.length > 0 && (
-            <button className="text-sm font-semibold text-emerald-600">Все</button>
+            <button className="text-sm font-semibold text-brand-600">Все</button>
           )}
         </div>
         
         <div className="space-y-2">
           {loading ? (
             <div className="flex justify-center py-8">
-              <LoaderIcon size={24} className="text-emerald-500 animate-spin" />
+              <LoaderIcon size={24} className="text-brand-500 animate-spin" />
             </div>
           ) : documents.length === 0 ? (
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 text-center border-2 border-dashed border-gray-300">
@@ -3875,7 +3875,7 @@ function MedcardEvents() {
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white font-bold text-sm rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white font-bold text-sm rounded-xl hover:bg-brand-600 transition-colors shadow-lg shadow-brand-200"
               >
                 <UploadIcon size={18} />
                 Загрузить документ
@@ -3886,7 +3886,7 @@ function MedcardEvents() {
               <div 
                 key={doc.id} 
                 onClick={() => setSelectedDoc(doc)}
-                className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer active:scale-[0.98]"
+                className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer active:scale-[0.98]"
               >
                 <div className="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-200 text-gray-500">
                   {getFileIcon(doc.file_type)}
@@ -3946,7 +3946,7 @@ function MedcardEvents() {
                     window.open(medcardApi.getDownloadUrl(selectedDoc.id), '_blank');
                     setSelectedDoc(null);
                   }}
-                  className="w-full py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-colors flex items-center justify-center gap-2"
                 >
                   <FileTextIcon size={18} />
                   Открыть документ
@@ -4002,7 +4002,7 @@ function MedcardEvents() {
 
       {/* Success notification */}
       {uploadSuccess && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 p-4 bg-emerald-500 text-white rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="fixed bottom-20 left-4 right-4 z-50 p-4 bg-brand-500 text-white rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
             <CheckCircleIcon size={18} />
           </div>
@@ -4254,7 +4254,7 @@ function CalendarPage() {
                 key={day}
                 onClick={() => handleDayClick(day)}
                 className={`py-2 rounded-lg font-medium text-sm transition-colors ${
-                  isToday ? "bg-emerald-500 text-white" :
+                  isToday ? "bg-brand-500 text-white" :
                   hasReminder ? "bg-pink-100 text-pink-600 font-bold hover:bg-pink-200" :
                   "text-gray-900 hover:bg-gray-50"
                 }`}
@@ -4274,7 +4274,7 @@ function CalendarPage() {
         <div className="space-y-2">
           {loading ? (
             <div className="flex justify-center py-8">
-              <LoaderIcon size={24} className="text-emerald-500" />
+              <LoaderIcon size={24} className="text-brand-500" />
             </div>
           ) : upcomingReminders.length === 0 ? (
             <div className="bg-gray-50 rounded-xl p-6 text-center border-2 border-dashed border-gray-200">
@@ -4312,7 +4312,7 @@ function CalendarPage() {
                 }`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  isSelected ? "bg-pink-100 text-pink-600" : "bg-emerald-50 text-emerald-600"
+                  isSelected ? "bg-pink-100 text-pink-600" : "bg-brand-50 text-brand-600"
                 }`}>
                   <CalendarIcon size={18} />
                 </div>
@@ -4323,7 +4323,7 @@ function CalendarPage() {
                   </div>
                   {metadata?.category && (
                     <div className="mt-2 text-xs">
-                      <span className="inline-block px-2 py-1 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg text-emerald-700 font-medium">
+                      <span className="inline-block px-2 py-1 bg-gradient-to-r from-brand-50 to-teal-50 border border-brand-200 rounded-lg text-brand-700 font-medium">
                         {biomarkerCategories[metadata.category] || metadata.category}
                       </span>
                       {metadata.biomarkers && (
@@ -4356,7 +4356,7 @@ function CalendarPage() {
                 placeholder="Например: Сдать анализ крови"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
               />
             </div>
 
@@ -4366,7 +4366,7 @@ function CalendarPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
               >
                 {Object.entries(biomarkerCategories).map(([key, name]) => (
                   <option key={key} value={key}>{name}</option>
@@ -4403,7 +4403,7 @@ function CalendarPage() {
                           }
                           setSelectedBiomarkerCodes(newSet);
                         }}
-                        className="w-4 h-4 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                        className="w-4 h-4 text-brand-600 bg-white border-gray-300 rounded focus:ring-brand-500 focus:ring-2"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-900 truncate">{bio.name}</div>
@@ -4416,7 +4416,7 @@ function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedBiomarkerCodes(new Set(availableBiomarkers.map((b: any) => b.code)))}
-                    className="text-xs text-emerald-600 font-medium hover:text-emerald-700"
+                    className="text-xs text-brand-600 font-medium hover:text-brand-700"
                   >
                     Выбрать все
                   </button>
@@ -4443,7 +4443,7 @@ function CalendarPage() {
                   value={customBiomarkers}
                   onChange={(e) => setCustomBiomarkers(e.target.value)}
                   rows={3}
-                  className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none"
+                  className="w-full p-3 bg-gray-50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all resize-none"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Перечислите конкретные показатели через запятую
@@ -4462,7 +4462,7 @@ function CalendarPage() {
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="flex-1 bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm font-medium text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none h-10"
+                  className="flex-1 bg-white rounded-lg px-3 py-2 border border-gray-200 text-sm font-medium text-gray-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none h-10"
                 />
                 
                 <span className="text-gray-400 text-sm">в</span>
@@ -4517,7 +4517,7 @@ function CalendarPage() {
             <button 
               onClick={handleAddReminder}
               disabled={!newTitle || !selectedDate}
-              className="flex-1 py-3.5 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-3.5 text-brand-600 font-bold hover:bg-brand-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Запланировать
             </button>
@@ -4526,7 +4526,7 @@ function CalendarPage() {
       ) : (
         <button 
           onClick={() => setShowAddForm(true)}
-          className="w-full bg-emerald-500 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
+          className="w-full bg-brand-500 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 hover:bg-brand-600 transition-colors"
         >
           <PlusIcon size={18} />
           Добавить напоминание
@@ -4572,7 +4572,7 @@ function DiariesSection() {
     { id: "mood", label: "Настроение", icon: "😊", unit: "/ 5", color: "bg-amber-50 text-amber-600", min: 0, max: 5, step: 1 },
     { id: "sleep", label: "Сон", icon: "😴", unit: "ч", color: "bg-indigo-50 text-indigo-600", min: 0, max: 24, step: 0.5 },
     { id: "water", label: "Вода", icon: "💧", unit: "л", color: "bg-cyan-50 text-cyan-600", min: 0, max: 10, step: 0.1 },
-    { id: "weight", label: "Вес", icon: "⚖️", unit: "кг", color: "bg-emerald-50 text-emerald-600", min: 20, max: 300, step: 0.1 },
+    { id: "weight", label: "Вес", icon: "⚖️", unit: "кг", color: "bg-brand-50 text-brand-600", min: 20, max: 300, step: 0.1 },
     { id: "pressure", label: "Давление", icon: "❤️", unit: "мм рт.ст.", color: "bg-rose-50 text-rose-600", min: 0, max: 300, step: 1 },
     { id: "sugar", label: "Сахар", icon: "🩸", unit: "ммоль/л", color: "bg-red-50 text-red-600", min: 0, max: 30, step: 0.1 },
   ];
@@ -4735,7 +4735,7 @@ function DiariesSection() {
           <button
             onClick={handleSave}
             disabled={!formData.value}
-            className="w-full py-2 bg-emerald-500 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2 bg-brand-500 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Сохранить
           </button>
@@ -4832,7 +4832,7 @@ function ProfilePage() {
   return (
     <div className="px-4 py-5 space-y-4">
       <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
-        <div className="w-20 h-20 rounded-xl bg-emerald-500 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-3">
+        <div className="w-20 h-20 rounded-xl bg-brand-500 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-3">
           {userName.split(' ').map(n => n[0]).join('')}
         </div>
         <h2 className="text-lg font-bold text-gray-900">{userName}</h2>
@@ -4842,13 +4842,13 @@ function ProfilePage() {
       <div className="grid grid-cols-3 gap-2">
         <button 
           onClick={() => setActiveSection(activeSection === "history" ? null : "history")}
-          className="bg-white border border-gray-200 rounded-xl p-3 text-center hover:border-emerald-300 hover:shadow-sm transition-all"
+          className="bg-white border border-gray-200 rounded-xl p-3 text-center hover:border-brand-300 hover:shadow-sm transition-all"
         >
           <p className="text-2xl font-bold text-gray-900">{totalAnalyses}</p>
           <p className="text-[10px] text-gray-400 mt-1">Анализов</p>
         </button>
         <div className="bg-white border border-gray-200 rounded-xl p-3 text-center">
-          <p className="text-2xl font-bold text-emerald-600">{normalPercent}%</p>
+          <p className="text-2xl font-bold text-brand-600">{normalPercent}%</p>
           <p className="text-[10px] text-gray-400 mt-1">В норме</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 text-center relative group">
@@ -5046,7 +5046,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       return (
         <div className="h-40 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-3xl font-bold text-emerald-600">{chartData[0].value}</div>
+            <div className="text-3xl font-bold text-brand-600">{chartData[0].value}</div>
             <div className="text-xs text-gray-400 mt-1">{formatShortDate(chartData[0].date)}</div>
           </div>
         </div>
@@ -5112,7 +5112,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       <div className="space-y-3">
         <button 
           onClick={() => setView('stats')}
-          className="flex items-center gap-1 text-emerald-600 text-sm font-medium"
+          className="flex items-center gap-1 text-brand-600 text-sm font-medium"
         >
           <ChevronLeftIcon size={16} />
           Назад
@@ -5120,7 +5120,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
         
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <BarChartIcon size={18} className="text-emerald-500" />
+            <BarChartIcon size={18} className="text-brand-500" />
             Динамика показателя
           </h4>
           
@@ -5152,7 +5152,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
                 onClick={() => setPeriod(p.value as any)}
                 className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   period === p.value 
-                    ? 'bg-emerald-500 text-white' 
+                    ? 'bg-brand-500 text-white' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -5176,7 +5176,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
                 <div className="text-[10px] text-gray-400">Мин</div>
               </div>
               <div>
-                <div className="text-lg font-bold text-emerald-600">
+                <div className="text-lg font-bold text-brand-600">
                   {(chartData.reduce((s, d) => s + d.value, 0) / chartData.length).toFixed(1)}
                 </div>
                 <div className="text-[10px] text-gray-400">Среднее</div>
@@ -5198,7 +5198,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       <div className="space-y-2">
         <button 
           onClick={() => setView('stats')}
-          className="flex items-center gap-1 text-emerald-600 text-sm font-medium mb-2"
+          className="flex items-center gap-1 text-brand-600 text-sm font-medium mb-2"
         >
           <ChevronLeftIcon size={16} />
           Назад к статистике
@@ -5214,11 +5214,11 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
                 className={`bg-white border rounded-lg p-2 flex items-center gap-2 ${
                   (scrollTarget === 'first' && i === sortedAnalyses.length - 1) || 
                   (scrollTarget === 'last' && i === 0) 
-                    ? 'border-emerald-400 ring-2 ring-emerald-100' 
+                    ? 'border-brand-400 ring-2 ring-brand-100' 
                     : 'border-gray-200'
                 }`}
               >
-                <ClipboardIcon size={16} className="text-emerald-500" />
+                <ClipboardIcon size={16} className="text-brand-500" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{a.title}</p>
                   <p className="text-xs text-gray-400">{formatDate(a.created_at)}</p>
@@ -5237,13 +5237,13 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
       {/* Кнопка аналитики */}
       <button 
         onClick={() => setView('analytics')}
-        className="w-full text-left p-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100 transition-colors group"
+        className="w-full text-left p-2 rounded-lg bg-gradient-to-r from-brand-50 to-teal-50 border border-brand-200 hover:from-brand-100 hover:to-teal-100 transition-colors group"
       >
         <div className="flex items-center gap-2">
-          <BarChartIcon size={18} className="text-emerald-600" />
-          <span className="font-bold text-emerald-700">📊 Аналитика показателей →</span>
+          <BarChartIcon size={18} className="text-brand-600" />
+          <span className="font-bold text-brand-700">📊 Аналитика показателей →</span>
         </div>
-        <p className="text-xs text-emerald-600 mt-1">Графики изменения показателей во времени</p>
+        <p className="text-xs text-brand-600 mt-1">Графики изменения показателей во времени</p>
       </button>
       
       <button 
@@ -5251,7 +5251,7 @@ function HistoryStatsClickable({ analyses }: { analyses: Analysis[] }) {
         className="w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors group"
       >
         <span className="text-sm text-gray-600">Всего загружено: </span>
-        <span className="font-bold text-emerald-600 group-hover:underline">{analyses.length} анализов →</span>
+        <span className="font-bold text-brand-600 group-hover:underline">{analyses.length} анализов →</span>
       </button>
       
       {firstAnalysis && (
