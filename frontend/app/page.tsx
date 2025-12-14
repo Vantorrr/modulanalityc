@@ -1403,6 +1403,20 @@ function BiomarkerTablePage() {
       return 'THYROID';
     }
     
+    // Новые категории
+    if (/желудок|gastric|пепсин|pepsin|кишечник|intestinal|кальпротектин|calprotectin|эластаза|elastase|хеликобактер|helicobacter|гастрин|gastrin/i.test(n + c)) return 'GASTROINTESTINAL';
+    if (/остеокальцин|osteocalcin|дезоксипиридинолин|dpd|crosslaps|костная щелочная/i.test(n + c)) return 'BONE';
+    if (/миоглобин|myoglobin|креатинкиназа|creatine kinase|cpk|лактат|lactate/i.test(n + c)) return 'MUSCULOSKELETAL';
+    if (/кортизол|cortisol|альдостерон|aldosterone|ренин|renin|адреналин|adrenaline|метанефрин|metanephrine|актг|acth/i.test(n + c)) return 'ADRENAL';
+    if (/серотонин|serotonin|дофамин|dopamine|гомоцистеин|homocysteine|ацетилхолин|acetylcholine/i.test(n + c)) return 'NERVOUS';
+    if (/амилаза|amylase|липаза|lipase|инсулин|insulin|с-пептид|c-peptide|hba1c|гликированный/i.test(n + c)) return 'PANCREAS';
+    if (/паратгормон|parathyroid|pth|паратиреоидный/i.test(n + c)) return 'PARATHYROID';
+    if (/тропонин|troponin|bnp|nt-probnp|миокард|cardiac/i.test(n + c)) return 'CARDIOVASCULAR';
+    if (/тестостерон|testosterone|эстрадиол|estradiol|прогестерон|progesterone|пролактин|prolactin|лг|lh|фсг|fsh|амг|amh|хгч|hcg|спермограмма/i.test(n + c)) return 'REPRODUCTIVE';
+    if (/моча|urine|urinary|альбумин в моче|microalbumin|белок в моче/i.test(n + c)) return 'URINARY';
+    if (/иммуноглобулин|immunoglobulin|igg|iga|igm|ige|лимфоцит|cd4|cd8|интерферон|цитокин/i.test(n + c)) return 'IMMUNE';
+    if (/протромбин|prothrombin|пти|pt|мно|inr|ачтв|aptt|фибриноген|fibrinogen|д-димер|d-dimer|антитромбин/i.test(n + c)) return 'COAGULATION';
+
     return 'OTHER';
   };
 
