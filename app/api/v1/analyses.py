@@ -149,10 +149,141 @@ def detect_biomarker_category(name: str, code: str) -> BiomarkerCategory:
         'срб', 'crp', 'с-реактивный',
         'прокальцитонин', 'procalcitonin',
         'интерлейкин', 'interleukin', 'il-',
-        'ферритин', 'ferritin',
     ]
     if any(kw in combined for kw in inflammation_keywords):
         return BiomarkerCategory.INFLAMMATION
+    
+    # ЖКТ (Желудочно-кишечный тракт)
+    gastrointestinal_keywords = [
+        'желудок', 'gastric', 'пепсин', 'pepsin',
+        'кишечник', 'intestinal',
+        'кальпротектин', 'calprotectin',
+        'эластаза', 'elastase',
+        'хеликобактер', 'helicobacter', 'h. pylori',
+        'гастрин', 'gastrin',
+    ]
+    if any(kw in combined for kw in gastrointestinal_keywords):
+        return BiomarkerCategory.GASTROINTESTINAL
+    
+    # Костная система
+    bone_keywords = [
+        'остеокальцин', 'osteocalcin',
+        'дезоксипиридинолин', 'dpd',
+        'β-crosslaps', 'crosslaps',
+        'костная щелочная фосфатаза', 'bone alp',
+    ]
+    if any(kw in combined for kw in bone_keywords):
+        return BiomarkerCategory.BONE
+    
+    # Костно-мышечная система
+    musculoskeletal_keywords = [
+        'миоглобин', 'myoglobin',
+        'креатинкиназа', 'creatine kinase', 'cpk',
+        'лактат', 'lactate',
+    ]
+    if any(kw in combined for kw in musculoskeletal_keywords):
+        return BiomarkerCategory.MUSCULOSKELETAL
+    
+    # Надпочечники
+    adrenal_keywords = [
+        'кортизол', 'cortisol',
+        'альдостерон', 'aldosterone',
+        'ренин', 'renin',
+        'адреналин', 'adrenaline', 'epinephrine',
+        'норадреналин', 'noradrenaline', 'norepinephrine',
+        'метанефрин', 'metanephrine',
+        'акт', 'acth', 'адренокортикотропный',
+    ]
+    if any(kw in combined for kw in adrenal_keywords):
+        return BiomarkerCategory.ADRENAL
+    
+    # Нервная система
+    nervous_keywords = [
+        'серотонин', 'serotonin',
+        'дофамин', 'dopamine',
+        'гомоцистеин', 'homocysteine',
+        'ацетилхолин', 'acetylcholine',
+    ]
+    if any(kw in combined for kw in nervous_keywords):
+        return BiomarkerCategory.NERVOUS
+    
+    # Поджелудочная железа
+    pancreas_keywords = [
+        'амилаза', 'amylase',
+        'липаза', 'lipase',
+        'инсулин', 'insulin',
+        'с-пептид', 'c-peptide',
+        'hba1c', 'гликированный гемоглобин', 'glycated',
+    ]
+    if any(kw in combined for kw in pancreas_keywords):
+        return BiomarkerCategory.PANCREAS
+    
+    # Паращитовидная железа
+    parathyroid_keywords = [
+        'паратгормон', 'parathyroid', 'pth',
+        'паратиреоидный', 'parathormone',
+    ]
+    if any(kw in combined for kw in parathyroid_keywords):
+        return BiomarkerCategory.PARATHYROID
+    
+    # Сердечно-сосудистая система
+    cardiovascular_keywords = [
+        'тропонин', 'troponin',
+        'bnp', 'мозговой натрийуретический',
+        'nt-probnp',
+        'миокард', 'cardiac',
+        'гомоцистеин', 'homocysteine',
+    ]
+    if any(kw in combined for kw in cardiovascular_keywords):
+        return BiomarkerCategory.CARDIOVASCULAR
+    
+    # Репродуктивная система
+    reproductive_keywords = [
+        'тестостерон', 'testosterone',
+        'эстрадиол', 'estradiol',
+        'прогестерон', 'progesterone',
+        'пролактин', 'prolactin',
+        'лг', 'lh', 'лютеинизирующий',
+        'фсг', 'fsh', 'фолликулостимулирующий',
+        'амг', 'amh', 'антимюллеров',
+        'ингибин', 'inhibin',
+        'хгч', 'hcg', 'хорионический',
+        'спермограмма', 'sperm',
+    ]
+    if any(kw in combined for kw in reproductive_keywords):
+        return BiomarkerCategory.REPRODUCTIVE
+    
+    # Мочевыделительная система
+    urinary_keywords = [
+        'моча', 'urine', 'urinary',
+        'альбумин в моче', 'microalbumin',
+        'белок в моче', 'proteinuria',
+    ]
+    if any(kw in combined for kw in urinary_keywords):
+        return BiomarkerCategory.URINARY
+    
+    # Иммунная система
+    immune_keywords = [
+        'иммуноглобулин', 'immunoglobulin', 'igg', 'iga', 'igm', 'ige',
+        'лимфоцит', 'lymphocyte',
+        'cd4', 'cd8', 'cd3',
+        'интерферон', 'interferon',
+        'цитокин', 'cytokine',
+    ]
+    if any(kw in combined for kw in immune_keywords):
+        return BiomarkerCategory.IMMUNE
+    
+    # Свертываемость крови
+    coagulation_keywords = [
+        'протромбин', 'prothrombin', 'пти', 'pt',
+        'мно', 'inr',
+        'ачтв', 'aptt', 'аптт',
+        'фибриноген', 'fibrinogen',
+        'д-димер', 'd-dimer',
+        'антитромбин', 'antithrombin',
+    ]
+    if any(kw in combined for kw in coagulation_keywords):
+        return BiomarkerCategory.COAGULATION
     
     return BiomarkerCategory.OTHER
 from app.models.user import User

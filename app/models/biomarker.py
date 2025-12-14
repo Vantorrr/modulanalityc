@@ -32,6 +32,18 @@ class BiomarkerCategory(str, enum.Enum):
     KIDNEY = "kidney"                   # Почечные показатели
     THYROID = "thyroid"                 # Щитовидная железа
     INFLAMMATION = "inflammation"       # Воспаление
+    GASTROINTESTINAL = "gastrointestinal"  # ЖКТ
+    BONE = "bone"                       # Костная система
+    MUSCULOSKELETAL = "musculoskeletal"  # Костно-мышечная
+    ADRENAL = "adrenal"                 # Надпочечники
+    NERVOUS = "nervous"                 # Нервная система
+    PANCREAS = "pancreas"               # Поджелудочная железа
+    PARATHYROID = "parathyroid"         # Паращитовидная железа
+    CARDIOVASCULAR = "cardiovascular"   # Сердечно-сосудистая
+    REPRODUCTIVE = "reproductive"       # Репродуктивная система
+    URINARY = "urinary"                 # Мочевыделительная
+    IMMUNE = "immune"                   # Иммунная система
+    COAGULATION = "coagulation"         # Свертываемость крови
     OTHER = "other"
 
 
