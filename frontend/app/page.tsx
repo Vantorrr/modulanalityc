@@ -1469,11 +1469,16 @@ function BiomarkerTablePage() {
       groups[cat] = [];
     });
 
+    console.log('[GroupBiomarkers] Total biomarkers:', filteredBiomarkers.length);
+    
     // Заполняем данными
     filteredBiomarkers.forEach(b => {
       // Используем category из API, если есть, иначе определяем автоматически
-      const cat = (b as any).category?.toUpperCase() || detectCategory(b.name || '', b.code || '');
+      const apiCategory = (b as any).category;
+      const cat = apiCategory?.toUpperCase() || detectCategory(b.name || '', b.code || '');
       const targetCat = groups[cat] ? cat : 'OTHER';
+      
+      console.log(`[GroupBiomarkers] ${b.name}: API category="${apiCategory}" -> "${cat}" -> target="${targetCat}"`);
       
       // Добавляем только если категория отображается
       if (groups[targetCat]) {
@@ -1885,9 +1890,15 @@ function BiomarkerTablePage() {
           categoryName={categoryNames[addBiomarkerCategory] || addBiomarkerCategory}
           onClose={() => setAddBiomarkerCategory(null)}
           onSuccess={() => {
+            // Автоматически раскрываем папку, в которую добавили показатель
+            setExpandedCategories(prev => {
+              const next = new Set(prev);
+              next.add(addBiomarkerCategory);
+              return next;
+            });
             setAddBiomarkerCategory(null);
             loadBiomarkers();
-            setToast({msg: 'Показатель добавлен', type: 'success'});
+            setToast({msg: 'Показатель добавлен!', type: 'success'});
           }}
         />
       )}
