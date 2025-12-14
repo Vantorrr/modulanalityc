@@ -117,6 +117,8 @@ async def add_biomarker_category_enums():
     """Add new biomarker category enum values if they don't exist."""
     from app.core.database import engine
     from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import create_async_engine
+    import asyncpg
     
     new_categories = [
         'gastrointestinal', 'bone', 'musculoskeletal', 'adrenal',
@@ -124,15 +126,29 @@ async def add_biomarker_category_enums():
         'reproductive', 'urinary', 'immune', 'coagulation'
     ]
     
+    # ALTER TYPE ... ADD VALUE cannot run inside a transaction!
+    # We need to use raw asyncpg connection with autocommit
     try:
-        async with engine.begin() as conn:
+        # Get connection URL from engine
+        url = str(engine.url)
+        # Convert from postgresql+asyncpg:// to postgresql://
+        raw_url = url.replace('postgresql+asyncpg://', 'postgresql://')
+        
+        # Connect directly with asyncpg (autocommit by default)
+        conn = await asyncpg.connect(raw_url)
+        try:
             for category in new_categories:
                 try:
-                    await conn.execute(text(f"ALTER TYPE biomarkercategory ADD VALUE IF NOT EXISTS '{category}'"))
-                except Exception as e:
-                    # Value might already exist or other error - continue
+                    await conn.execute(f"ALTER TYPE biomarkercategory ADD VALUE IF NOT EXISTS '{category}'")
+                    logger.info(f"  + Added enum value: {category}")
+                except asyncpg.exceptions.DuplicateObjectError:
+                    # Value already exists - this is fine
                     pass
+                except Exception as e:
+                    logger.warning(f"  Could not add {category}: {e}")
             logger.info(f"✅ Biomarker category enum values checked/added")
+        finally:
+            await conn.close()
     except Exception as e:
         logger.warning(f"Could not add biomarker category enums: {e}")
 
