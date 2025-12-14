@@ -1242,7 +1242,9 @@ function BiomarkerTablePage() {
     try {
       setLoading(true);
       const data = await biomarkersApi.getAll();
-      setBiomarkers(data.items);
+      console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers');
+      console.log('[LoadBiomarkers] Items:', JSON.stringify(data.items?.slice(0, 3)));
+      setBiomarkers(data.items || []);
     } catch (err) {
       console.error("Failed to load biomarkers", err);
       setToast({msg: 'Ошибка загрузки данных', type: 'error'});
@@ -1889,16 +1891,21 @@ function BiomarkerTablePage() {
           category={addBiomarkerCategory}
           categoryName={categoryNames[addBiomarkerCategory] || addBiomarkerCategory}
           onClose={() => setAddBiomarkerCategory(null)}
-          onSuccess={() => {
-            // Автоматически раскрываем папку, в которую добавили показатель
+          onSuccess={async () => {
+            // Автоматически раскрываем папку "Прочее" (показатели сохраняются туда из-за fallback)
             setExpandedCategories(prev => {
               const next = new Set(prev);
-              next.add(addBiomarkerCategory);
+              next.add('OTHER'); // Новые показатели попадают в OTHER
+              next.add(addBiomarkerCategory); // И исходную папку тоже
               return next;
             });
             setAddBiomarkerCategory(null);
-            loadBiomarkers();
-            setToast({msg: 'Показатель добавлен!', type: 'success'});
+            
+            // Перезагружаем список
+            await loadBiomarkers();
+            
+            // Показываем уведомление
+            setToast({msg: 'Показатель добавлен в папку "Прочее"!', type: 'success'});
           }}
         />
       )}
