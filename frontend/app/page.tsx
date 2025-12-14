@@ -452,6 +452,34 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
     acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status === 'normal').length : 0), 0
   );
   
+  // Функция определения категории биомаркера
+  function detectBiomarkerCategory(name: string): string {
+    const n = name.toLowerCase();
+    // Гормоны
+    if (/тестостерон|эстрадиол|прогестерон|пролактин|лг|фсг|ттг|т3|т4|тироксин|кортизол|дгэа|андростендион|альдостерон/i.test(n)) return 'HORMONES';
+    // Гематология
+    if (/гемоглобин|эритроцит|лейкоцит|тромбоцит|гематокрит|mcv|mch|mchc|rdw|mpv|соэ|ретикулоцит|нейтрофил|лимфоцит|моноцит|эозинофил|базофил/i.test(n)) return 'HEMATOLOGY';
+    // Липиды
+    if (/холестерин|лпнп|лпвп|триглицерид|липопротеин|апо\s?[ab]/i.test(n)) return 'LIPIDS';
+    // Печень
+    if (/алт|аст|билирубин|ггт|щф|альбумин|белок общий|гамма-глутамил/i.test(n)) return 'LIVER';
+    // Почки
+    if (/креатинин|мочевина|мочевая кислота|скф|цистатин|клубочков/i.test(n)) return 'KIDNEY';
+    // Щитовидная
+    if (/ттг|т3|т4|тироксин|трийодтиронин|тиреоглобулин|ат-тпо|ат-тг/i.test(n)) return 'THYROID';
+    // Витамины
+    if (/витамин|b12|фолиевая|фолат|d\s|25-oh/i.test(n)) return 'VITAMINS';
+    // Минералы
+    if (/железо|ферритин|трансферрин|кальций|магний|калий|натрий|хлор|фосфор|цинк|медь|селен/i.test(n)) return 'MINERALS';
+    // Воспаление
+    if (/срб|c-реактивный|прокальцитонин|интерлейкин|tnf|фибриноген/i.test(n)) return 'INFLAMMATION';
+    // Сердечно-сосудистая
+    if (/тропонин|bnp|nt-probnp|гомоцистеин|миоглобин|креатинкиназа-мв/i.test(n)) return 'CARDIOVASCULAR';
+    // Биохимия (общее)
+    if (/глюкоз|гликир|hba1c|инсулин|амилаз|липаз/i.test(n)) return 'BIOCHEMISTRY';
+    return 'OTHER';
+  }
+
   // Анализ здоровья по системам организма
   const systemsHealth = useMemo(() => {
     // Группируем биомаркеры по системам
@@ -461,7 +489,8 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       if (!Array.isArray(analysis.biomarkers)) return;
       
       analysis.biomarkers.forEach(b => {
-        const category = b.category || 'OTHER';
+        // Определяем категорию через detectBiomarkerCategory если не задана
+        const category = b.category?.toUpperCase() || detectBiomarkerCategory(b.name || b.biomarker_name || '');
         if (!systemsMap[category]) {
           systemsMap[category] = { total: 0, normal: 0, name: getCategoryName(category) };
         }
@@ -472,6 +501,8 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       });
     });
     
+    console.log('[SystemsHealth] Распределение по системам:', systemsMap);
+    
     // Рассчитываем индекс для каждой системы
     return Object.entries(systemsMap).map(([key, data]) => ({
       system: key,
@@ -479,7 +510,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       total: data.total,
       normal: data.normal,
       index: Math.round((data.normal / data.total) * 100),
-      hasIssues: (data.normal / data.total) < 0.8, // Проблема если <80% в норме
+      hasIssues: data.normal < data.total, // Проблема если есть хотя бы одно отклонение
     }));
   }, [analyses]);
   
