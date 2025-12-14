@@ -528,13 +528,14 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
                        'Рекомендуем обследование';
   
   // Цвет карточки: зелёный #35BA5D (высокий), жёлтый (средний), красный #FF3C3C (низкий)
-  const healthColor = healthIndex >= 80 && problemSystems.length === 0 
-    ? 'bg-brand-500'  // Зелёный: всё отлично
-    : healthIndex >= 60 || (healthIndex >= 80 && problemSystems.length > 0)
-      ? 'bg-warning-500'  // Жёлтый: средний или есть локальные проблемы
+  // Цвет зависит ТОЛЬКО от общего индекса
+  const healthColor = healthIndex >= 80 
+    ? 'bg-brand-500'    // Зелёный: высокий индекс (>= 80%)
+    : healthIndex >= 60 
+      ? 'bg-warning-500'  // Жёлтый: средний индекс (60-79%)
       : healthIndex > 0 
-        ? 'bg-danger-500'  // Красный: низкий индекс
-        : 'bg-gray-400';   // Серый: нет данных
+        ? 'bg-danger-500'   // Красный: низкий индекс (< 60%)
+        : 'bg-gray-400';    // Серый: нет данных
   
   // Функция получения названия категории
   function getCategoryName(category: string): string {
