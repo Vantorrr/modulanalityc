@@ -1356,28 +1356,18 @@ function BiomarkerTablePage() {
     }
   };
 
+  // Флаг для автораскрытия после загрузки
+  const [shouldAutoExpand, setShouldAutoExpand] = useState(false);
+  
   const loadBiomarkers = async (autoExpand = false) => {
     try {
       setLoading(true);
       const data = await biomarkersApi.getAll();
-      console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers');
+      console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers, autoExpand:', autoExpand);
       setBiomarkers(data.items || []);
       
-      // Автораскрытие папок с показателями
-      if (autoExpand && data.items?.length > 0) {
-        const categoriesToExpand = new Set<string>();
-        data.items.forEach((b: any) => {
-          const cat = b.category?.toUpperCase() || detectCategory(b.name || '', b.code || '');
-          if (b.last_value !== null && b.last_value !== undefined) {
-            categoriesToExpand.add(cat);
-          }
-        });
-        console.log('[AutoExpand] Expanding categories:', Array.from(categoriesToExpand));
-        setExpandedCategories(prev => {
-          const updated = new Set(prev);
-          categoriesToExpand.forEach(cat => updated.add(cat));
-          return updated;
-        });
+      if (autoExpand) {
+        setShouldAutoExpand(true);
       }
     } catch (err) {
       console.error("Failed to load biomarkers", err);
@@ -1649,6 +1639,22 @@ function BiomarkerTablePage() {
 
     return groups;
   }, [filteredBiomarkers, searchQuery, filterFilled, selectedCategory]);
+
+  // Автораскрытие папок после загрузки анализа
+  useEffect(() => {
+    if (shouldAutoExpand && Object.keys(groupedBiomarkers).length > 0) {
+      const filledCategories = Object.entries(groupedBiomarkers)
+        .filter(([, items]) => (items as any[]).length > 0)
+        .map(([cat]) => cat);
+      
+      console.log('[AutoExpand] Expanding filled categories:', filledCategories);
+      
+      if (filledCategories.length > 0) {
+        setExpandedCategories(new Set(filledCategories));
+        setShouldAutoExpand(false);
+      }
+    }
+  }, [shouldAutoExpand, groupedBiomarkers]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
