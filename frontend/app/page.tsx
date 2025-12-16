@@ -1356,19 +1356,15 @@ function BiomarkerTablePage() {
     }
   };
 
-  // Флаг для автораскрытия после загрузки
-  const [shouldAutoExpand, setShouldAutoExpand] = useState(false);
+  // Категории из нового анализа для автораскрытия
+  const [categoriesToExpand, setCategoriesToExpand] = useState<string[]>([]);
   
-  const loadBiomarkers = async (autoExpand = false) => {
+  const loadBiomarkers = async () => {
     try {
       setLoading(true);
       const data = await biomarkersApi.getAll();
-      console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers, autoExpand:', autoExpand);
+      console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers');
       setBiomarkers(data.items || []);
-      
-      if (autoExpand) {
-        setShouldAutoExpand(true);
-      }
     } catch (err) {
       console.error("Failed to load biomarkers", err);
       setToast({msg: 'Ошибка загрузки данных', type: 'error'});
@@ -1443,7 +1439,19 @@ function BiomarkerTablePage() {
           
           if (detail.status === 'completed') {
             setProcessingIds(prev => prev.filter(pid => pid !== id));
-            loadBiomarkers(true); // true = автораскрытие папок
+            
+            // Собираем категории из нового анализа
+            if (detail.biomarkers?.length > 0) {
+              const newCats = detail.biomarkers.map((b: any) => {
+                const cat = b.category?.toUpperCase() || detectCategory(b.name || b.biomarker_name || '', b.code || '');
+                return cat;
+              });
+              const uniqueCats = [...new Set(newCats)] as string[];
+              console.log('[AutoExpand] New analysis categories:', uniqueCats);
+              setCategoriesToExpand(uniqueCats);
+            }
+            
+            loadBiomarkers();
             loadAnalyses();
             
             setToast({
@@ -1640,25 +1648,21 @@ function BiomarkerTablePage() {
     return groups;
   }, [filteredBiomarkers, searchQuery, filterFilled, selectedCategory]);
 
-  // Автораскрытие папок после загрузки анализа ИЛИ при первом открытии страницы
-  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
-  
+  // Автораскрытие папок из нового анализа
   useEffect(() => {
-    // Раскрываем при первой загрузке или после загрузки нового анализа
-    if ((shouldAutoExpand || !hasAutoExpanded) && Object.keys(groupedBiomarkers).length > 0 && !loading) {
-      const filledCategories = Object.entries(groupedBiomarkers)
-        .filter(([, items]) => (items as any[]).length > 0)
-        .map(([cat]) => cat);
+    if (categoriesToExpand.length > 0 && !loading) {
+      console.log('[AutoExpand] Expanding categories from new analysis:', categoriesToExpand);
       
-      console.log('[AutoExpand] Expanding filled categories:', filledCategories);
+      setExpandedCategories(prev => {
+        const updated = new Set(prev);
+        categoriesToExpand.forEach(cat => updated.add(cat));
+        return updated;
+      });
       
-      if (filledCategories.length > 0) {
-        setExpandedCategories(new Set(filledCategories));
-        setShouldAutoExpand(false);
-        setHasAutoExpanded(true);
-      }
+      // Очищаем после раскрытия
+      setCategoriesToExpand([]);
     }
-  }, [shouldAutoExpand, groupedBiomarkers, loading, hasAutoExpanded]);
+  }, [categoriesToExpand, loading]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
