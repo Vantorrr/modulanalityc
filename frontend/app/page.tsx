@@ -1339,6 +1339,7 @@ function BiomarkerTablePage() {
   const [addBiomarkerCategory, setAddBiomarkerCategory] = useState<string | null>(null);
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [processingIds, setProcessingIds] = useState<number[]>([]);
 
   useEffect(() => {
     loadBiomarkers();
@@ -1399,37 +1400,17 @@ function BiomarkerTablePage() {
     
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const startTime = Date.now();
     
     try {
       setUploading(true);
-      await analysesApi.upload(file);
+      const newAnalysis = await analysesApi.upload(file);
       
-      // Показываем заставку минимум 6 секунд (чтобы пользователь видел все этапы)
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 6000) {
-        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
+      // Добавляем в processingIds для отслеживания
+      if (newAnalysis?.id) {
+        setProcessingIds(prev => [...prev, newAnalysis.id]);
       }
       
-      setToast({msg: '✅ Анализ загружен! Идет распознавание...', type: 'success'});
-      
-      // Reload data сразу
-      loadBiomarkers();
-      loadAnalyses();
-      
-      // Polling - проверяем статус каждые 5 секунд, пока AI не закончит
-      let pollCount = 0;
-      const pollInterval = setInterval(async () => {
-        pollCount++;
-        console.log('[BiomarkerTable] Polling for AI data, attempt:', pollCount);
-        await loadAnalyses();
-        
-        // Останавливаем после 12 попыток (60 секунд)
-        if (pollCount >= 12) {
-          clearInterval(pollInterval);
-        }
-      }, 5000);
+      setToast({msg: '🚀 Анализ загружен! AI обрабатывает...', type: 'success'});
       
       // Reset input
       if (fileInputRef.current) {
@@ -1442,6 +1423,41 @@ function BiomarkerTablePage() {
       setUploading(false);
     }
   };
+  
+  // Polling для отслеживания статуса обработки
+  useEffect(() => {
+    if (processingIds.length === 0) return;
+    
+    const interval = setInterval(async () => {
+      console.log('[BiomarkerTable] Polling for:', processingIds);
+      
+      for (const id of processingIds) {
+        try {
+          const detail = await analysesApi.getById(id);
+          
+          if (detail.status === 'completed') {
+            setProcessingIds(prev => prev.filter(pid => pid !== id));
+            loadBiomarkers();
+            loadAnalyses();
+            setToast({
+              msg: `✅ Готово! Найдено ${detail.biomarkers?.length || 0} показателей`,
+              type: 'success'
+            });
+          } else if (detail.status === 'failed') {
+            setProcessingIds(prev => prev.filter(pid => pid !== id));
+            setToast({
+              msg: `❌ Ошибка: ${detail.error_message || 'Не удалось распознать'}`,
+              type: 'error'
+            });
+          }
+        } catch (e) {
+          console.error("Poll error", e);
+        }
+      }
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [processingIds]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all'); // Фильтр категории
