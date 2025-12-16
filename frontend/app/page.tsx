@@ -415,15 +415,22 @@ export default function Home() {
 function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { isProfileFilled, checkAndPromptMedcard } = useMedcard();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [biomarkers, setBiomarkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [latestRec, setLatestRec] = useState<any>(null);
 
   useEffect(() => {
-    analysesApi.getAll()
-      .then(data => {
-        setAnalyses(data);
+    // Загружаем и анализы и биомаркеры
+    Promise.all([
+      analysesApi.getAll(),
+      biomarkersApi.getAll()
+    ])
+      .then(([analysesData, biomarkersData]) => {
+        setAnalyses(analysesData);
+        setBiomarkers(biomarkersData.items || []);
+        
         // Find latest recommendation
-        const withRecs = data.find((a: any) => a.ai_recommendations?.items?.length > 0);
+        const withRecs = analysesData.find((a: any) => a.ai_recommendations?.items?.length > 0);
         if (withRecs) {
             setLatestRec(withRecs.ai_recommendations.items[0]);
         }
@@ -444,13 +451,11 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
     Array.isArray(a.biomarkers) && a.biomarkers.length > 0 && a.biomarkers.every(b => b.status === 'normal')
   ).length;
 
-  // Рассчитываем реальный индекс здоровья на основе показателей
-  const totalBiomarkers = analyses.reduce((acc, a) => 
-    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.length : 0), 0
-  );
-  const normalBiomarkers = analyses.reduce((acc, a) => 
-    acc + (Array.isArray(a.biomarkers) ? a.biomarkers.filter(b => b.status === 'normal').length : 0), 0
-  );
+  // Рассчитываем реальный индекс здоровья на основе ВСЕХ биомаркеров (из папок)
+  const totalBiomarkers = biomarkers.filter(b => b.last_value !== null && b.last_value !== undefined).length;
+  const normalBiomarkers = biomarkers.filter(b => 
+    b.last_value !== null && b.last_value !== undefined && b.last_status === 'normal'
+  ).length;
   
   // Функция определения категории биомаркера
   function detectBiomarkerCategory(name: string): string {
@@ -481,24 +486,24 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   }
 
   // Анализ здоровья по системам организма
+  // Анализ здоровья по системам организма (из biomarkers)
   const systemsHealth = useMemo(() => {
     // Группируем биомаркеры по системам
     const systemsMap: Record<string, { total: number; normal: number; name: string }> = {};
     
-    analyses.forEach(analysis => {
-      if (!Array.isArray(analysis.biomarkers)) return;
+    biomarkers.forEach(b => {
+      // Только биомаркеры с значениями
+      if (b.last_value === null || b.last_value === undefined) return;
       
-      analysis.biomarkers.forEach(b => {
-        // Определяем категорию через detectBiomarkerCategory если не задана
-        const category = b.category?.toUpperCase() || detectBiomarkerCategory(b.name || b.biomarker_name || '');
-        if (!systemsMap[category]) {
-          systemsMap[category] = { total: 0, normal: 0, name: getCategoryName(category) };
-        }
-        systemsMap[category].total++;
-        if (b.status === 'normal') {
-          systemsMap[category].normal++;
-        }
-      });
+      // Определяем категорию
+      const category = b.category?.toUpperCase() || detectBiomarkerCategory(b.name || '');
+      if (!systemsMap[category]) {
+        systemsMap[category] = { total: 0, normal: 0, name: getCategoryName(category) };
+      }
+      systemsMap[category].total++;
+      if (b.last_status === 'normal') {
+        systemsMap[category].normal++;
+      }
     });
     
     console.log('[SystemsHealth] Распределение по системам:', systemsMap);
@@ -512,7 +517,7 @@ function HomePage({ onNavigate }: { onNavigate: (tab: string) => void }) {
       index: Math.round((data.normal / data.total) * 100),
       hasIssues: data.normal < data.total, // Проблема если есть хотя бы одно отклонение
     }));
-  }, [analyses]);
+  }, [biomarkers]);
   
   // Общий индекс здоровья
   const healthIndex = totalBiomarkers > 0 ? Math.round((normalBiomarkers / totalBiomarkers) * 100) : 0;
