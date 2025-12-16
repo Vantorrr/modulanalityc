@@ -1444,9 +1444,15 @@ function BiomarkerTablePage() {
             if (detail.biomarkers?.length > 0) {
               const newCategories = new Set<string>();
               detail.biomarkers.forEach((b: any) => {
-                const cat = b.category?.toUpperCase() || 'OTHER';
+                // Определяем категорию: из API или через detectCategory
+                let cat = b.category?.toUpperCase();
+                if (!cat || cat === 'OTHER') {
+                  cat = detectCategory(b.name || b.biomarker_name || '', b.code || '');
+                }
                 newCategories.add(cat);
+                console.log(`[AutoExpand] ${b.name}: category=${cat}`);
               });
+              console.log('[AutoExpand] Categories to expand:', Array.from(newCategories));
               setExpandedCategories(prev => {
                 const updated = new Set(prev);
                 newCategories.forEach(cat => updated.add(cat));
