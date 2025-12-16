@@ -1439,6 +1439,21 @@ function BiomarkerTablePage() {
             setProcessingIds(prev => prev.filter(pid => pid !== id));
             loadBiomarkers();
             loadAnalyses();
+            
+            // Автоматически раскрываем папки с новыми показателями
+            if (detail.biomarkers?.length > 0) {
+              const newCategories = new Set<string>();
+              detail.biomarkers.forEach((b: any) => {
+                const cat = b.category?.toUpperCase() || 'OTHER';
+                newCategories.add(cat);
+              });
+              setExpandedCategories(prev => {
+                const updated = new Set(prev);
+                newCategories.forEach(cat => updated.add(cat));
+                return updated;
+              });
+            }
+            
             setToast({
               msg: `✅ Готово! Найдено ${detail.biomarkers?.length || 0} показателей`,
               type: 'success'
@@ -1877,7 +1892,9 @@ function BiomarkerTablePage() {
               </div>
             )}
 
-            {Object.entries(groupedBiomarkers).map(([category, items]) => {
+            {Object.entries(groupedBiomarkers)
+              .sort(([, a], [, b]) => (b as any[]).length - (a as any[]).length) // Заполненные папки вверху
+              .map(([category, items]) => {
               const isExpanded = expandedCategories.has(category) || expandedCategories.has('all');
               const categoryColors: Record<string, string> = {
                 'HEMATOLOGY': 'from-red-500 to-rose-600',
