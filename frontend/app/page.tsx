@@ -1640,9 +1640,12 @@ function BiomarkerTablePage() {
     return groups;
   }, [filteredBiomarkers, searchQuery, filterFilled, selectedCategory]);
 
-  // Автораскрытие папок после загрузки анализа
+  // Автораскрытие папок после загрузки анализа ИЛИ при первом открытии страницы
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
+  
   useEffect(() => {
-    if (shouldAutoExpand && Object.keys(groupedBiomarkers).length > 0) {
+    // Раскрываем при первой загрузке или после загрузки нового анализа
+    if ((shouldAutoExpand || !hasAutoExpanded) && Object.keys(groupedBiomarkers).length > 0 && !loading) {
       const filledCategories = Object.entries(groupedBiomarkers)
         .filter(([, items]) => (items as any[]).length > 0)
         .map(([cat]) => cat);
@@ -1652,9 +1655,10 @@ function BiomarkerTablePage() {
       if (filledCategories.length > 0) {
         setExpandedCategories(new Set(filledCategories));
         setShouldAutoExpand(false);
+        setHasAutoExpanded(true);
       }
     }
-  }, [shouldAutoExpand, groupedBiomarkers]);
+  }, [shouldAutoExpand, groupedBiomarkers, loading, hasAutoExpanded]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
