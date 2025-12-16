@@ -1356,13 +1356,29 @@ function BiomarkerTablePage() {
     }
   };
 
-  const loadBiomarkers = async () => {
+  const loadBiomarkers = async (autoExpand = false) => {
     try {
       setLoading(true);
       const data = await biomarkersApi.getAll();
       console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers');
-      console.log('[LoadBiomarkers] Items:', JSON.stringify(data.items?.slice(0, 3)));
       setBiomarkers(data.items || []);
+      
+      // Автораскрытие папок с показателями
+      if (autoExpand && data.items?.length > 0) {
+        const categoriesToExpand = new Set<string>();
+        data.items.forEach((b: any) => {
+          const cat = b.category?.toUpperCase() || detectCategory(b.name || '', b.code || '');
+          if (b.last_value !== null && b.last_value !== undefined) {
+            categoriesToExpand.add(cat);
+          }
+        });
+        console.log('[AutoExpand] Expanding categories:', Array.from(categoriesToExpand));
+        setExpandedCategories(prev => {
+          const updated = new Set(prev);
+          categoriesToExpand.forEach(cat => updated.add(cat));
+          return updated;
+        });
+      }
     } catch (err) {
       console.error("Failed to load biomarkers", err);
       setToast({msg: 'Ошибка загрузки данных', type: 'error'});
@@ -1437,28 +1453,8 @@ function BiomarkerTablePage() {
           
           if (detail.status === 'completed') {
             setProcessingIds(prev => prev.filter(pid => pid !== id));
-            loadBiomarkers();
+            loadBiomarkers(true); // true = автораскрытие папок
             loadAnalyses();
-            
-            // Автоматически раскрываем папки с новыми показателями
-            if (detail.biomarkers?.length > 0) {
-              const newCategories = new Set<string>();
-              detail.biomarkers.forEach((b: any) => {
-                // Определяем категорию: из API или через detectCategory
-                let cat = b.category?.toUpperCase();
-                if (!cat || cat === 'OTHER') {
-                  cat = detectCategory(b.name || b.biomarker_name || '', b.code || '');
-                }
-                newCategories.add(cat);
-                console.log(`[AutoExpand] ${b.name}: category=${cat}`);
-              });
-              console.log('[AutoExpand] Categories to expand:', Array.from(newCategories));
-              setExpandedCategories(prev => {
-                const updated = new Set(prev);
-                newCategories.forEach(cat => updated.add(cat));
-                return updated;
-              });
-            }
             
             setToast({
               msg: `✅ Готово! Найдено ${detail.biomarkers?.length || 0} показателей`,
