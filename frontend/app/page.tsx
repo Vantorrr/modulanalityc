@@ -1650,19 +1650,41 @@ function BiomarkerTablePage() {
 
   // Автораскрытие папок из нового анализа
   useEffect(() => {
-    if (categoriesToExpand.length > 0 && !loading) {
+    if (categoriesToExpand.length > 0) {
       console.log('[AutoExpand] Expanding categories from new analysis:', categoriesToExpand);
       
-      setExpandedCategories(prev => {
-        const updated = new Set(prev);
-        categoriesToExpand.forEach(cat => updated.add(cat));
-        return updated;
+      // Небольшая задержка чтобы данные успели обновиться
+      setTimeout(() => {
+        setExpandedCategories(prev => {
+          const updated = new Set(prev);
+          categoriesToExpand.forEach(cat => updated.add(cat));
+          console.log('[AutoExpand] Updated expanded categories:', Array.from(updated));
+          return updated;
+        });
+        setCategoriesToExpand([]);
+      }, 500);
+    }
+  }, [categoriesToExpand]);
+  
+  // Раскрываем все непустые папки при первой загрузке данных
+  const hasExpandedOnLoad = useRef(false);
+  useEffect(() => {
+    if (!hasExpandedOnLoad.current && biomarkers.length > 0 && !loading) {
+      hasExpandedOnLoad.current = true;
+      
+      // Находим все категории с данными
+      const filledCats = new Set<string>();
+      biomarkers.forEach((b: any) => {
+        if (b.last_value !== null && b.last_value !== undefined) {
+          const cat = b.category?.toUpperCase() || detectCategory(b.name || '', b.code || '');
+          filledCats.add(cat);
+        }
       });
       
-      // Очищаем после раскрытия
-      setCategoriesToExpand([]);
+      console.log('[AutoExpand] Initial load - expanding:', Array.from(filledCats));
+      setExpandedCategories(filledCats);
     }
-  }, [categoriesToExpand, loading]);
+  }, [biomarkers, loading]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
