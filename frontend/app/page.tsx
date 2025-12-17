@@ -2350,7 +2350,13 @@ function AddNewBiomarkerModal({ category, categoryName, onClose, onSuccess }: an
 }
 
 // Детальная страница биомаркера
-function BiomarkerDetailPage({ biomarker, onBack, onUpdate }: { biomarker: any, onBack: () => void, onUpdate?: () => void }) {
+function BiomarkerDetailPage({ biomarker: initialBiomarker, onBack, onUpdate }: { biomarker: any, onBack: () => void, onUpdate?: () => void }) {
+  const [biomarker, setBiomarker] = useState(initialBiomarker);
+
+  useEffect(() => {
+    setBiomarker(initialBiomarker);
+  }, [initialBiomarker]);
+
   const [showAddDateModal, setShowAddDateModal] = useState(false);
   const [editingValue, setEditingValue] = useState<any>(null); // Для редактирования
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
@@ -2380,11 +2386,9 @@ function BiomarkerDetailPage({ biomarker, onBack, onUpdate }: { biomarker: any, 
       setToast({msg: 'Значение удалено', type: 'success'});
       // Перезагрузка данных
       const updated = await biomarkersApi.getDetail(biomarker.code);
-      biomarker.history = updated.history;
-      biomarker.total_measurements = updated.total_measurements;
-      biomarker.min_value = updated.min_value;
-      biomarker.max_value = updated.max_value;
-      biomarker.avg_value = updated.avg_value;
+      setBiomarker(updated);
+      
+      if (onUpdate) onUpdate();
     } catch (err) {
       console.error("Failed to delete value", err);
       setToast({msg: 'Ошибка удаления', type: 'error'});
@@ -2393,11 +2397,8 @@ function BiomarkerDetailPage({ biomarker, onBack, onUpdate }: { biomarker: any, 
 
   const reloadBiomarker = async () => {
     const updated = await biomarkersApi.getDetail(biomarker.code);
-    biomarker.history = updated.history;
-    biomarker.total_measurements = updated.total_measurements;
-    biomarker.min_value = updated.min_value;
-    biomarker.max_value = updated.max_value;
-    biomarker.avg_value = updated.avg_value;
+    setBiomarker(updated);
+    if (onUpdate) onUpdate();
   };
 
   // График
