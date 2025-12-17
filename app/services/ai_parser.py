@@ -664,6 +664,31 @@ class AIParserService:
         name_lower = name.lower().strip()
         
         mappings = {
+            # ГОРМОНЫ (важно проверять первыми из-за пересечений имен)
+            "гспг": "SHBG",
+            "shbg": "SHBG",
+            "sex hormone": "SHBG",
+            "индекс своб": "FAI",
+            "ист": "FAI",
+            "fai": "FAI",
+            "free androgen": "FAI",
+            "тестостерон": "TEST",
+            "testosterone": "TEST",
+            "пролактин": "PROL",
+            "prolactin": "PROL",
+            "ттг": "TSH",
+            "tsh": "TSH",
+            "thyrotropin": "TSH",
+            "тиреотропный": "TSH",
+            "т4": "FT4",
+            "ft4": "FT4",
+            "free t4": "FT4",
+            "свободный т4": "FT4",
+            "т3": "FT3",
+            "ft3": "FT3",
+            "free t3": "FT3",
+
+            # ОСТАЛЬНОЕ
             "гемоглобин": "HGB",
             "hemoglobin": "HGB",
             "hgb": "HGB",
@@ -701,25 +726,10 @@ class AIParserService:
             "b12": "B12",
             "витамин d": "D3",
             "d3": "D3",
-            "ттг": "TSH",
-            "tsh": "TSH",
-            "thyrotropin": "TSH",
-            "тиреотропный": "TSH",
-            "т4": "FT4",
-            "ft4": "FT4",
             "кальций": "CA",
             "calcium": "CA",
             "магний": "MG",
             "magnesium": "MG",
-            "индекс своб": "FAI",
-            "ист": "FAI",
-            "fai": "FAI",
-            "тестостерон": "TEST",
-            "testosterone": "TEST",
-            "гспг": "SHBG",
-            "shbg": "SHBG",
-            "пролактин": "PROL",
-            "prolactin": "PROL",
         }
         
         for key, code in mappings.items():
