@@ -399,6 +399,7 @@ export default function Home() {
               }}
             />}
             {activeTab === "analyses" && <BiomarkerTablePage 
+              processingIds={processingIds}
               onProcessingFound={(ids) => setProcessingIds(prev => [...new Set([...prev, ...ids])])}
               onUploadStart={() => setIsGlobalUploading(true)}
               onUploadSuccess={(id) => {
