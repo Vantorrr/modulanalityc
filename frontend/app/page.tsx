@@ -958,28 +958,48 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setUploading(true);
+    // Сразу показываем заставку
     if (onUploadStart) onUploadStart();
     
+    // Небольшой таймаут чтобы React успел отрисовать заставку до тяжелой работы
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    setUploading(true);
     const startTime = Date.now();
     
     try {
       const newAnalysis = await analysesApi.upload(file);
       console.log('Upload started:', newAnalysis.id);
       
-      // Notify parent about new processing item
+      // Ждем завершения обработки на бэкенде
+      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
+        const pollInterval = 2000;
+        const maxTime = 120000; // 2 мин макс
+        let timeSpent = 0;
+        
+        while (timeSpent < maxTime) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          timeSpent += pollInterval;
+          
+          try {
+            const check = await analysesApi.getById(newAnalysis.id);
+            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
+              break;
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+          }
+        }
+      }
+
+      // Notify parent about success (hides splash screen)
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
-      // Показываем заставку минимум 6 секунд
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 6000) {
-        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
-      }
-      
-      // Переходим на вкладку Анализы
+      // Если просили перейти - переходим, но только ПОСЛЕ завершения
       if (onSuccess) {
         onSuccess();
       }
+      
     } catch (err) {
       console.error(err);
       alert('Ошибка загрузки');
