@@ -2384,9 +2384,16 @@ function BiomarkerDetailPage({ biomarker: initialBiomarker, onBack, onUpdate }: 
     try {
       await biomarkersApi.deleteValue(valueId);
       setToast({msg: 'Значение удалено', type: 'success'});
-      // Перезагрузка данных
-      const updated = await biomarkersApi.getDetail(biomarker.code);
-      setBiomarker(updated);
+      
+      try {
+        // Перезагрузка данных
+        const updated = await biomarkersApi.getDetail(biomarker.code);
+        setBiomarker(updated);
+      } catch (e: any) {
+        // Если данных больше нет (404), значит мы удалили последнее значение
+        // Закрываем страницу
+        if (onBack) onBack();
+      }
       
       if (onUpdate) onUpdate();
     } catch (err) {
