@@ -118,10 +118,12 @@ class RecommendationService:
         ]
         
         # Ask AI for keywords
+        logger.info(f"[Recommendations] Generating keywords for {len(biomarker_data)} biomarkers ({recommendation_type})")
         keywords_data = await self.ai_parser.generate_search_keywords(
             biomarker_data, 
             patient_profile=profile_data
         )
+        logger.info(f"[Recommendations] AI returned keywords: {keywords_data}")
         
         recommendations = []
         
@@ -133,7 +135,9 @@ class RecommendationService:
                 continue
                 
             # Search products for these keywords
+            logger.info(f"[Recommendations] Searching products for {code} with keywords: {keywords}")
             found_products = await self._search_products(keywords, limit=3)
+            logger.info(f"[Recommendations] Found {len(found_products)} products for {code}")
             
             for product in found_products:
                 recommendations.append({
@@ -164,8 +168,10 @@ class RecommendationService:
                 })
         
         # Save to Analysis model
+        logger.info(f"[Recommendations] Saving {len(recommendations)} recommendations to analysis {analysis_id}")
         analysis.ai_recommendations = {"items": recommendations}
         await self.db.commit()
+        logger.info(f"[Recommendations] Successfully saved recommendations")
         
         return recommendations
         
