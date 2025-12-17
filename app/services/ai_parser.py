@@ -684,10 +684,21 @@ class AIParserService:
             "d3": "D3",
             "ттг": "TSH",
             "tsh": "TSH",
+            "т4": "FT4",
+            "ft4": "FT4",
             "кальций": "CA",
             "calcium": "CA",
             "магний": "MG",
             "magnesium": "MG",
+            "тестостерон": "TEST",
+            "testosterone": "TEST",
+            "гспг": "SHBG",
+            "shbg": "SHBG",
+            "пролактин": "PROL",
+            "prolactin": "PROL",
+            "ист": "FAI",
+            "индекс своб": "FAI",
+            "fai": "FAI",
         }
         
         for key, code in mappings.items():
