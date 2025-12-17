@@ -1867,7 +1867,7 @@ function BiomarkerTablePage({
           </button>
           
           {/* Content */}
-          <div className={`overflow-hidden transition-all duration-300 ${aiBlockExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${aiBlockExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}>
             <div className="px-5 pb-5 space-y-4 border-t border-gray-100">
               {/* AI Summary */}
               <div className="pt-4">
