@@ -1413,6 +1413,24 @@ function BiomarkerTablePage({
     loadProducts();
   }, []);
 
+  const prevProcessingIdsRef = useRef<number[]>([]);
+  
+  // Следим за завершением обработки анализов
+  useEffect(() => {
+    // Находим ID, которые исчезли из списка (значит, завершились)
+    const completedIds = prevProcessingIdsRef.current.filter(id => !processingIds.includes(id));
+    
+    if (completedIds.length > 0) {
+      console.log('Analysis completed, reloading data:', completedIds);
+      // Перезагружаем данные без показа лоадера (тихое обновление)
+      loadBiomarkers(true);
+      loadAnalyses(true);
+      setToast({msg: '✅ Данные обновлены', type: 'success'});
+    }
+    
+    prevProcessingIdsRef.current = processingIds;
+  }, [processingIds]);
+
   const loadProducts = async () => {
     try {
       const data = await productsApi.getAll();
@@ -1425,9 +1443,9 @@ function BiomarkerTablePage({
   // Категории из нового анализа для автораскрытия
   const [categoriesToExpand, setCategoriesToExpand] = useState<string[]>([]);
   
-  const loadBiomarkers = async () => {
+  const loadBiomarkers = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await biomarkersApi.getAll();
       console.log('[LoadBiomarkers] Loaded:', data.items?.length, 'biomarkers');
       setBiomarkers(data.items || []);
@@ -1435,11 +1453,11 @@ function BiomarkerTablePage({
       console.error("Failed to load biomarkers", err);
       setToast({msg: 'Ошибка загрузки данных', type: 'error'});
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  const loadAnalyses = async () => {
+  const loadAnalyses = async (silent = false) => {
     try {
       const items = await analysesApi.getAll();
       console.log('[BiomarkerTable] Loaded analyses:', items.length, items);
@@ -1453,15 +1471,13 @@ function BiomarkerTablePage({
       
       // Загружаем полные данные последнего завершенного анализа для AI-комментариев
       const completed = items.filter((a: any) => a.status === 'completed');
-      console.log('[BiomarkerTable] Completed analyses:', completed.length);
       
       if (completed.length > 0) {
         const latestId = completed[0].id;
-        console.log('[BiomarkerTable] Loading full data for analysis:', latestId);
+        // Если это тихое обновление, не спамим логами
+        if (!silent) console.log('[BiomarkerTable] Loading full data for analysis:', latestId);
+        
         const fullData = await analysesApi.getById(latestId);
-        console.log('[BiomarkerTable] Full data:', fullData);
-        console.log('[BiomarkerTable] AI Summary:', fullData.ai_summary);
-        console.log('[BiomarkerTable] AI Recommendations:', fullData.ai_recommendations);
         setLatestAiAnalysis(fullData);
       }
     } catch (err) {
