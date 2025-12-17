@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, createContext, useContext, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   HomeIcon, ClipboardIcon, FolderIcon, CalendarIcon, UserIcon,
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
@@ -825,6 +826,7 @@ function HomePage({ onNavigate, onUploadStart, onUploadSuccess }: {
 // Кнопка загрузки анализа
 function ProcessingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [mounted, setMounted] = useState(false);
   
   const steps = [
     { text: "Загружаю фото", icon: "📷", duration: 1500 },
@@ -834,6 +836,7 @@ function ProcessingScreen() {
   ];
   
   useEffect(() => {
+    setMounted(true);
     const timers: NodeJS.Timeout[] = [];
     let totalDelay = 0;
     
@@ -850,8 +853,8 @@ function ProcessingScreen() {
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md transition-all duration-300">
+  const content = (
+    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md transition-all duration-300">
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-md p-6">
         {/* Logo/Icon */}
@@ -867,7 +870,7 @@ function ProcessingScreen() {
           Анализирую ваши данные
         </h2>
         <p className="text-gray-400 text-sm mb-10 text-center">
-          Это займёт несколько секунд
+          Примерное время: 20-30 секунд
         </p>
         
         {/* Steps */}
@@ -935,6 +938,9 @@ function ProcessingScreen() {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }
 
 function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUploadSuccess }: { 
@@ -945,6 +951,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [showLocalScreen, setShowLocalScreen] = useState(false);
 
   const handleClick = () => {
     // Check if profile is filled before allowing upload
@@ -958,9 +965,13 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setUploading(true);
+    // Показываем локальную заставку (она рендерится через портал поверх всего)
+    setShowLocalScreen(true);
+    
+    // Уведомляем глобальный стейт (на всякий случай)
     if (onUploadStart) onUploadStart();
     
+    setUploading(true);
     const startTime = Date.now();
     
     try {
@@ -973,7 +984,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
       }
 
-      // Notify parent about new processing item (hides splash screen)
+      // Notify parent about new processing item (hides global splash screen)
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
       // Переходим на вкладку Анализы
@@ -985,6 +996,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       alert('Ошибка загрузки');
     } finally {
       setUploading(false);
+      setShowLocalScreen(false); // Скрываем локальную заставку
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -1012,6 +1024,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
+      {showLocalScreen && <ProcessingScreen />}
     </>
   );
 }
