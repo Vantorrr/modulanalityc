@@ -1886,33 +1886,78 @@ function BiomarkerTablePage({
               </div>
 
               {/* AI Recommendations (Список БАДов от AI) */}
-              {latestAiAnalysis?.ai_recommendations && (
+              {latestAiAnalysis?.ai_recommendations && Array.isArray(latestAiAnalysis.ai_recommendations) && latestAiAnalysis.ai_recommendations.length > 0 && (
                 <div className="pt-4 border-t border-gray-100">
                    <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Рекомендованные добавки (AI)</h4>
                    
-                   {Array.isArray(latestAiAnalysis.ai_recommendations) ? (
-                      <ul className="space-y-2">
-                        {latestAiAnalysis.ai_recommendations.map((rec: any, i: number) => (
-                           <li key={i} className="flex items-start gap-2 text-sm text-gray-700 bg-green-50/50 p-2 rounded-lg">
-                             <span className="text-brand-500 mt-0.5 font-bold">+</span>
-                             <span>{typeof rec === 'object' ? JSON.stringify(rec).replace(/[{"}]/g, '').replace(/:/g, ': ') : rec}</span>
-                           </li>
-                        ))}
-                      </ul>
-                   ) : typeof latestAiAnalysis.ai_recommendations === 'object' ? (
-                      <ul className="space-y-2">
-                        {Object.entries(latestAiAnalysis.ai_recommendations).map(([key, value]: [string, any], i) => (
-                           <li key={i} className="flex items-start gap-2 text-sm text-gray-700 bg-green-50/50 p-2 rounded-lg">
-                             <span className="text-brand-500 mt-0.5 font-bold">+</span>
-                             <span><strong>{key}:</strong> {String(value)}</span>
-                           </li>
-                        ))}
-                      </ul>
-                   ) : (
-                      <div className="text-sm text-gray-700 bg-green-50/50 p-3 rounded-lg">
-                         {formatMarkdownText(String(latestAiAnalysis.ai_recommendations))}
-                      </div>
-                   )}
+                   <div className="space-y-3">
+                     {latestAiAnalysis.ai_recommendations.map((rec: any, i: number) => {
+                       // Ищем продукт в каталоге
+                       const product = products.find(p => p.id === rec.product_id);
+                       
+                       if (!product) {
+                         // Если продукт не найден, но есть рекомендация, выводим причину
+                         return (
+                           <div key={i} className="flex items-start gap-3 p-3 bg-indigo-50/50 rounded-xl">
+                             <div className="min-w-6 pt-0.5 text-indigo-500">
+                               <SparklesIcon size={16} />
+                             </div>
+                             <div>
+                               <div className="text-sm text-gray-800 font-medium">
+                                 Рекомендация для {rec.biomarker_code}
+                               </div>
+                               <div className="text-xs text-gray-600 mt-1">{rec.reason}</div>
+                             </div>
+                           </div>
+                         );
+                       }
+
+                       return (
+                         <div key={i} className="flex items-start gap-3 p-3 bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
+                           {/* Иконка */}
+                           <div className="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
+                             {product.name?.charAt(0) || 'V'}
+                           </div>
+                           
+                           {/* Инфо */}
+                           <div className="flex-1 min-w-0">
+                             <div className="flex justify-between items-start">
+                               <h5 className="font-semibold text-gray-900 text-sm leading-tight truncate pr-2">
+                                 {product.name}
+                               </h5>
+                               {product.price && (
+                                 <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                   {product.price} ₽
+                                 </span>
+                               )}
+                             </div>
+                             
+                             <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                               {product.description || product.active_ingredients}
+                             </div>
+                             
+                             {/* Причина от AI */}
+                             <div className="mt-2 flex items-start gap-1.5 text-xs text-indigo-700 bg-indigo-50/50 p-1.5 rounded-lg">
+                               <SparklesIcon size={12} className="mt-0.5 shrink-0" />
+                               <span>{rec.reason}</span>
+                             </div>
+                           </div>
+                           
+                           {/* Кнопка */}
+                           <a
+                             href={product.purchase_url || '#'}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="self-center ml-2 p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 duration-200"
+                           >
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                             </svg>
+                           </a>
+                         </div>
+                       );
+                     })}
+                   </div>
                 </div>
               )}
               
