@@ -1899,14 +1899,14 @@ function BiomarkerTablePage({
               </div>
 
               {/* AI Recommendations (Список БАДов от AI) */}
-              {latestAiAnalysis?.ai_recommendations && Array.isArray(latestAiAnalysis.ai_recommendations) && latestAiAnalysis.ai_recommendations.length > 0 && (
+              {latestAiAnalysis?.ai_recommendations?.items && latestAiAnalysis.ai_recommendations.items.length > 0 && (
                 <div className="pt-4 border-t border-gray-100">
                    <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Рекомендованные добавки (AI)</h4>
                    
                    <div className="space-y-3">
-                     {latestAiAnalysis.ai_recommendations.map((rec: any, i: number) => {
+                     {latestAiAnalysis.ai_recommendations.items.map((rec: any, i: number) => {
                        // Ищем продукт в каталоге (нестрогое сравнение, т.к. ID могут быть строками или числами)
-                       const product = products.find(p => p.id == rec.product_id || p.external_id == rec.product_id);
+                       const product = products.find(p => p.id == rec.product.id || p.external_id == rec.product.id);
                        
                        if (!product) {
                          // Если продукт не найден, выводим заглушку с информацией
@@ -1917,10 +1917,9 @@ function BiomarkerTablePage({
                              </div>
                              <div className="flex-1">
                                <div className="text-sm text-gray-800 font-medium">
-                                 Рекомендация (товар #{rec.product_id} не найден)
+                                 {rec.product?.name || `Товар не найден`}
                                </div>
-                               <div className="text-xs text-gray-500 mt-1">Для: {rec.biomarker_code}</div>
-                               <div className="text-xs text-gray-600 mt-1">{rec.reason}</div>
+                               <div className="text-xs text-gray-500 mt-1">{rec.reason}</div>
                              </div>
                            </div>
                          );
