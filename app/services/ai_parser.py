@@ -584,8 +584,11 @@ class AIParserService:
             raw_code = bio.get("code", "")
             code = self._normalize_biomarker_code(raw_code)
             
+            logger.info(f"Biomarker processing: raw='{raw_code}', normalized='{code}', value={value}")
+            
             # Skip duplicates (take first occurrence)
             if code in seen_codes:
+                logger.info(f"Duplicate biomarker skipped: {code}")
                 continue
             seen_codes.add(code)
             
@@ -700,6 +703,8 @@ class AIParserService:
             "d3": "D3",
             "ттг": "TSH",
             "tsh": "TSH",
+            "thyrotropin": "TSH",
+            "тиреотропный": "TSH",
             "т4": "FT4",
             "ft4": "FT4",
             "кальций": "CA",
