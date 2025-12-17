@@ -955,6 +955,8 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [showScreen, setShowScreen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const handleClick = () => {
     if (onBeforeUpload && !onBeforeUpload()) {
@@ -963,71 +965,26 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     fileInputRef.current?.click();
   };
 
-  // Показать оверлей напрямую через DOM (100% работает)
-  const showOverlay = () => {
-    if (document.getElementById('upload-processing-overlay')) return;
+  // Анимация шагов
+  useEffect(() => {
+    if (!showScreen) return;
     
-    const overlay = document.createElement('div');
-    overlay.id = 'upload-processing-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
-    overlay.innerHTML = `
-      <div style="width:96px;height:96px;background:linear-gradient(135deg,#35BA5D,#22d3ee);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(53,186,93,0.4);animation:pulse 2s infinite;">
-        <span style="font-size:48px;">📷</span>
-      </div>
-      <h2 style="color:white;font-size:24px;font-weight:bold;margin-top:40px;text-align:center;">Анализирую ваши данные</h2>
-      <p style="color:#9ca3af;margin-top:8px;text-align:center;">Примерное время: 20-30 секунд</p>
-      <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px;width:280px;">
-        <div id="step-0" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.1);border-radius:12px;">
-          <span style="font-size:24px;">📷</span>
-          <span style="color:white;">Загружаю фото...</span>
-        </div>
-        <div id="step-1" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
-          <span style="font-size:24px;">🔍</span>
-          <span style="color:white;">Распознаю текст</span>
-        </div>
-        <div id="step-2" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
-          <span style="font-size:24px;">🧬</span>
-          <span style="color:white;">Анализирую показатели</span>
-        </div>
-        <div id="step-3" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
-          <span style="font-size:24px;">💊</span>
-          <span style="color:white;">Пишу рекомендации</span>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
+    const timers: NodeJS.Timeout[] = [];
+    [1, 2, 3].forEach((step, i) => {
+      const timer = setTimeout(() => setCurrentStep(step), (i + 1) * 5000);
+      timers.push(timer);
+    });
     
-    // Анимация шагов
-    let step = 0;
-    const stepInterval = setInterval(() => {
-      step++;
-      if (step > 3) {
-        clearInterval(stepInterval);
-        return;
-      }
-      const prevEl = document.getElementById(`step-${step-1}`);
-      const currEl = document.getElementById(`step-${step}`);
-      if (prevEl) {
-        prevEl.style.opacity = '0.5';
-        prevEl.style.background = 'rgba(53,186,93,0.2)';
-      }
-      if (currEl) {
-        currEl.style.opacity = '1';
-        currEl.style.background = 'rgba(255,255,255,0.1)';
-      }
-    }, 5000);
-  };
-  
-  const hideOverlay = () => {
-    document.getElementById('upload-processing-overlay')?.remove();
-  };
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [showScreen]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // МГНОВЕННО показываем оверлей через DOM
-    showOverlay();
+    // МГНОВЕННО показываем экран
+    setShowScreen(true);
+    setCurrentStep(0);
     
     if (onUploadStart) onUploadStart();
     setUploading(true);
@@ -1063,11 +1020,18 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       console.error(err);
       alert('Ошибка загрузки');
     } finally {
-      hideOverlay();
+      setShowScreen(false);
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+  
+  const steps = [
+    { text: "Загружаю фото...", icon: "📷" },
+    { text: "Распознаю текст", icon: "🔍" },
+    { text: "Анализирую показатели", icon: "🧬" },
+    { text: "Пишу рекомендации", icon: "💊" },
+  ];
 
   return (
     <>
@@ -1092,6 +1056,31 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
+      
+      {/* Локальный экран обработки */}
+      {showScreen && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-md">
+          <div className="w-24 h-24 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
+            <span className="text-5xl">{steps[currentStep].icon}</span>
+          </div>
+          <h2 className="text-white text-2xl font-bold mt-10 text-center">Анализирую ваши данные</h2>
+          <p className="text-gray-400 text-sm mt-2 text-center">Примерное время: 20-30 секунд</p>
+          <div className="mt-8 space-y-3 w-72">
+            {steps.map((step, i) => (
+              <div 
+                key={i}
+                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+                  i === currentStep ? 'bg-white/10 scale-105' : i < currentStep ? 'bg-brand-500/20 opacity-60' : 'opacity-30'
+                }`}
+              >
+                <span className="text-2xl">{step.icon}</span>
+                <span className="text-white">{step.text}</span>
+                {i < currentStep && <span className="ml-auto text-brand-400">✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
