@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # OpenRouter (OpenAI-compatible API)
     openai_api_key: Optional[str] = None
     openai_base_url: str = "https://openrouter.ai/api/v1"
-    openai_model: str = "openai/gpt-4o-mini"  # or "anthropic/claude-3-haiku"
+    openai_model: str = "openai/gpt-4o"  # Full GPT-4 Omni for maximum accuracy
     
     # File uploads
     upload_dir: str = "./uploads"
