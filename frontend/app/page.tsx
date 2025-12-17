@@ -1892,20 +1892,21 @@ function BiomarkerTablePage({
                    
                    <div className="space-y-3">
                      {latestAiAnalysis.ai_recommendations.map((rec: any, i: number) => {
-                       // Ищем продукт в каталоге
-                       const product = products.find(p => p.id === rec.product_id);
+                       // Ищем продукт в каталоге (нестрогое сравнение, т.к. ID могут быть строками или числами)
+                       const product = products.find(p => p.id == rec.product_id || p.external_id == rec.product_id);
                        
                        if (!product) {
-                         // Если продукт не найден, но есть рекомендация, выводим причину
+                         // Если продукт не найден, выводим заглушку с информацией
                          return (
-                           <div key={i} className="flex items-start gap-3 p-3 bg-indigo-50/50 rounded-xl">
-                             <div className="min-w-6 pt-0.5 text-indigo-500">
+                           <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                             <div className="min-w-6 pt-0.5 text-gray-400">
                                <SparklesIcon size={16} />
                              </div>
-                             <div>
+                             <div className="flex-1">
                                <div className="text-sm text-gray-800 font-medium">
-                                 Рекомендация для {rec.biomarker_code}
+                                 Рекомендация (товар #{rec.product_id} не найден)
                                </div>
+                               <div className="text-xs text-gray-500 mt-1">Для: {rec.biomarker_code}</div>
                                <div className="text-xs text-gray-600 mt-1">{rec.reason}</div>
                              </div>
                            </div>
