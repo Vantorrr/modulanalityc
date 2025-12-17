@@ -617,7 +617,11 @@ class AIParserService:
     
     def _enrich_with_regex(self, result: Dict, ocr_text: str) -> Dict:
         """Find missing critical biomarkers using regex."""
+        logger.info(f"[Regex Rescue] Starting with {len(result.get('biomarkers', []))} biomarkers")
+        logger.info(f"[Regex Rescue] OCR text preview (first 300 chars): {ocr_text[:300]}")
+        
         existing_codes = {b["code"] for b in result.get("biomarkers", [])}
+        logger.info(f"[Regex Rescue] Existing codes: {existing_codes}")
         
         # Regex patterns for critical hormones that AI might miss
         critical_patterns = {
@@ -643,8 +647,10 @@ class AIParserService:
         
         for code, patterns in critical_patterns.items():
             if code in existing_codes:
+                logger.info(f"[Regex Rescue] Skipping {code} (already exists)")
                 continue
-                
+            
+            logger.info(f"[Regex Rescue] Searching for missing {code}...")
             for pattern in patterns:
                 match = re.search(pattern, ocr_text, re.IGNORECASE)
                 if match:
@@ -654,7 +660,7 @@ class AIParserService:
                         value_str = value_str.rstrip(".")
                         value = float(value_str)
                         
-                        logger.info(f"Regex rescue: found missing {code} = {value}")
+                        logger.info(f"[Regex Rescue] ✅ Found missing {code} = {value}")
                         
                         result["biomarkers"].append({
                             "code": code,
@@ -666,9 +672,13 @@ class AIParserService:
                         })
                         existing_codes.add(code)
                         break
-                    except ValueError:
+                    except ValueError as e:
+                        logger.info(f"[Regex Rescue] ValueError for {code}: {e}")
                         continue
-                        
+                else:
+                    logger.info(f"[Regex Rescue] ❌ Pattern didn't match for {code}")
+        
+        logger.info(f"[Regex Rescue] Final count: {len(result.get('biomarkers', []))} biomarkers")
         return result
 
     def _fallback_parse(self, ocr_text: str) -> Dict:
