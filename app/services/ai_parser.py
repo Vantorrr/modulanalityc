@@ -580,7 +580,9 @@ class AIParserService:
             except (ValueError, TypeError):
                 continue
             
-            code = bio["code"].upper().strip()
+            # Normalize code from AI output to ensure standard codes
+            raw_code = bio.get("code", "")
+            code = self._normalize_biomarker_code(raw_code)
             
             # Skip duplicates (take first occurrence)
             if code in seen_codes:
