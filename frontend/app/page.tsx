@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, createContext, useContext, useMemo } from "react";
+import { flushSync } from "react-dom";
 import {
   HomeIcon, ClipboardIcon, FolderIcon, CalendarIcon, UserIcon,
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
@@ -390,7 +391,12 @@ export default function Home() {
           <main className="flex-1 overflow-y-auto pb-20">
             {activeTab === "home" && <HomePage 
               onNavigate={setActiveTab} 
-              onUploadStart={() => setIsGlobalUploading(true)}
+              onUploadStart={() => {
+                // flushSync гарантирует мгновенный рендер заставки
+                flushSync(() => {
+                  setIsGlobalUploading(true);
+                });
+              }}
               onUploadSuccess={(id) => {
                 setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
@@ -398,7 +404,12 @@ export default function Home() {
             />}
             {activeTab === "analyses" && <BiomarkerTablePage 
               onProcessingFound={(ids) => setProcessingIds(prev => [...new Set([...prev, ...ids])])}
-              onUploadStart={() => setIsGlobalUploading(true)}
+              onUploadStart={() => {
+                // flushSync гарантирует мгновенный рендер заставки
+                flushSync(() => {
+                  setIsGlobalUploading(true);
+                });
+              }}
               onUploadSuccess={(id) => {
                 setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
@@ -957,11 +968,8 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Показываем заставку СРАЗУ
+    // Показываем заставку СРАЗУ (flushSync в родителе гарантирует мгновенный рендер)
     if (onUploadStart) onUploadStart();
-    
-    // КРИТИЧЕСКИ ВАЖНО: даём React время отрендерить экран перед загрузкой
-    await new Promise(resolve => setTimeout(resolve, 100));
     
     setUploading(true);
     
@@ -1460,11 +1468,8 @@ function BiomarkerTablePage({
     if (!file) return;
     
     try {
-      // Показываем заставку СРАЗУ
+      // Показываем заставку СРАЗУ (flushSync в родителе гарантирует мгновенный рендер)
       if (onUploadStart) onUploadStart();
-      
-      // КРИТИЧЕСКИ ВАЖНО: даём React время отрендерить экран перед загрузкой
-      await new Promise(resolve => setTimeout(resolve, 100));
       
       setUploading(true);
       
