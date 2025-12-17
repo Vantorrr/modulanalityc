@@ -1313,6 +1313,7 @@ function Toast({ message, type = 'success', onClose }: { message: string, type?:
 // Функция для форматирования markdown текста в JSX
 function formatMarkdownText(text: string) {
   if (!text) return null;
+  if (typeof text !== 'string') return <span>{String(text)}</span>;
   
   const lines = text.split('\n');
   const elements: JSX.Element[] = [];
