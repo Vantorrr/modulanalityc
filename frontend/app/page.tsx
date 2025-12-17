@@ -1905,24 +1905,11 @@ function BiomarkerTablePage({
                    
                    <div className="space-y-3">
                      {latestAiAnalysis.ai_recommendations.items.map((rec: any, i: number) => {
-                       // Ищем продукт в каталоге (нестрогое сравнение, т.к. ID могут быть строками или числами)
-                       const product = products.find(p => p.id == rec.product.id || p.external_id == rec.product.id);
+                       // Используем данные продукта прямо из рекомендации
+                       const product = rec.product;
                        
                        if (!product) {
-                         // Если продукт не найден, выводим заглушку с информацией
-                         return (
-                           <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                             <div className="min-w-6 pt-0.5 text-gray-400">
-                               <SparklesIcon size={16} />
-                             </div>
-                             <div className="flex-1">
-                               <div className="text-sm text-gray-800 font-medium">
-                                 {rec.product?.name || `Товар не найден`}
-                               </div>
-                               <div className="text-xs text-gray-500 mt-1">{rec.reason}</div>
-                             </div>
-                           </div>
-                         );
+                         return null;
                        }
 
                        return (
@@ -1961,11 +1948,9 @@ function BiomarkerTablePage({
                              href={product.purchase_url || '#'}
                              target="_blank"
                              rel="noopener noreferrer"
-                             className="self-center ml-2 p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 duration-200"
+                             className="self-center ml-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                            >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                             </svg>
+                             Купить
                            </a>
                          </div>
                        );
