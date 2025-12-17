@@ -955,39 +955,93 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [showLocalScreen, setShowLocalScreen] = useState(false);
 
   const handleClick = () => {
-    // Check if profile is filled before allowing upload
     if (onBeforeUpload && !onBeforeUpload()) {
-      return; // Modal will be shown, don't proceed
+      return;
     }
     fileInputRef.current?.click();
+  };
+
+  // Показать оверлей напрямую через DOM (100% работает)
+  const showOverlay = () => {
+    if (document.getElementById('upload-processing-overlay')) return;
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'upload-processing-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
+    overlay.innerHTML = `
+      <div style="width:96px;height:96px;background:linear-gradient(135deg,#35BA5D,#22d3ee);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(53,186,93,0.4);animation:pulse 2s infinite;">
+        <span style="font-size:48px;">📷</span>
+      </div>
+      <h2 style="color:white;font-size:24px;font-weight:bold;margin-top:40px;text-align:center;">Анализирую ваши данные</h2>
+      <p style="color:#9ca3af;margin-top:8px;text-align:center;">Примерное время: 20-30 секунд</p>
+      <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px;width:280px;">
+        <div id="step-0" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.1);border-radius:12px;">
+          <span style="font-size:24px;">📷</span>
+          <span style="color:white;">Загружаю фото...</span>
+        </div>
+        <div id="step-1" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
+          <span style="font-size:24px;">🔍</span>
+          <span style="color:white;">Распознаю текст</span>
+        </div>
+        <div id="step-2" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
+          <span style="font-size:24px;">🧬</span>
+          <span style="color:white;">Анализирую показатели</span>
+        </div>
+        <div id="step-3" style="display:flex;align-items:center;gap:12px;padding:12px;opacity:0.3;border-radius:12px;">
+          <span style="font-size:24px;">💊</span>
+          <span style="color:white;">Пишу рекомендации</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    // Анимация шагов
+    let step = 0;
+    const stepInterval = setInterval(() => {
+      step++;
+      if (step > 3) {
+        clearInterval(stepInterval);
+        return;
+      }
+      const prevEl = document.getElementById(`step-${step-1}`);
+      const currEl = document.getElementById(`step-${step}`);
+      if (prevEl) {
+        prevEl.style.opacity = '0.5';
+        prevEl.style.background = 'rgba(53,186,93,0.2)';
+      }
+      if (currEl) {
+        currEl.style.opacity = '1';
+        currEl.style.background = 'rgba(255,255,255,0.1)';
+      }
+    }, 5000);
+  };
+  
+  const hideOverlay = () => {
+    document.getElementById('upload-processing-overlay')?.remove();
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Показываем ЛОКАЛЬНУЮ заставку СРАЗУ (не зависит от родителя)
-    setShowLocalScreen(true);
+    // МГНОВЕННО показываем оверлей через DOM
+    showOverlay();
     
-    // Также уведомляем родителя
     if (onUploadStart) onUploadStart();
-    
     setUploading(true);
     
     try {
       const newAnalysis = await analysesApi.upload(file);
       console.log('Upload started:', newAnalysis.id);
       
-      // Notify parent about new processing item (polling handles the rest)
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
       // Ждём пока статус станет completed
       if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
         const pollInterval = 2000;
-        const maxTime = 120000; // 2 минуты макс
+        const maxTime = 120000;
         let timeSpent = 0;
         
         while (timeSpent < maxTime) {
@@ -996,8 +1050,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
           
           try {
             const check = await analysesApi.getById(newAnalysis.id);
-            console.log('Polling status:', check.status);
-            
             if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
               break;
             }
@@ -1011,8 +1063,8 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       console.error(err);
       alert('Ошибка загрузки');
     } finally {
+      hideOverlay();
       setUploading(false);
-      setShowLocalScreen(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -1040,7 +1092,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
-      {showLocalScreen && <ProcessingScreen />}
     </>
   );
 }
