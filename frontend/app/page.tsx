@@ -951,7 +951,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [showLocalScreen, setShowLocalScreen] = useState(false);
 
   const handleClick = () => {
     // Check if profile is filled before allowing upload
@@ -965,10 +964,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Показываем локальную заставку (она рендерится через портал поверх всего)
-    setShowLocalScreen(true);
-    
-    // Уведомляем глобальный стейт (на всякий случай)
+    // Уведомляем глобальный стейт - заставка появится через Portal
     if (onUploadStart) onUploadStart();
     
     setUploading(true);
@@ -984,7 +980,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
       }
 
-      // Notify parent about new processing item (hides global splash screen)
+      // Notify parent about new processing item
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
       // Переходим на вкладку Анализы
@@ -996,7 +992,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       alert('Ошибка загрузки');
     } finally {
       setUploading(false);
-      setShowLocalScreen(false); // Скрываем локальную заставку
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -1024,7 +1019,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
-      {showLocalScreen && <ProcessingScreen />}
     </>
   );
 }
