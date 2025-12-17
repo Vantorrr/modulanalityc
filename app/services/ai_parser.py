@@ -315,6 +315,9 @@ class AIParserService:
             # Validate and clean results
             result = self._validate_extraction(result)
             
+            # Safety net: try to find missing critical biomarkers via regex
+            result = self._enrich_with_regex(result, ocr_text)
+            
             logger.info(
                 f"AI extraction completed: {len(result.get('biomarkers', []))} biomarkers found"
             )
@@ -612,6 +615,59 @@ class AIParserService:
         except (ValueError, TypeError):
             return None
     
+    def _enrich_with_regex(self, result: Dict, ocr_text: str) -> Dict:
+        """Find missing critical biomarkers using regex."""
+        existing_codes = {b["code"] for b in result.get("biomarkers", [])}
+        
+        # Regex patterns for critical hormones that AI might miss
+        critical_patterns = {
+            "TSH": [
+                r"(?:ТТГ|TSH|Тиреотропный)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "FT4": [
+                r"(?:Т4\s*своб|FT4|T4\s*free)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "TEST": [
+                r"(?:Тестостерон|Testosterone)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "SHBG": [
+                r"(?:ГСПГ|SHBG|Sex\s*hormone)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "PROL": [
+                r"(?:Пролактин|Prolactin)[^:\d]*[:\s]*([\d.,]+)",
+            ]
+        }
+        
+        for code, patterns in critical_patterns.items():
+            if code in existing_codes:
+                continue
+                
+            for pattern in patterns:
+                match = re.search(pattern, ocr_text, re.IGNORECASE)
+                if match:
+                    try:
+                        value_str = match.group(1).replace(",", ".")
+                        # Clean value string from possible artifacts like trailing dots
+                        value_str = value_str.rstrip(".")
+                        value = float(value_str)
+                        
+                        logger.info(f"Regex rescue: found missing {code} = {value}")
+                        
+                        result["biomarkers"].append({
+                            "code": code,
+                            "raw_name": "Rescued by Regex",
+                            "value": value,
+                            "unit": "",
+                            "ref_min": None,
+                            "ref_max": None
+                        })
+                        existing_codes.add(code)
+                        break
+                    except ValueError:
+                        continue
+                        
+        return result
+
     def _fallback_parse(self, ocr_text: str) -> Dict:
         """
         Fallback regex-based parser when AI is unavailable.
