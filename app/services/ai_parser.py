@@ -704,15 +704,15 @@ class AIParserService:
             "calcium": "CA",
             "магний": "MG",
             "magnesium": "MG",
+            "индекс своб": "FAI",
+            "ист": "FAI",
+            "fai": "FAI",
             "тестостерон": "TEST",
             "testosterone": "TEST",
             "гспг": "SHBG",
             "shbg": "SHBG",
             "пролактин": "PROL",
             "prolactin": "PROL",
-            "ист": "FAI",
-            "индекс своб": "FAI",
-            "fai": "FAI",
         }
         
         for key, code in mappings.items():
