@@ -824,45 +824,115 @@ function HomePage({ onNavigate, onUploadStart, onUploadSuccess }: {
 
 // Кнопка загрузки анализа
 function ProcessingScreen() {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
   
   const steps = [
-    { text: "Загружаю файл...", icon: "📂" },
-    { text: "Распознаю текст...", icon: "🔍" },
-    { text: "AI анализирует данные...", icon: "🧠" },
-    { text: "Формирую рекомендации...", icon: "✨" },
+    { text: "Загружаю фото", icon: "📷", duration: 1500 },
+    { text: "Распознаю текст", icon: "🔍", duration: 1500 },
+    { text: "Анализирую показатели", icon: "🧬", duration: 1500 },
+    { text: "Пишу рекомендации", icon: "💊", duration: 1500 },
   ];
   
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStepIndex((prev) => (prev + 1) % steps.length);
-    }, 2000);
-    return () => clearInterval(interval);
+    const timers: NodeJS.Timeout[] = [];
+    let totalDelay = 0;
+    
+    steps.forEach((step, index) => {
+      if (index > 0) {
+        totalDelay += steps[index - 1].duration;
+        const timer = setTimeout(() => {
+          setCurrentStep(index);
+        }, totalDelay);
+        timers.push(timer);
+      }
+    });
+    
+    return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-brand-500 rounded-full animate-ping opacity-20 duration-1000"></div>
-        <div className="relative z-10 w-24 h-24 bg-gradient-to-br from-brand-500 to-teal-400 rounded-3xl rotate-3 flex items-center justify-center shadow-2xl shadow-brand-500/30 ring-1 ring-white/20">
-          <span className="text-4xl animate-pulse">{steps[stepIndex].icon}</span>
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-md transition-all duration-300">
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center w-full max-w-md p-6">
+        {/* Logo/Icon */}
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-brand-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+          <div className="relative w-24 h-24 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
+            <span className="text-4xl animate-bounce-slight">{steps[currentStep].icon}</span>
+          </div>
         </div>
+        
+        {/* Title */}
+        <h2 className="text-white text-2xl font-bold mb-2 text-center">
+          Анализирую ваши данные
+        </h2>
+        <p className="text-gray-400 text-sm mb-10 text-center">
+          Это займёт несколько секунд
+        </p>
+        
+        {/* Steps */}
+        <div className="w-full space-y-4 mb-8">
+          {steps.map((step, index) => {
+            const isCompleted = index < currentStep;
+            const isActive = index === currentStep;
+            
+            return (
+              <div 
+                key={index}
+                className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 ${
+                  isActive 
+                    ? 'bg-white/10 border border-white/20 shadow-lg scale-105' 
+                    : isCompleted 
+                      ? 'bg-brand-500/10 border border-brand-500/20' 
+                      : 'opacity-30'
+                }`}
+              >
+                {/* Step indicator */}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${
+                  isCompleted 
+                    ? 'bg-brand-500' 
+                    : isActive 
+                      ? 'bg-gradient-to-br from-purple-500 to-blue-500 animate-pulse' 
+                      : 'bg-white/10'
+                }`}>
+                  {isCompleted ? (
+                    <span className="text-white text-lg">✓</span>
+                  ) : (
+                    <span className="text-2xl">{step.icon}</span>
+                  )}
+                </div>
+                
+                {/* Step text */}
+                <div className="flex-1">
+                  <div className={`font-semibold transition-colors ${
+                    isCompleted ? 'text-brand-400' : isActive ? 'text-white' : 'text-gray-500'
+                  }`}>
+                    {step.text}
+                  </div>
+                  {isActive && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
+                      <span className="text-xs text-gray-400">Выполняется...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Progress bar */}
+        <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-brand-400 to-cyan-400 h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+        
+        <p className="text-gray-500 text-xs mt-6 text-center">
+          Пожалуйста, не закрывайте приложение
+        </p>
       </div>
-      
-      <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Обработка анализов</h2>
-      
-      <div className="h-8 flex items-center justify-center min-w-[200px]">
-         <p key={stepIndex} className="text-white/80 font-medium animate-in slide-in-from-bottom-2 fade-in duration-300">
-           {steps[stepIndex].text}
-         </p>
-      </div>
-      
-      {/* Indeterminate loader */}
-      <div className="mt-10 w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
-        <div className="h-full w-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]"></div>
-      </div>
-      
-      <p className="text-white/30 text-xs mt-8">Не закрывайте приложение</p>
     </div>
   );
 }
