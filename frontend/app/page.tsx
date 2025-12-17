@@ -924,7 +924,32 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess }: { onBeforeUpload?: 
     const startTime = Date.now();
     
     try {
-      await analysesApi.upload(file);
+      const newAnalysis = await analysesApi.upload(file);
+      console.log('Upload started:', newAnalysis.id);
+      
+      // Поллинг статуса анализа пока он не завершится
+      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
+        const pollInterval = 2000;
+        const maxTime = 120000; // 2 минуты макс
+        let timeSpent = 0;
+        
+        while (timeSpent < maxTime) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          timeSpent += pollInterval;
+          
+          try {
+            const check = await analysesApi.getById(newAnalysis.id);
+            console.log('Polling status:', check.status);
+            
+            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
+              break;
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+            // Ignore temporary network errors
+          }
+        }
+      }
       
       // Показываем заставку минимум 6 секунд (чтобы пользователь видел все этапы)
       const elapsed = Date.now() - startTime;
@@ -1383,6 +1408,16 @@ function BiomarkerTablePage() {
       const items = await analysesApi.getAll();
       console.log('[BiomarkerTable] Loaded analyses:', items.length, items);
       setAnalyses(items);
+      
+      // Находим анализы в обработке и добавляем в отслеживание
+      const processing = items.filter((a: any) => a.status === 'processing' || a.status === 'pending');
+      if (processing.length > 0) {
+        console.log('[BiomarkerTable] Found processing items:', processing.map((p: any) => p.id));
+        setProcessingIds(prev => {
+          const newIds = processing.map((p: any) => p.id).filter((id: number) => !prev.includes(id));
+          return [...prev, ...newIds];
+        });
+      }
       
       // Загружаем полные данные последнего завершенного анализа для AI-комментариев
       const completed = items.filter((a: any) => a.status === 'completed');
