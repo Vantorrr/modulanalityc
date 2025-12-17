@@ -867,7 +867,7 @@ function ProcessingScreen() {
           Анализирую ваши данные
         </h2>
         <p className="text-gray-400 text-sm mb-10 text-center">
-          Это займёт несколько секунд
+          Примерное время: 20-30 секунд
         </p>
         
         {/* Steps */}
@@ -958,10 +958,9 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    setUploading(true);
+    // Показываем заставку СРАЗУ
     if (onUploadStart) onUploadStart();
-    
-    const startTime = Date.now();
+    setUploading(true);
     
     try {
       const newAnalysis = await analysesApi.upload(file);
@@ -970,13 +969,30 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       // Notify parent about new processing item
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
-      // Показываем заставку минимум 6 секунд
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 6000) {
-        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
+      // Ждём пока статус станет completed
+      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
+        const pollInterval = 2000;
+        const maxTime = 120000; // 2 минуты макс
+        let timeSpent = 0;
+        
+        while (timeSpent < maxTime) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          timeSpent += pollInterval;
+          
+          try {
+            const check = await analysesApi.getById(newAnalysis.id);
+            console.log('Polling status:', check.status);
+            
+            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
+              break;
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+          }
+        }
       }
       
-      // Переходим на вкладку Анализы
+      // ТОЛЬКО после обработки переходим на вкладку Анализы
       if (onSuccess) {
         onSuccess();
       }
@@ -1467,8 +1483,9 @@ function BiomarkerTablePage({
     if (!file) return;
     
     try {
-      setUploading(true);
+      // Показываем заставку СРАЗУ
       if (onUploadStart) onUploadStart();
+      setUploading(true);
       
       const newAnalysis = await analysesApi.upload(file);
       
