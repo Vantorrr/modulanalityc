@@ -955,6 +955,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [showLocalScreen, setShowLocalScreen] = useState(false);
 
   const handleClick = () => {
     // Check if profile is filled before allowing upload
@@ -968,7 +969,10 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Показываем заставку СРАЗУ (flushSync в родителе гарантирует мгновенный рендер)
+    // Показываем ЛОКАЛЬНУЮ заставку СРАЗУ (не зависит от родителя)
+    setShowLocalScreen(true);
+    
+    // Также уведомляем родителя
     if (onUploadStart) onUploadStart();
     
     setUploading(true);
@@ -980,12 +984,35 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       // Notify parent about new processing item (polling handles the rest)
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
-      // Глобальный polling в Home отслеживает статус, не нужно дублировать
+      // Ждём пока статус станет completed
+      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
+        const pollInterval = 2000;
+        const maxTime = 120000; // 2 минуты макс
+        let timeSpent = 0;
+        
+        while (timeSpent < maxTime) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          timeSpent += pollInterval;
+          
+          try {
+            const check = await analysesApi.getById(newAnalysis.id);
+            console.log('Polling status:', check.status);
+            
+            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
+              break;
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+          }
+        }
+      }
+      
     } catch (err) {
       console.error(err);
       alert('Ошибка загрузки');
     } finally {
       setUploading(false);
+      setShowLocalScreen(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -1013,6 +1040,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
+      {showLocalScreen && <ProcessingScreen />}
     </>
   );
 }
