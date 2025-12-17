@@ -686,8 +686,7 @@ function HomePage({ onNavigate, onUploadStart, onUploadSuccess }: {
         <h2 className="text-lg font-bold text-gray-900">Быстрые действия</h2>
         
         <UploadAnalysisButton 
-          onBeforeUpload={checkAndPromptMedcard} 
-          onSuccess={() => onNavigate("analyses")}
+          onBeforeUpload={checkAndPromptMedcard}
           onUploadStart={onUploadStart}
           onUploadSuccess={onUploadSuccess}
         />
@@ -970,36 +969,10 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       const newAnalysis = await analysesApi.upload(file);
       console.log('Upload started:', newAnalysis.id);
       
-      // Notify parent about new processing item
+      // Notify parent about new processing item (polling handles the rest)
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
-      // Ждём пока статус станет completed
-      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
-        const pollInterval = 2000;
-        const maxTime = 120000; // 2 минуты макс
-        let timeSpent = 0;
-        
-        while (timeSpent < maxTime) {
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
-          timeSpent += pollInterval;
-          
-          try {
-            const check = await analysesApi.getById(newAnalysis.id);
-            console.log('Polling status:', check.status);
-            
-            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
-              break;
-            }
-          } catch (e) {
-            console.error('Polling error:', e);
-          }
-        }
-      }
-      
-      // ТОЛЬКО после обработки переходим на вкладку Анализы
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Глобальный polling в Home отслеживает статус, не нужно дублировать
     } catch (err) {
       console.error(err);
       alert('Ошибка загрузки');
