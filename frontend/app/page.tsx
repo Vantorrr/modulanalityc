@@ -960,6 +960,10 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     
     // Показываем заставку СРАЗУ
     if (onUploadStart) onUploadStart();
+    
+    // КРИТИЧЕСКИ ВАЖНО: даём React время отрендерить экран перед загрузкой
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     setUploading(true);
     
     try {
@@ -1485,6 +1489,10 @@ function BiomarkerTablePage({
     try {
       // Показываем заставку СРАЗУ
       if (onUploadStart) onUploadStart();
+      
+      // КРИТИЧЕСКИ ВАЖНО: даём React время отрендерить экран перед загрузкой
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       setUploading(true);
       
       const newAnalysis = await analysesApi.upload(file);
