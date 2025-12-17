@@ -554,6 +554,8 @@ class AIParserService:
             "biomarkers": [],
         }
         
+        seen_codes = set()
+        
         for bio in result.get("biomarkers", []):
             # Skip invalid entries
             if not bio.get("code") or bio.get("value") is None:
@@ -564,8 +566,15 @@ class AIParserService:
             except (ValueError, TypeError):
                 continue
             
+            code = bio["code"].upper().strip()
+            
+            # Skip duplicates (take first occurrence)
+            if code in seen_codes:
+                continue
+            seen_codes.add(code)
+            
             validated["biomarkers"].append({
-                "code": bio["code"].upper(),
+                "code": code,
                 "raw_name": bio.get("raw_name", ""),
                 "value": value,
                 "unit": bio.get("unit", ""),
