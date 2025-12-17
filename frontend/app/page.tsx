@@ -1883,6 +1883,31 @@ function BiomarkerTablePage({
                   )}
                 </div>
               </div>
+
+              {/* AI Recommendations (Список БАДов от AI) */}
+              {latestAiAnalysis?.ai_recommendations && (Array.isArray(latestAiAnalysis.ai_recommendations) ? (
+                latestAiAnalysis.ai_recommendations.length > 0 && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Рекомендованные добавки (AI)</h4>
+                    <ul className="space-y-2">
+                      {latestAiAnalysis.ai_recommendations.map((rec: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700 bg-green-50/50 p-2 rounded-lg">
+                          <span className="text-brand-500 mt-0.5 font-bold">+</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              ) : (
+                // Если это строка
+                <div className="pt-4 border-t border-gray-100">
+                   <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Рекомендованные добавки (AI)</h4>
+                   <div className="text-sm text-gray-700 bg-green-50/50 p-3 rounded-lg">
+                     {formatMarkdownText(latestAiAnalysis.ai_recommendations)}
+                   </div>
+                </div>
+              ))}
               
               {/* Рекомендуемые продукты */}
               {products.length > 0 && (
