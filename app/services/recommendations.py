@@ -66,8 +66,29 @@ class RecommendationService:
         result = await self.db.execute(stmt)
         problem_biomarkers = result.scalars().all()
         
+        # If no problematic biomarkers, get ALL for general recommendations
         if not problem_biomarkers:
-            logger.info(f"No problematic biomarkers found for analysis {analysis_id}")
+            logger.info(f"No problematic biomarkers, generating preventive recommendations for analysis {analysis_id}")
+            stmt_all = (
+                select(UserBiomarker)
+                .options(selectinload(UserBiomarker.biomarker))
+                .where(
+                    and_(
+                        UserBiomarker.analysis_id == analysis_id,
+                        UserBiomarker.user_id == user_id,
+                    )
+                )
+                .limit(5)  # Top 5 biomarkers for general recommendations
+            )
+            result_all = await self.db.execute(stmt_all)
+            biomarkers_for_recs = result_all.scalars().all()
+            recommendation_type = "preventive"
+        else:
+            biomarkers_for_recs = problem_biomarkers
+            recommendation_type = "corrective"
+        
+        if not biomarkers_for_recs:
+            logger.info(f"No biomarkers found for analysis {analysis_id}")
             return []
             
         # Get Patient Profile
@@ -93,7 +114,7 @@ class RecommendationService:
                 "unit": ub.unit,
                 "status": ub.status.value,
             }
-            for ub in problem_biomarkers
+            for ub in biomarkers_for_recs
         ]
         
         # Ask AI for keywords
