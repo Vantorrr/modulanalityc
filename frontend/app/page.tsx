@@ -393,16 +393,18 @@ export default function Home() {
               onNavigate={setActiveTab} 
               onUploadStart={() => setIsGlobalUploading(true)}
               onUploadSuccess={(id) => {
-                setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
+                // Задержка чтобы избежать мигания заставки при переключении состояния
+                setTimeout(() => setIsGlobalUploading(false), 500);
               }}
             />}
             {activeTab === "analyses" && <BiomarkerTablePage 
               onProcessingFound={(ids) => setProcessingIds(prev => [...new Set([...prev, ...ids])])}
               onUploadStart={() => setIsGlobalUploading(true)}
               onUploadSuccess={(id) => {
-                setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
+                // Задержка чтобы избежать мигания заставки при переключении состояния
+                setTimeout(() => setIsGlobalUploading(false), 500);
               }}
             />}
             {activeTab === "medcard" && <MedcardPage />}
