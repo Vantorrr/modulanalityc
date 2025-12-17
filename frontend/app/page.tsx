@@ -241,6 +241,19 @@ export default function Home() {
   // Global processing state
   const [processingIds, setProcessingIds] = useState<number[]>([]);
   const [isGlobalUploading, setIsGlobalUploading] = useState(false);
+  const [isProcessingOverlayVisible, setIsProcessingOverlayVisible] = useState(false);
+
+  // Control overlay visibility to prevent flicker
+  useEffect(() => {
+    if (isGlobalUploading || processingIds.length > 0) {
+      setIsProcessingOverlayVisible(true);
+    } else {
+      const timer = setTimeout(() => {
+        setIsProcessingOverlayVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isGlobalUploading, processingIds]);
 
   // Polling logic for processing items
   useEffect(() => {
@@ -343,7 +356,7 @@ export default function Home() {
   return (
     <MedcardContext.Provider value={contextValue}>
       <div className="min-h-screen bg-gray-50">
-        {(isGlobalUploading || processingIds.length > 0) && <ProcessingScreen />}
+        {isProcessingOverlayVisible && <ProcessingScreen />}
         <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col shadow-xl">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-4 py-3">

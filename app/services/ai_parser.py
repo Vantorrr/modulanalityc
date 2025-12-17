@@ -635,6 +635,9 @@ class AIParserService:
             ],
             "PROL": [
                 r"(?:Пролактин|Prolactin)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "FAI": [
+                r"(?:ИСТ|FAI|Index of Free Testosterone|Индекс своб\. тестостерона)[^:\d]*[:\s]*([\d.,]+)",
             ]
         }
         
