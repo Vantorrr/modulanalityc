@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, createContext, useContext, useMemo } from "react";
-import { flushSync } from "react-dom";
 import {
   HomeIcon, ClipboardIcon, FolderIcon, CalendarIcon, UserIcon,
   BellIcon, UploadIcon, ActivityIcon, DropletIcon, AlertCircleIcon,
@@ -391,12 +390,7 @@ export default function Home() {
           <main className="flex-1 overflow-y-auto pb-20">
             {activeTab === "home" && <HomePage 
               onNavigate={setActiveTab} 
-              onUploadStart={() => {
-                // flushSync гарантирует мгновенный рендер заставки
-                flushSync(() => {
-                  setIsGlobalUploading(true);
-                });
-              }}
+              onUploadStart={() => setIsGlobalUploading(true)}
               onUploadSuccess={(id) => {
                 setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
@@ -404,12 +398,7 @@ export default function Home() {
             />}
             {activeTab === "analyses" && <BiomarkerTablePage 
               onProcessingFound={(ids) => setProcessingIds(prev => [...new Set([...prev, ...ids])])}
-              onUploadStart={() => {
-                // flushSync гарантирует мгновенный рендер заставки
-                flushSync(() => {
-                  setIsGlobalUploading(true);
-                });
-              }}
+              onUploadStart={() => setIsGlobalUploading(true)}
               onUploadSuccess={(id) => {
                 setIsGlobalUploading(false);
                 if (id) setProcessingIds(prev => [...prev, id]);
@@ -697,7 +686,8 @@ function HomePage({ onNavigate, onUploadStart, onUploadSuccess }: {
         <h2 className="text-lg font-bold text-gray-900">Быстрые действия</h2>
         
         <UploadAnalysisButton 
-          onBeforeUpload={checkAndPromptMedcard}
+          onBeforeUpload={checkAndPromptMedcard} 
+          onSuccess={() => onNavigate("analyses")}
           onUploadStart={onUploadStart}
           onUploadSuccess={onUploadSuccess}
         />
@@ -877,7 +867,7 @@ function ProcessingScreen() {
           Анализирую ваши данные
         </h2>
         <p className="text-gray-400 text-sm mb-10 text-center">
-          Примерное время: 20-30 секунд
+          Это займёт несколько секунд
         </p>
         
         {/* Steps */}
@@ -955,83 +945,49 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [showScreen, setShowScreen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
 
   const handleClick = () => {
+    // Check if profile is filled before allowing upload
     if (onBeforeUpload && !onBeforeUpload()) {
-      return;
+      return; // Modal will be shown, don't proceed
     }
     fileInputRef.current?.click();
   };
-
-  // Анимация шагов
-  useEffect(() => {
-    if (!showScreen) return;
-    
-    const timers: NodeJS.Timeout[] = [];
-    [1, 2, 3].forEach((step, i) => {
-      const timer = setTimeout(() => setCurrentStep(step), (i + 1) * 5000);
-      timers.push(timer);
-    });
-    
-    return () => timers.forEach(t => clearTimeout(t));
-  }, [showScreen]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // МГНОВЕННО показываем экран
-    setShowScreen(true);
-    setCurrentStep(0);
-    
-    if (onUploadStart) onUploadStart();
     setUploading(true);
+    if (onUploadStart) onUploadStart();
+    
+    const startTime = Date.now();
     
     try {
       const newAnalysis = await analysesApi.upload(file);
       console.log('Upload started:', newAnalysis.id);
       
+      // Notify parent about new processing item
       if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
       
-      // Ждём пока статус станет completed
-      if (newAnalysis.status === 'processing' || newAnalysis.status === 'pending') {
-        const pollInterval = 2000;
-        const maxTime = 120000;
-        let timeSpent = 0;
-        
-        while (timeSpent < maxTime) {
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
-          timeSpent += pollInterval;
-          
-          try {
-            const check = await analysesApi.getById(newAnalysis.id);
-            if (check.status === 'completed' || check.status === 'error' || check.status === 'failed') {
-              break;
-            }
-          } catch (e) {
-            console.error('Polling error:', e);
-          }
-        }
+      // Показываем заставку минимум 6 секунд
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 6000) {
+        await new Promise(resolve => setTimeout(resolve, 6000 - elapsed));
       }
       
+      // Переходим на вкладку Анализы
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error(err);
       alert('Ошибка загрузки');
     } finally {
-      setShowScreen(false);
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
-  
-  const steps = [
-    { text: "Загружаю фото...", icon: "📷" },
-    { text: "Распознаю текст", icon: "🔍" },
-    { text: "Анализирую показатели", icon: "🧬" },
-    { text: "Пишу рекомендации", icon: "💊" },
-  ];
 
   return (
     <>
@@ -1056,31 +1012,6 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onChange={handleUpload}
         className="hidden"
       />
-      
-      {/* Локальный экран обработки */}
-      {showScreen && (
-        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-md">
-          <div className="w-24 h-24 bg-gradient-to-br from-brand-400 to-cyan-500 rounded-full shadow-2xl flex items-center justify-center">
-            <span className="text-5xl">{steps[currentStep].icon}</span>
-          </div>
-          <h2 className="text-white text-2xl font-bold mt-10 text-center">Анализирую ваши данные</h2>
-          <p className="text-gray-400 text-sm mt-2 text-center">Примерное время: 20-30 секунд</p>
-          <div className="mt-8 space-y-3 w-72">
-            {steps.map((step, i) => (
-              <div 
-                key={i}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
-                  i === currentStep ? 'bg-white/10 scale-105' : i < currentStep ? 'bg-brand-500/20 opacity-60' : 'opacity-30'
-                }`}
-              >
-                <span className="text-2xl">{step.icon}</span>
-                <span className="text-white">{step.text}</span>
-                {i < currentStep && <span className="ml-auto text-brand-400">✓</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -1536,10 +1467,8 @@ function BiomarkerTablePage({
     if (!file) return;
     
     try {
-      // Показываем заставку СРАЗУ (flushSync в родителе гарантирует мгновенный рендер)
-      if (onUploadStart) onUploadStart();
-      
       setUploading(true);
+      if (onUploadStart) onUploadStart();
       
       const newAnalysis = await analysesApi.upload(file);
       
