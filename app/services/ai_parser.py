@@ -789,9 +789,9 @@ class AIParserService:
         # Нужен приоритет над RDW-CV (коэфф. вариации)
         logger.info("[Regex Rescue] Checking for RDW-SD (standard deviation)...")
         
-        # Паттерн без референсов (OCR часто не видит их на той же строке)
-        rdw_sd_pattern_simple = r"(?:Отн[.\s]*ширина[.\s]*распред[.\s]*эритр[.\s]*по[.\s]*объем[^\n]*ст[.\s]*откл)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)"
-        rdw_sd_match = re.search(rdw_sd_pattern_simple, ocr_text, re.IGNORECASE | re.DOTALL)
+        # Упрощённый паттерн: ищем "ст.откл" и ближайшее число с "+фл"
+        rdw_sd_pattern_simple = r"ст[.\s]*откл[^\d]*?([\d.,]+)\s*\+?\s*(?:фл|fl)"
+        rdw_sd_match = re.search(rdw_sd_pattern_simple, ocr_text, re.IGNORECASE)
         
         if rdw_sd_match:
             try:
@@ -807,7 +807,7 @@ class AIParserService:
                 ref_min = 37.1
                 ref_max = 45.7
                 
-                logger.info(f"[Regex Rescue] ✅ Found RDW-SD = {value} фл, ref=[{ref_min}-{ref_max}]")
+                logger.info(f"[Regex Rescue] ✅ Found RDW-SD = {value} фл (fixed from {value_str}), ref=[{ref_min}-{ref_max}]")
                 
                 # Заменяем существующий RDW если он есть и это CV (%)
                 replaced = False
