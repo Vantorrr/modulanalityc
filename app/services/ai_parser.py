@@ -719,6 +719,7 @@ class AIParserService:
         """Find missing critical biomarkers using regex."""
         logger.info(f"[Regex Rescue] Starting with {len(result.get('biomarkers', []))} biomarkers")
         logger.info(f"[Regex Rescue] OCR text preview (first 300 chars): {ocr_text[:300]}")
+        logger.info(f"[Regex Rescue] FULL OCR text for debugging:\n{ocr_text}")
         
         existing_codes = {b["code"] for b in result.get("biomarkers", [])}
         logger.info(f"[Regex Rescue] Existing codes: {existing_codes}")
@@ -787,8 +788,11 @@ class AIParserService:
         # Специальная обработка для RDW-SD (стандартное отклонение с отметкой +)
         # Нужен приоритет над RDW-CV (коэфф. вариации)
         logger.info("[Regex Rescue] Checking for RDW-SD (standard deviation)...")
-        rdw_sd_pattern = r"(?:Отн.*ширина.*распред.*эритр.*ст.*отклонение|RDW.*SD)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)\s*([\d.,]+)-([\d.,]+)"
-        rdw_sd_match = re.search(rdw_sd_pattern, ocr_text, re.IGNORECASE)
+        
+        # Паттерн с учётом возможных переносов строк и пробелов
+        rdw_sd_pattern = r"(?:Отн[.\s]*ширина[.\s]*распред[.\s]*эритр[.\s]*по[.\s]*объем[^\d]*ст[.\s]*откл|RDW[.\s]*SD)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)\s*([\d.,]+)-([\d.,]+)"
+        logger.info(f"[Regex Rescue] RDW-SD pattern: {rdw_sd_pattern}")
+        rdw_sd_match = re.search(rdw_sd_pattern, ocr_text, re.IGNORECASE | re.DOTALL)
         
         if rdw_sd_match:
             try:
@@ -837,24 +841,24 @@ class AIParserService:
         
         leukocyte_percentage_patterns = {
             "NEU": [
-                r"(?:Нейтрофил|Neutrophil|NEUT).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Нейтрофил|Neutrophil|NEUT).*?(\d+[.,]\d+)\s*%",
+                r"(?:Нейтрофил|Neutrophil|NEUT)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Нейтрофил|Neutrophil|NEUT)[^\d]*(\d+[.,]\d+)\s*%",
             ],
             "LYM": [
-                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM).*?(\d+[.,]\d+)\s*%",
+                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM)[^\d]*(\d+[.,]\d+)\s*%",
             ],
             "MONO": [
-                r"(?:Моноцит|Monocyte|MONO).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Моноцит|Monocyte|MONO).*?(\d+[.,]\d+)\s*%",
+                r"(?:Моноцит|Monocyte|MONO)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Моноцит|Monocyte|MONO)[^\d]*(\d+[.,]\d+)\s*%",
             ],
             "EOS": [
-                r"(?:Эозинофил|Eosinophil|EOS).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Эозинофил|Eosinophil|EOS).*?(\d+[.,]\d+)\s*%",
+                r"(?:Эозинофил|Eosinophil|EOS)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Эозинофил|Eosinophil|EOS)[^\d]*(\d+[.,]\d+)\s*%",
             ],
             "BASO": [
-                r"(?:Базофил|Basophil|BASO).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Базофил|Basophil|BASO).*?(\d+[.,]\d+)\s*%",
+                r"(?:Базофил|Basophil|BASO)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Базофил|Basophil|BASO)[^\d]*(\d+[.,]\d+)\s*%",
             ],
         }
         
@@ -880,8 +884,10 @@ class AIParserService:
                 logger.info(f"[Regex Rescue] {code}% already exists with refs")
                 continue
             
-            for pattern in patterns:
+            for idx, pattern in enumerate(patterns):
+                logger.info(f"[Regex Rescue] Trying {code}% pattern #{idx+1}: {pattern[:50]}...")
                 matches = re.findall(pattern, ocr_text, re.IGNORECASE)
+                logger.info(f"[Regex Rescue] {code}% pattern #{idx+1} found {len(matches)} matches")
                 if matches:
                     try:
                         # Берём последнее найденное значение (обычно процент идёт после абс)
