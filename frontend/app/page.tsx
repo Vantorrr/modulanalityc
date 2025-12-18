@@ -1468,7 +1468,23 @@ function BiomarkerTablePage({
       // Перезагружаем данные без показа лоадера (тихое обновление)
       loadBiomarkers(true);
       loadAnalyses(true);
-      setToast({msg: '✅ Данные обновлены', type: 'success'});
+      
+      // Auto-expand categories for newly completed analyses
+      completedIds.forEach(async id => {
+        try {
+          const detail = await analysesApi.getById(id);
+          if (detail.status === 'completed' && detail.biomarkers?.length > 0) {
+            const newCats = detail.biomarkers.map((b: any) => {
+              const cat = b.category?.toUpperCase() || detectCategory(b.name || b.biomarker_name || '', b.code || '');
+              return cat;
+            });
+            const uniqueCats = Array.from(new Set(newCats)) as string[];
+            setCategoriesToExpand(uniqueCats);
+          }
+        } catch(e) { console.error(e); }
+      });
+      
+      setToast({msg: '✅ Анализ обработан!', type: 'success'});
     }
     
     prevProcessingIdsRef.current = processingIds;
@@ -1558,37 +1574,7 @@ function BiomarkerTablePage({
     }
   };
   
-  // React to processing completion (via props)
-  const prevProcessingRef = useRef<number[]>([]);
-  useEffect(() => {
-    const prev = prevProcessingRef.current;
-    const current = processingIds;
-    
-    const removed = prev.filter(id => !current.includes(id));
-    if (removed.length > 0) {
-       // Data refresh logic
-       loadBiomarkers();
-       loadAnalyses();
-       
-       // Handle expansion
-       removed.forEach(async id => {
-          try {
-             const detail = await analysesApi.getById(id);
-             if (detail.status === 'completed' && detail.biomarkers?.length > 0) {
-                 const newCats = detail.biomarkers.map((b: any) => {
-                    const cat = b.category?.toUpperCase() || detectCategory(b.name || b.biomarker_name || '', b.code || '');
-                    return cat;
-                 });
-                 // Deduplicate
-                 const uniqueCats = Array.from(new Set(newCats)) as string[];
-                 setCategoriesToExpand(uniqueCats);
-                 setToast({msg: '✅ Анализ обработан!', type: 'success'});
-             }
-          } catch(e) { console.error(e); }
-       });
-    }
-    prevProcessingRef.current = current;
-  }, [processingIds]);
+  // Removed duplicate useEffect - using prevProcessingIdsRef above instead
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all'); // Фильтр категории

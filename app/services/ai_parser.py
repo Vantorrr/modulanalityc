@@ -816,6 +816,33 @@ class AIParserService:
         """Normalize biomarker name to standard code."""
         name_lower = name.lower().strip()
         
+        # Exact matches for short codes (to avoid substring conflicts)
+        exact_matches = {
+            "mchc": "MCHC",
+            "mch": "MCH",
+            "mcv": "MCV",
+            "mpv": "MPV",
+            "rdw": "RDW",
+            "pdw": "PDW",
+            "pct": "PCT",
+            "hct": "HCT",
+            "wbc": "WBC",
+            "rbc": "RBC",
+            "plt": "PLT",
+            "hgb": "HGB",
+            "hb": "HGB",
+            "neu": "NEU",
+            "lym": "LYM",
+            "mono": "MONO",
+            "eos": "EOS",
+            "baso": "BASO",
+            "esr": "ESR",
+        }
+        
+        # Check exact match first
+        if name_lower in exact_matches:
+            return exact_matches[name_lower]
+        
         mappings = {
             # ГОРМОНЫ (важно проверять первыми из-за пересечений имен)
             "гспг": "SHBG",
@@ -862,14 +889,15 @@ class AIParserService:
             "средний объем эритроцит": "MCV",
             "средний объём эритроцит": "MCV",
             "mcv": "MCV",
-            "среднее содержание гемоглобина в эритроците": "MCH",
-            "среднее содержание hb": "MCH",
-            "среднее содержание hemoglobin": "MCH",
-            "mch": "MCH",
+            # ВАЖНО: MCHC должна быть РАНЬШЕ MCH (проверка подстрок)
             "средняя концентрация hb": "MCHC",
             "средняя концентрация гемоглобина": "MCHC",
             "средняя конц": "MCHC",
             "mchc": "MCHC",
+            "среднее содержание гемоглобина в эритроците": "MCH",
+            "среднее содержание hb": "MCH",
+            "среднее содержание hemoglobin": "MCH",
+            "mch": "MCH",
             "ширина распределения эритроцит": "RDW",
             "отн.ширина распред.эритр": "RDW",
             "rdw": "RDW",
