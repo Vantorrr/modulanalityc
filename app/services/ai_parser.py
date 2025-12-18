@@ -789,9 +789,24 @@ class AIParserService:
         # Нужен приоритет над RDW-CV (коэфф. вариации)
         logger.info("[Regex Rescue] Checking for RDW-SD (standard deviation)...")
         
-        # Упрощённый паттерн: ищем "ст.откл" и ближайшее число с "+фл"
-        rdw_sd_pattern_simple = r"ст[.\s]*откл[^\d]*?([\d.,]+)\s*\+?\s*(?:фл|fl)"
-        rdw_sd_match = re.search(rdw_sd_pattern_simple, ocr_text, re.IGNORECASE)
+        # Ищем контекст "ст.откл" (может быть до или после числа)
+        context_match = re.search(r"ст[.\s]*откл", ocr_text, re.IGNORECASE)
+        
+        rdw_sd_match = None
+        if context_match:
+            # Нашли "ст.откл" → ищем ближайшее "число + фл" в окне ±100 символов
+            context_start = max(0, context_match.start() - 100)
+            context_end = min(len(ocr_text), context_match.end() + 100)
+            context_window = ocr_text[context_start:context_end]
+            
+            logger.info(f"[Regex Rescue] Found 'ст.откл' context, searching for value in window: {context_window[:150]}")
+            
+            # Ищем "число + фл" в контексте
+            value_pattern = r"([\d.,]+)\s*\+?\s*(?:фл|fl)"
+            rdw_sd_match = re.search(value_pattern, context_window, re.IGNORECASE)
+        
+        else:
+            logger.info("[Regex Rescue] ❌ 'ст.откл' context not found in OCR text")
         
         if rdw_sd_match:
             try:
@@ -839,6 +854,8 @@ class AIParserService:
                     logger.info(f"[Regex Rescue] ✅ Added RDW-SD")
             except (ValueError, IndexError) as e:
                 logger.info(f"[Regex Rescue] Error parsing RDW-SD: {e}")
+        else:
+            logger.info("[Regex Rescue] ❌ RDW-SD value pattern not found")
         
         # Добавляем процентные значения лейкоцитов (если их нет)
         logger.info("[Regex Rescue] Searching for percentage values of WBC...")
