@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # OpenRouter (OpenAI-compatible API)
     openai_api_key: Optional[str] = None
     openai_base_url: str = "https://openrouter.ai/api/v1"
-    openai_model: str = "openai/gpt-4o"  # Full GPT-4 Omni for maximum accuracy
+    openai_model: str = "anthropic/claude-3.5-sonnet"  # Claude 3.5 Sonnet - best for medical data
     
     # File uploads
     upload_dir: str = "./uploads"
