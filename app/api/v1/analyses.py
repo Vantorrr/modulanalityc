@@ -26,23 +26,35 @@ def detect_biomarker_category(name: str, code: str) -> BiomarkerCategory:
     code_lower = (code or "").lower()
     combined = f"{name_lower} {code_lower}"
     
-    # Гематология (кровь)
+    # Гематология (кровь) - проверяем КОДЫ в первую очередь
+    hematology_codes = [
+        'hgb', 'hb', 'rbc', 'wbc', 'plt', 'hct',
+        'mcv', 'mch', 'mchc', 'rdw', 'mpv', 'pct', 'pdw',
+        'neu', 'neut', 'lym', 'lymph', 'mono', 'eos', 'baso',
+        'esr',
+    ]
+    if any(kw in code_lower for kw in hematology_codes):
+        return BiomarkerCategory.HEMATOLOGY
+    
+    # Гематология (кровь) - проверяем названия
     hematology_keywords = [
-        'гемоглобин', 'hemoglobin', 'hgb', 'hb',
-        'эритроцит', 'erythrocyte', 'rbc', 'мсv', 'mch', 'mchc', 'rdw',
-        'лейкоцит', 'leukocyte', 'wbc',
-        'тромбоцит', 'platelet', 'plt', 'mpv',
-        'гематокрит', 'hematocrit', 'hct',
-        'тромбокрит', 'thrombocrit', 'pct',
+        'гемоглобин', 'hemoglobin',
+        'эритроцит', 'erythrocyte',
+        'лейкоцит', 'leukocyte',
+        'тромбоцит', 'platelet',
+        'гематокрит', 'hematocrit',
+        'тромбокрит', 'thrombocrit',
         'ретикулоцит', 'reticulocyte',
         'нейтрофил', 'neutrophil',
         'лимфоцит', 'lymphocyte',
         'моноцит', 'monocyte',
         'эозинофил', 'eosinophil',
         'базофил', 'basophil',
-        'соэ', 'esr', 'coe',
+        'соэ', 'coe',
         'цп', 'цпэ', 'цветовой показатель', 'color index',
         'палочкоядер', 'сегментоядер', 'юные',
+        'средний объем', 'среднее содержание', 'средняя концентрация',
+        'ширина распределения',
     ]
     if any(kw in combined for kw in hematology_keywords):
         return BiomarkerCategory.HEMATOLOGY
