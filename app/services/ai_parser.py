@@ -591,7 +591,8 @@ class AIParserService:
             "biomarkers": [],
         }
         
-        seen_codes = set()
+        # Track (code, unit) pairs to allow both absolute and percentage values
+        seen_combinations = set()
         
         for bio in result.get("biomarkers", []):
             # Skip invalid entries
@@ -607,11 +608,17 @@ class AIParserService:
             raw_code = bio.get("code", "")
             code = self._normalize_biomarker_code(raw_code)
             
-            # Skip duplicates (take first occurrence)
-            if code in seen_codes:
-                logger.info(f"Duplicate biomarker skipped: {code}")
+            # Fallback для unit если AI не нашёл
+            unit = bio.get("unit") or "ед."
+            if not unit.strip():
+                unit = "ед."
+            
+            # Skip duplicates (same code AND same unit)
+            combination = (code, unit)
+            if combination in seen_combinations:
+                logger.info(f"Duplicate biomarker skipped: {code} ({unit})")
                 continue
-            seen_codes.add(code)
+            seen_combinations.add(combination)
             
             # Get reference ranges
             ref_min = self._safe_float(bio.get("ref_min"))
@@ -620,12 +627,7 @@ class AIParserService:
             # Fix decimal point if needed (e.g., 922 -> 92.2 for MCV)
             value = self._fix_decimal_point(code, value, ref_min, ref_max)
             
-            logger.info(f"Biomarker processing: raw='{raw_code}', normalized='{code}', value={value}")
-            
-            # Fallback для unit если AI не нашёл
-            unit = bio.get("unit") or "ед."
-            if not unit.strip():
-                unit = "ед."
+            logger.info(f"Biomarker processing: raw='{raw_code}', normalized='{code}', value={value}, unit='{unit}'")
             
             validated["biomarkers"].append({
                 "code": code,
@@ -862,9 +864,11 @@ class AIParserService:
             "mcv": "MCV",
             "среднее содержание гемоглобина в эритроците": "MCH",
             "среднее содержание hb": "MCH",
+            "среднее содержание hemoglobin": "MCH",
             "mch": "MCH",
             "средняя концентрация hb": "MCHC",
             "средняя концентрация гемоглобина": "MCHC",
+            "средняя конц": "MCHC",
             "mchc": "MCHC",
             "ширина распределения эритроцит": "RDW",
             "отн.ширина распред.эритр": "RDW",
