@@ -114,11 +114,20 @@ EXTRACTION_SYSTEM_PROMPT = """Ты — медицинский AI-ассисте�
 - PCT (Тромбокрит, Plateletcrit)
 - PDW (Относит.ширина распред.тромбоцитов, отн.ширина распред.тромбоцитов)
 - WBC (Лейкоциты, лейк, White Blood Cells)
-- NEU (Нейтрофилы, нейтрофилы абс/%)
-- LYM (Лимфоциты, лимфоциты абс/%)
-- MONO (Моноциты, моноциты абс/%)
-- EOS (Эозинофилы, эозинофилы абс/%)
-- BASO (Базофилы, базофилы абс/%)
+
+⚠️ ВАЖНО: Для лейкоцитов (NEU, LYM, MONO, EOS, BASO) ВСЕГДА извлекай ОБА значения если они есть:
+  1) АБСОЛЮТНОЕ значение (единица: 10*9/л или 10^9/л)
+  2) ПРОЦЕНТНОЕ значение (единица: %)
+  
+Это ОТДЕЛЬНЫЕ биомаркеры! Например:
+- NEU с unit="10*9/л" и value=2.61
+- NEU с unit="%" и value=51.4
+
+- NEU (Нейтрофилы абс + %)
+- LYM (Лимфоциты абс + %)
+- MONO (Моноциты абс + %)
+- EOS (Эозинофилы абс + %)
+- BASO (Базофилы абс + %)
 - ESR (СОЭ, скорость оседания эритроцитов)
 
 ПОЛОВЫЕ ГОРМОНЫ И ДР.:
@@ -726,6 +735,12 @@ class AIParserService:
             ],
             "FAI": [
                 r"(?:ИСТ|FAI|Index of Free Testosterone|Индекс своб\. тестостерона)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "RDW": [
+                r"(?:RDW|Ширина распредел|Отн.*ширина.*эритроц)[^:\d]*[:\s]*([\d.,]+)",
+            ],
+            "PDW": [
+                r"(?:PDW|Относит.*ширина.*тромбоцит|отн.*ширина.*тромб)[^:\d]*[:\s]*([\d.,]+)",
             ]
         }
         
@@ -761,6 +776,66 @@ class AIParserService:
                         continue
                 else:
                     logger.info(f"[Regex Rescue] ❌ Pattern didn't match for {code}")
+        
+        # Добавляем процентные значения лейкоцитов (если их нет)
+        logger.info("[Regex Rescue] Searching for percentage values of WBC...")
+        
+        leukocyte_percentage_patterns = {
+            "NEU": [
+                r"(?:Нейтрофил|Neutrophil|NEUT).*?(\d+[.,]\d+)\s*%",
+                r"(?:Нейтрофил|NEUT).*?абс.*?[:\s]*([\d.,]+).*?(\d+[.,]\d+)\s*%",
+            ],
+            "LYM": [
+                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM).*?(\d+[.,]\d+)\s*%",
+            ],
+            "MONO": [
+                r"(?:Моноцит|Monocyte|MONO).*?(\d+[.,]\d+)\s*%",
+            ],
+            "EOS": [
+                r"(?:Эозинофил|Eosinophil|EOS).*?(\d+[.,]\d+)\s*%",
+            ],
+            "BASO": [
+                r"(?:Базофил|Basophil|BASO).*?(\d+[.,]\d+)\s*%",
+            ],
+        }
+        
+        # Проверяем какие из процентных значений уже есть
+        existing_percentage_codes = set()
+        for bm in result.get("biomarkers", []):
+            if bm.get("unit") == "%" and bm.get("code") in leukocyte_percentage_patterns:
+                existing_percentage_codes.add(bm["code"])
+        
+        for code, patterns in leukocyte_percentage_patterns.items():
+            if code in existing_percentage_codes:
+                logger.info(f"[Regex Rescue] {code}% already exists")
+                continue
+            
+            for pattern in patterns:
+                matches = re.findall(pattern, ocr_text, re.IGNORECASE)
+                if matches:
+                    try:
+                        # Берём последнее найденное значение (обычно процент идёт после абс)
+                        value_str = matches[-1] if isinstance(matches[-1], str) else matches[-1][-1]
+                        value_str = value_str.replace(",", ".").rstrip(".")
+                        value = float(value_str)
+                        
+                        # Проверка что это похоже на процент (0-100)
+                        if 0 <= value <= 100:
+                            logger.info(f"[Regex Rescue] ✅ Found {code}% = {value}")
+                            
+                            result["biomarkers"].append({
+                                "code": code,
+                                "raw_name": f"Rescued {code} %",
+                                "value": value,
+                                "unit": "%",
+                                "ref_min": None,
+                                "ref_max": None
+                            })
+                            existing_percentage_codes.add(code)
+                            break
+                    except (ValueError, IndexError) as e:
+                        logger.info(f"[Regex Rescue] Error parsing {code}%: {e}")
+                        continue
         
         logger.info(f"[Regex Rescue] Final count: {len(result.get('biomarkers', []))} biomarkers")
         return result
