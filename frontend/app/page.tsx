@@ -989,12 +989,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     try {
       const newAnalysis = await analysesApi.upload(file);
       
-      // Проверяем что upload вернул корректный объект с id
-      if (!newAnalysis || !newAnalysis.id) {
-        throw new Error('Сервер не вернул ID анализа');
-      }
-      
-      console.log('Upload started:', newAnalysis.id);
+      console.log('Upload started:', newAnalysis.analysis_id);
       
       // Polling: проверяем готовность анализа каждые 2 секунды (макс 30 сек)
       let attempts = 0;
@@ -1005,7 +1000,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         await new Promise(resolve => setTimeout(resolve, 2000)); // Ждём 2 секунды
         
         try {
-          const updated = await analysesApi.getById(newAnalysis.id);
+          const updated = await analysesApi.getById(newAnalysis.analysis_id);
           console.log(`[Polling #${attempts + 1}] Analysis status:`, updated.status);
           
           if (updated.status === 'completed') {
@@ -1030,7 +1025,7 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
       }
 
       // Notify parent about new processing item
-      if (onUploadSuccess) onUploadSuccess(newAnalysis.id);
+      if (onUploadSuccess) onUploadSuccess(newAnalysis.analysis_id);
       
       // Переходим на вкладку Анализы
       if (onSuccess) {
@@ -1545,8 +1540,8 @@ function BiomarkerTablePage({
       
       const newAnalysis = await analysesApi.upload(file);
       
-      if (newAnalysis?.id && onUploadSuccess) {
-        onUploadSuccess(newAnalysis.id);
+      if (onUploadSuccess) {
+        onUploadSuccess(newAnalysis.analysis_id);
       }
       
       setToast({msg: '🚀 Анализ загружен! AI обрабатывает...', type: 'success'});

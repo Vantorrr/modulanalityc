@@ -44,6 +44,14 @@ export interface Analysis {
   biomarkers?: Biomarker[];
 }
 
+export interface AnalysisUploadResponse {
+  analysis_id: number;
+  file_id: number;
+  filename: string;
+  status: string;
+  message: string;
+}
+
 export interface Biomarker {
   id: number;
   name: string;
@@ -236,7 +244,7 @@ export const analysesApi = {
     return apiFetch<Analysis>(`/analyses/${id}`);
   },
   
-  async upload(file: File, title?: string, labName?: string): Promise<Analysis> {
+  async upload(file: File, title?: string, labName?: string): Promise<AnalysisUploadResponse> {
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
