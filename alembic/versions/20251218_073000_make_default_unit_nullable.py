@@ -1,7 +1,7 @@
 """Make biomarker default_unit nullable
 
 Revision ID: 20251218_073000
-Revises: 20251214_142719
+Revises: 20251212_000000
 Create Date: 2025-12-18 07:30:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20251218_073000'
-down_revision = '20251214_142719'
+down_revision = '20251212_000000'
 branch_labels = None
 depends_on = None
 
