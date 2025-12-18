@@ -595,11 +595,16 @@ class AIParserService:
                 continue
             seen_codes.add(code)
             
+            # Fallback для unit если AI не нашёл
+            unit = bio.get("unit") or "ед."
+            if not unit.strip():
+                unit = "ед."
+            
             validated["biomarkers"].append({
                 "code": code,
                 "raw_name": bio.get("raw_name", ""),
                 "value": value,
-                "unit": bio.get("unit", ""),
+                "unit": unit,
                 "ref_min": self._safe_float(bio.get("ref_min")),
                 "ref_max": self._safe_float(bio.get("ref_max")),
             })
@@ -666,7 +671,7 @@ class AIParserService:
                             "code": code,
                             "raw_name": "Rescued by Regex",
                             "value": value,
-                            "unit": "",
+                            "unit": "ед.",  # Fallback unit for regex rescue
                             "ref_min": None,
                             "ref_max": None
                         })

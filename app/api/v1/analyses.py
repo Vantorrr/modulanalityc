@@ -426,7 +426,7 @@ async def process_analysis_file(
                 biomarker = Biomarker(
                     code=bio_data["code"],
                     name_ru=raw_name,
-                    default_unit=bio_data.get("unit", ""),
+                    default_unit=bio_data.get("unit") or "ед.",  # Fallback для unit
                     category=category,  # Auto-detected category
                 )
                 db.add(biomarker)
@@ -555,12 +555,18 @@ async def process_analysis_file(
         await db.commit()
         
     except OCRError as e:
+        await db.rollback()  # Откатываем битую транзакцию
         analysis = await db.get(Analysis, analysis_id)
         if analysis:
             analysis.status = AnalysisStatus.FAILED
             analysis.error_message = str(e)
             await db.commit()
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error processing analysis {analysis_id}: {str(e)}", exc_info=True)
+        
+        await db.rollback()  # Откатываем битую транзакцию
         analysis = await db.get(Analysis, analysis_id)
         if analysis:
             analysis.status = AnalysisStatus.FAILED

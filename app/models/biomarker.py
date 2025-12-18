@@ -97,8 +97,9 @@ class Biomarker(Base):
     )
     
     # Units
-    default_unit: Mapped[str] = mapped_column(
+    default_unit: Mapped[Optional[str]] = mapped_column(
         String(50),
+        nullable=True,
         comment="Default measurement unit",
     )
     alternative_units: Mapped[Optional[str]] = mapped_column(

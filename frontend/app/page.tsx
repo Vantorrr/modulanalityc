@@ -988,6 +988,12 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
     
     try {
       const newAnalysis = await analysesApi.upload(file);
+      
+      // Проверяем что upload вернул корректный объект с id
+      if (!newAnalysis || !newAnalysis.id) {
+        throw new Error('Сервер не вернул ID анализа');
+      }
+      
       console.log('Upload started:', newAnalysis.id);
       
       // Polling: проверяем готовность анализа каждые 2 секунды (макс 30 сек)
@@ -1031,8 +1037,8 @@ function UploadAnalysisButton({ onBeforeUpload, onSuccess, onUploadStart, onUplo
         onSuccess();
       }
     } catch (err) {
-      console.error(err);
-      alert('Ошибка загрузки');
+      console.error('Upload error:', err);
+      alert(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
