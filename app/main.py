@@ -102,6 +102,10 @@ async def ensure_db_schema():
                 ADD COLUMN IF NOT EXISTS lab_name VARCHAR(100)
             """))
             logger.info("✅ Added lab_name column to user_biomarkers")
+            
+            # Make biomarkers.default_unit nullable (HOTFIX for AI extraction without units)
+            await conn.execute(text("ALTER TABLE biomarkers ALTER COLUMN default_unit DROP NOT NULL"))
+            logger.info("✅ HOTFIX APPLIED: biomarkers.default_unit is now nullable")
     except Exception as e:
         # It's okay if it fails (e.g. table doesn't exist yet, handled by migrations)
         logger.warning(f"Schema hotfix note: {e}")
