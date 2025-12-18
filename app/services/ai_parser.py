@@ -784,37 +784,100 @@ class AIParserService:
                 else:
                     logger.info(f"[Regex Rescue] ❌ Pattern didn't match for {code}")
         
+        # Специальная обработка для RDW-SD (стандартное отклонение с отметкой +)
+        # Нужен приоритет над RDW-CV (коэфф. вариации)
+        logger.info("[Regex Rescue] Checking for RDW-SD (standard deviation)...")
+        rdw_sd_pattern = r"(?:Отн.*ширина.*распред.*эритр.*ст.*отклонение|RDW.*SD)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)\s*([\d.,]+)-([\d.,]+)"
+        rdw_sd_match = re.search(rdw_sd_pattern, ocr_text, re.IGNORECASE)
+        
+        if rdw_sd_match:
+            try:
+                value_str = rdw_sd_match.group(1).replace(",", ".").rstrip(".")
+                ref_min_str = rdw_sd_match.group(2).replace(",", ".").rstrip(".")
+                ref_max_str = rdw_sd_match.group(3).replace(",", ".").rstrip(".")
+                value = float(value_str)
+                ref_min = float(ref_min_str)
+                ref_max = float(ref_max_str)
+                
+                logger.info(f"[Regex Rescue] ✅ Found RDW-SD = {value} фл, ref=[{ref_min}-{ref_max}]")
+                
+                # Заменяем существующий RDW если он есть и это CV (%)
+                replaced = False
+                for i, bm in enumerate(result.get("biomarkers", [])):
+                    if bm.get("code") == "RDW" and bm.get("unit") == "%":
+                        # Это RDW-CV, заменяем на RDW-SD
+                        result["biomarkers"][i] = {
+                            "code": "RDW",
+                            "raw_name": "RDW-SD (ст.откл.)",
+                            "value": value,
+                            "unit": "фл",
+                            "ref_min": ref_min,
+                            "ref_max": ref_max
+                        }
+                        replaced = True
+                        logger.info(f"[Regex Rescue] ✅ Replaced RDW-CV with RDW-SD")
+                        break
+                
+                if not replaced and "RDW" not in existing_codes:
+                    result["biomarkers"].append({
+                        "code": "RDW",
+                        "raw_name": "RDW-SD (ст.откл.)",
+                        "value": value,
+                        "unit": "фл",
+                        "ref_min": ref_min,
+                        "ref_max": ref_max
+                    })
+                    existing_codes.add("RDW")
+                    logger.info(f"[Regex Rescue] ✅ Added RDW-SD")
+            except (ValueError, IndexError) as e:
+                logger.info(f"[Regex Rescue] Error parsing RDW-SD: {e}")
+        
         # Добавляем процентные значения лейкоцитов (если их нет)
         logger.info("[Regex Rescue] Searching for percentage values of WBC...")
         
         leukocyte_percentage_patterns = {
             "NEU": [
+                r"(?:Нейтрофил|Neutrophil|NEUT).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
                 r"(?:Нейтрофил|Neutrophil|NEUT).*?(\d+[.,]\d+)\s*%",
-                r"(?:Нейтрофил|NEUT).*?абс.*?[:\s]*([\d.,]+).*?(\d+[.,]\d+)\s*%",
             ],
             "LYM": [
+                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
                 r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM).*?(\d+[.,]\d+)\s*%",
             ],
             "MONO": [
+                r"(?:Моноцит|Monocyte|MONO).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
                 r"(?:Моноцит|Monocyte|MONO).*?(\d+[.,]\d+)\s*%",
             ],
             "EOS": [
+                r"(?:Эозинофил|Eosinophil|EOS).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
                 r"(?:Эозинофил|Eosinophil|EOS).*?(\d+[.,]\d+)\s*%",
             ],
             "BASO": [
+                r"(?:Базофил|Basophil|BASO).*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
                 r"(?:Базофил|Basophil|BASO).*?(\d+[.,]\d+)\s*%",
             ],
         }
         
         # Проверяем какие из процентных значений уже есть
         existing_percentage_codes = set()
-        for bm in result.get("biomarkers", []):
+        existing_percentage_without_refs = []  # (index, code) для биомаркеров без референсов
+        
+        for i, bm in enumerate(result.get("biomarkers", [])):
             if bm.get("unit") == "%" and bm.get("code") in leukocyte_percentage_patterns:
                 existing_percentage_codes.add(bm["code"])
+                if not bm.get("ref_min") or not bm.get("ref_max"):
+                    existing_percentage_without_refs.append((i, bm["code"]))
         
         for code, patterns in leukocyte_percentage_patterns.items():
-            if code in existing_percentage_codes:
-                logger.info(f"[Regex Rescue] {code}% already exists")
+            # Проверяем нужно ли обновить референсы для существующего биомаркера
+            needs_update_index = None
+            for idx, existing_code in existing_percentage_without_refs:
+                if existing_code == code:
+                    needs_update_index = idx
+                    break
+            
+            if code in existing_percentage_codes and needs_update_index is None:
+                logger.info(f"[Regex Rescue] {code}% already exists with refs")
                 continue
             
             for pattern in patterns:
@@ -822,23 +885,47 @@ class AIParserService:
                 if matches:
                     try:
                         # Берём последнее найденное значение (обычно процент идёт после абс)
-                        value_str = matches[-1] if isinstance(matches[-1], str) else matches[-1][-1]
-                        value_str = value_str.replace(",", ".").rstrip(".")
-                        value = float(value_str)
+                        match = matches[-1]
+                        
+                        # Если match tuple с (value, ref_min, ref_max)
+                        if isinstance(match, tuple) and len(match) >= 3:
+                            value_str = match[0].replace(",", ".").rstrip(".")
+                            ref_min_str = match[1].replace(",", ".").rstrip(".")
+                            ref_max_str = match[2].replace(",", ".").rstrip(".")
+                            value = float(value_str)
+                            ref_min = float(ref_min_str)
+                            ref_max = float(ref_max_str)
+                        elif isinstance(match, tuple):
+                            value_str = match[0].replace(",", ".").rstrip(".")
+                            value = float(value_str)
+                            ref_min = None
+                            ref_max = None
+                        else:
+                            value_str = match.replace(",", ".").rstrip(".")
+                            value = float(value_str)
+                            ref_min = None
+                            ref_max = None
                         
                         # Проверка что это похоже на процент (0-100)
                         if 0 <= value <= 100:
-                            logger.info(f"[Regex Rescue] ✅ Found {code}% = {value}")
+                            logger.info(f"[Regex Rescue] ✅ Found {code}% = {value}, ref=[{ref_min}-{ref_max}]" if ref_min else f"[Regex Rescue] ✅ Found {code}% = {value}")
                             
-                            result["biomarkers"].append({
-                                "code": code,
-                                "raw_name": f"Rescued {code} %",
-                                "value": value,
-                                "unit": "%",
-                                "ref_min": None,
-                                "ref_max": None
-                            })
-                            existing_percentage_codes.add(code)
+                            # Если биомаркер существует но без референсов - обновляем
+                            if needs_update_index is not None:
+                                result["biomarkers"][needs_update_index]["ref_min"] = ref_min
+                                result["biomarkers"][needs_update_index]["ref_max"] = ref_max
+                                logger.info(f"[Regex Rescue] ✅ Updated {code}% references")
+                            else:
+                                # Добавляем новый
+                                result["biomarkers"].append({
+                                    "code": code,
+                                    "raw_name": f"Rescued {code} %",
+                                    "value": value,
+                                    "unit": "%",
+                                    "ref_min": ref_min,
+                                    "ref_max": ref_max
+                                })
+                                existing_percentage_codes.add(code)
                             break
                     except (ValueError, IndexError) as e:
                         logger.info(f"[Regex Rescue] Error parsing {code}%: {e}")
