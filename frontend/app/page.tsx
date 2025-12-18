@@ -1943,53 +1943,60 @@ function BiomarkerTablePage({
                          <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 shadow-md overflow-hidden">
                            <div className="relative">
                              {/* Placeholder для фото товара */}
-                             <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                             <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                                <div className="text-gray-400 text-center">
-                                 <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                  </svg>
-                                 <div className="text-xs mt-2 font-medium">Фото товара</div>
+                                 <div className="text-sm mt-2 font-medium">Фото товара</div>
                                </div>
                              </div>
                              
-                             {/* Иконка закладки */}
-                             <button className="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
-                               <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                             {/* Иконка закладки — чёрная контурная без круга */}
+                             <button className="absolute top-3 right-3 hover:scale-110 transition-transform">
+                               <svg className="w-7 h-7 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                               </svg>
+                             </button>
+                             
+                             {/* Рейтинг — накладывается на фото (слева внизу) */}
+                             <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-amber-400 px-2.5 py-1.5 rounded-lg shadow-md">
+                               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                               </svg>
+                               <span className="text-sm font-bold text-white">5</span>
+                             </div>
+                             
+                             {/* Иконка корзины — накладывается на фото (справа внизу) */}
+                             <button className="absolute bottom-3 right-3 w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center hover:scale-110 transition-transform">
+                               <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                </svg>
                              </button>
                            </div>
                            
                            <div className="p-4">
-                             {/* Рейтинг */}
-                             <div className="flex items-center gap-1 mb-2">
-                               <div className="flex items-center gap-0.5 bg-amber-50 px-2 py-1 rounded-lg">
-                                 <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                 </svg>
-                                 <span className="text-xs font-bold text-amber-700">5</span>
-                               </div>
-                             </div>
-                             
                              {/* Название товара */}
-                             <h5 className="font-bold text-gray-900 text-sm leading-tight mb-2 line-clamp-2">
+                             <h5 className="font-bold text-gray-900 text-base leading-tight mb-3 line-clamp-2">
                                {product.name}
                              </h5>
                              
-                             {/* Цена */}
-                             <div className="text-2xl font-black text-gray-900 mb-1">
-                               {product.price || 0}<span className="text-lg">₽</span>
+                             {/* Цена на сером фоне */}
+                             <div className="inline-block bg-gray-100 px-3 py-1 rounded-lg mb-2">
+                               <span className="text-2xl font-black text-gray-900">
+                                 {product.price || 0}<span className="text-lg">₽</span>
+                               </span>
                              </div>
                              
-                             {/* Баллы за покупку (опционально) */}
-                             <div className="text-xs text-gray-500 mb-3">
+                             {/* Баллы за покупку */}
+                             <div className="text-sm text-gray-500 mb-3">
                                +{Math.round((product.price || 0) * 0.03)} баллов за покупку
                              </div>
                              
                              {/* Причина от AI */}
-                             <div className="mb-3 flex items-start gap-1.5 text-xs text-indigo-700 bg-indigo-50 p-2.5 rounded-lg">
-                               <SparklesIcon size={12} className="mt-0.5 shrink-0" />
-                               <span className="font-medium">{rec.reason}</span>
+                             <div className="mb-4 flex items-start gap-2 text-sm text-indigo-700 bg-indigo-50/70 p-3 rounded-lg">
+                               <SparklesIcon size={14} className="mt-0.5 shrink-0" />
+                               <span className="font-medium leading-relaxed">{rec.reason}</span>
                              </div>
                              
                              {/* Большая зелёная кнопка "В корзину" */}
@@ -1997,10 +2004,10 @@ function BiomarkerTablePage({
                                href={product.purchase_url || '#'}
                                target="_blank"
                                rel="noopener noreferrer"
-                               className="w-full flex items-center justify-center gap-2 py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm rounded-xl transition-colors shadow-lg shadow-brand-200"
+                               className="w-full flex items-center justify-center gap-2 py-4 bg-brand-500 hover:bg-brand-600 text-white font-bold text-base rounded-2xl transition-colors shadow-lg"
                              >
-                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                </svg>
                                В корзину
                              </a>
