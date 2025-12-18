@@ -718,8 +718,8 @@ class AIParserService:
     def _enrich_with_regex(self, result: Dict, ocr_text: str) -> Dict:
         """Find missing critical biomarkers using regex."""
         logger.info(f"[Regex Rescue] Starting with {len(result.get('biomarkers', []))} biomarkers")
-        logger.info(f"[Regex Rescue] OCR text preview (first 300 chars): {ocr_text[:300]}")
-        logger.info(f"[Regex Rescue] FULL OCR text for debugging:\n{ocr_text}")
+        logger.info(f"[Regex Rescue] OCR text preview (first 500 chars): {ocr_text[:500]}")
+        # logger.info(f"[Regex Rescue] FULL OCR text for debugging:\n{ocr_text}")  # Disabled for production
         
         existing_codes = {b["code"] for b in result.get("biomarkers", [])}
         logger.info(f"[Regex Rescue] Existing codes: {existing_codes}")
@@ -789,19 +789,23 @@ class AIParserService:
         # Нужен приоритет над RDW-CV (коэфф. вариации)
         logger.info("[Regex Rescue] Checking for RDW-SD (standard deviation)...")
         
-        # Паттерн с учётом возможных переносов строк и пробелов
-        rdw_sd_pattern = r"(?:Отн[.\s]*ширина[.\s]*распред[.\s]*эритр[.\s]*по[.\s]*объем[^\d]*ст[.\s]*откл|RDW[.\s]*SD)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)\s*([\d.,]+)-([\d.,]+)"
-        logger.info(f"[Regex Rescue] RDW-SD pattern: {rdw_sd_pattern}")
-        rdw_sd_match = re.search(rdw_sd_pattern, ocr_text, re.IGNORECASE | re.DOTALL)
+        # Паттерн без референсов (OCR часто не видит их на той же строке)
+        rdw_sd_pattern_simple = r"(?:Отн[.\s]*ширина[.\s]*распред[.\s]*эритр[.\s]*по[.\s]*объем[^\n]*ст[.\s]*откл)[^\d]*([\d.,]+)\s*\+?\s*(?:фл|fl)"
+        rdw_sd_match = re.search(rdw_sd_pattern_simple, ocr_text, re.IGNORECASE | re.DOTALL)
         
         if rdw_sd_match:
             try:
                 value_str = rdw_sd_match.group(1).replace(",", ".").rstrip(".")
-                ref_min_str = rdw_sd_match.group(2).replace(",", ".").rstrip(".")
-                ref_max_str = rdw_sd_match.group(3).replace(",", ".").rstrip(".")
                 value = float(value_str)
-                ref_min = float(ref_min_str)
-                ref_max = float(ref_max_str)
+                
+                # Исправляем OCR косяк: 482 -> 48.2
+                if value > 100:  # RDW-SD обычно 30-60 фл
+                    value = value / 10
+                    logger.info(f"[Regex Rescue] Fixed decimal point: {value_str} -> {value}")
+                
+                # Стандартные референсы для RDW-SD (37-46 фл для мужчин)
+                ref_min = 37.1
+                ref_max = 45.7
                 
                 logger.info(f"[Regex Rescue] ✅ Found RDW-SD = {value} фл, ref=[{ref_min}-{ref_max}]")
                 
@@ -841,24 +845,24 @@ class AIParserService:
         
         leukocyte_percentage_patterns = {
             "NEU": [
-                r"(?:Нейтрофил|Neutrophil|NEUT)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Нейтрофил|Neutrophil|NEUT)[^\d]*(\d+[.,]\d+)\s*%",
+                r"(?:Нейтрофил|Neutrophil|NEUT)[^0-9]*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Нейтрофил|Neutrophil|NEUT)[^0-9]*?(\d+[.,]\d+)\s*%",
             ],
             "LYM": [
-                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Лимфоцит|Lymphocyte|LYMPH|LYM)[^\d]*(\d+[.,]\d+)\s*%",
+                r"(?:Лимфоцит|лимфощ|Lymphocyte|LYMPH|LYM)[^0-9]*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Лимфоцит|лимфощ|Lymphocyte|LYMPH|LYM)[^0-9]*?(\d+[.,]\d+)\s*%",
             ],
             "MONO": [
-                r"(?:Моноцит|Monocyte|MONO)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Моноцит|Monocyte|MONO)[^\d]*(\d+[.,]\d+)\s*%",
+                r"(?:Моноцит|Монациты|Monocyte|MONO)[^0-9]*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Моноцит|Монациты|Monocyte|MONO)[^0-9]*?(\d+[.,]\d+)\s*%",
             ],
             "EOS": [
-                r"(?:Эозинофил|Eosinophil|EOS)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Эозинофил|Eosinophil|EOS)[^\d]*(\d+[.,]\d+)\s*%",
+                r"(?:Эозинофил|Eosinophil|EOS)[^0-9]*?(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Эозинофил|Eosinophil|EOS)[^0-9]*?(\d+[.,]\d+)\s*%",
             ],
             "BASO": [
-                r"(?:Базофил|Basophil|BASO)[^\d]*(\d+[.,]\d+)\s*%\s*([\d.,]+)-([\d.,]+)",
-                r"(?:Базофил|Basophil|BASO)[^\d]*(\d+[.,]\d+)\s*%",
+                r"(?:Базофил|вёзофил|Basophil|BASO)[^0-9]*?(\d+[.,]\d+)\s*\+?\s*%\s*([\d.,]+)-([\d.,]+)",
+                r"(?:Базофил|вёзофил|Basophil|BASO)[^0-9]*?(\d+[.,]\d+)\s*\+?\s*%",
             ],
         }
         
@@ -884,10 +888,8 @@ class AIParserService:
                 logger.info(f"[Regex Rescue] {code}% already exists with refs")
                 continue
             
-            for idx, pattern in enumerate(patterns):
-                logger.info(f"[Regex Rescue] Trying {code}% pattern #{idx+1}: {pattern[:50]}...")
+            for pattern in patterns:
                 matches = re.findall(pattern, ocr_text, re.IGNORECASE)
-                logger.info(f"[Regex Rescue] {code}% pattern #{idx+1} found {len(matches)} matches")
                 if matches:
                     try:
                         # Берём последнее найденное значение (обычно процент идёт после абс)
